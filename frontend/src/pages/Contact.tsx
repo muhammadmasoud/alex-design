@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,60 @@ export default function ContactPage() {
     }
   };
 
+  const handleWhatsAppRedirect = () => {
+    const phoneNumber = "+201026517446";
+    
+    // Get current form values
+    const formValues = {
+      name: (document.querySelector('input[name="name"]') as HTMLInputElement)?.value || '',
+      email: (document.querySelector('input[name="email"]') as HTMLInputElement)?.value || '',
+      message: (document.querySelector('textarea[name="message"]') as HTMLTextAreaElement)?.value || ''
+    };
+
+    // Create message based on service context or general inquiry
+    let whatsappMessage = '';
+    
+    if (state?.service) {
+      // Service inquiry message
+      const price = state.price ? ` (${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(state.price)})` : '';
+      whatsappMessage = `Hi! I'm interested in the ${state.service}${price} service.`;
+      
+      if (formValues.message && formValues.message.trim() !== '') {
+        whatsappMessage += `\n\nAdditional details:\n${formValues.message}`;
+      }
+      
+      if (formValues.name && formValues.name.trim() !== '') {
+        whatsappMessage += `\n\nName: ${formValues.name}`;
+      }
+      
+      if (formValues.email && formValues.email.trim() !== '') {
+        whatsappMessage += `\nEmail: ${formValues.email}`;
+      }
+    } else {
+      // General inquiry message
+      whatsappMessage = 'Hi! I have an inquiry about your services.';
+      
+      if (formValues.message && formValues.message.trim() !== '') {
+        whatsappMessage += `\n\nMessage:\n${formValues.message}`;
+      }
+      
+      if (formValues.name && formValues.name.trim() !== '') {
+        whatsappMessage += `\n\nName: ${formValues.name}`;
+      }
+      
+      if (formValues.email && formValues.email.trim() !== '') {
+        whatsappMessage += `\nEmail: ${formValues.email}`;
+      }
+    }
+
+    // Encode the message for URL
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    const whatsappUrl = `https://wa.me/${phoneNumber.replace('+', '')}?text=${encodedMessage}`;
+    
+    // Open WhatsApp in a new window/tab
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <div className="container py-10 max-w-2xl">
       <SEO title="Contact | Studio Arc" description="Get in touch with our architecture studio." canonical="/contact" />
@@ -108,7 +163,19 @@ export default function ContactPage() {
           <Textarea rows={6} {...register("message")} />
           {errors.message && <p className="text-sm text-destructive mt-1">{errors.message.message}</p>}
         </div>
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? "Sending..." : "Send message"}</Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Sending..." : "Send message"}
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleWhatsAppRedirect}
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Send WhatsApp Message
+          </Button>
+        </div>
       </form>
     </div>
   );
