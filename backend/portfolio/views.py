@@ -124,8 +124,9 @@ class ServiceViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class RegistrationView(APIView):
+    authentication_classes = []
+    permission_classes = []
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -143,8 +144,9 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -310,7 +312,6 @@ class AdminDashboardView(APIView):
         })
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class AdminCheckView(APIView):
     """
     Check if current user is admin

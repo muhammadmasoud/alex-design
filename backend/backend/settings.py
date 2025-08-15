@@ -42,6 +42,24 @@ SECRET_KEY = 'django-insecure-+2u1*3#gjno))10f#=5eo51r4_p^&8)y!x)syiv61t3s^pp+qp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not IS_PRODUCTION
 
+# CSRF Configuration for Production
+if IS_PRODUCTION:
+    CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_USE_SESSIONS = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_DOMAIN = None
+    CSRF_COOKIE_PATH = '/'
+    CSRF_TRUSTED_ORIGINS = [
+        "http://52.47.162.66",
+        "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
+    ]
+else:
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_USE_SESSIONS = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
 # Host settings based on environment
 if IS_PRODUCTION:
     ALLOWED_HOSTS = [
@@ -79,7 +97,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
 ]
 
 ROOT_URLCONF = 'backend.urls'
