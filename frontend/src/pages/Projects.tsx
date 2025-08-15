@@ -74,27 +74,36 @@ export default function ProjectsPage() {
 
      return (
      <motion.div 
-       className="container py-10"
+       className="container py-8 sm:py-10 px-4 sm:px-6"
        variants={containerVariants}
        initial="hidden"
        animate="visible"
      >
        <SEO title="Projects | Studio Arc" description="Explore residential, commercial, and public architecture projects." canonical="/projects" />
        <motion.header className="mb-6" variants={itemVariants}>
-         <h1 className="font-heading text-3xl">Projects</h1>
-         <p className="mt-2 text-muted-foreground">Browse our portfolio with filters, search, and pagination.</p>
+         <h1 className="font-heading text-2xl sm:text-3xl">Projects</h1>
+         <p className="mt-2 text-sm sm:text-base text-muted-foreground">Browse our portfolio with filters, search, and pagination.</p>
        </motion.header>
 
-                 <motion.div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end mb-6" variants={itemVariants}>
-           <Input value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search projects" />
-           <CategoryFilter
-             categories={categories}
-             category={category}
-             subcategory={subcategory}
-             onCategoryChange={(v) => { setPage(1); setCategory(v); }}
-             onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
-             type="project"
-           />
+                 <motion.div className="flex flex-col sm:flex-row gap-4 mb-6" variants={itemVariants}>
+           <div className="flex-1">
+             <Input 
+               value={search} 
+               onChange={(e) => { setPage(1); setSearch(e.target.value); }} 
+               placeholder="Search projects"
+               className="w-full" 
+             />
+           </div>
+           <div className="sm:w-auto">
+             <CategoryFilter
+               categories={categories}
+               category={category}
+               subcategory={subcategory}
+               onCategoryChange={(v) => { setPage(1); setCategory(v); }}
+               onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
+               type="project"
+             />
+           </div>
          </motion.div>
 
         {loading ? (

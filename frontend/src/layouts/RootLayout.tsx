@@ -5,9 +5,9 @@ import PageTransition from "@/components/PageTransition";
 
 export default function RootLayout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 w-full">
         <PageTransition>
           <Outlet />
         </PageTransition>

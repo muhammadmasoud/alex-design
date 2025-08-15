@@ -146,9 +146,9 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="container py-10 max-w-2xl">
+    <div className="container py-8 sm:py-10 px-4 sm:px-6 max-w-2xl">
       <SEO title="Contact | Studio Arc" description="Get in touch with our architecture studio." canonical="/contact" />
-      <h1 className="font-heading text-3xl mb-6">Contact</h1>
+      <h1 className="font-heading text-2xl sm:text-3xl mb-4 sm:mb-6">Contact</h1>
       {state?.service && (
         <div className="mb-6 p-4 bg-muted rounded-lg">
           <p className="text-sm text-muted-foreground">Inquiring about:</p>
@@ -176,14 +176,15 @@ export default function ContactPage() {
           <Textarea rows={6} {...register("message")} />
           {errors.message && <p className="text-sm text-destructive mt-1">{errors.message.message}</p>}
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+        <div className="flex flex-col gap-3">
+          <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
             {isSubmitting ? "Sending..." : "Send message"}
           </Button>
           <Button 
             type="button" 
             onClick={handleWhatsAppRedirect}
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            size="lg"
           >
             <MessageCircle className="w-4 h-4 mr-2" />
             Send WhatsApp Message

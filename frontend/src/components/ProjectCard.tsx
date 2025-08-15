@@ -61,18 +61,18 @@ export default function ProjectCard({ project }: Props) {
             </div>
           )}
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="space-y-2">
-            <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors duration-200">
+            <h3 className="font-semibold text-base sm:text-lg leading-tight group-hover:text-primary transition-colors duration-200">
               {project.title}
             </h3>
-            <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="line-clamp-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {project.description}
             </p>
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                {formatDate(project.created_at)}
+                <span className="text-xs">{formatDate(project.created_at)}</span>
               </div>
               <div className="text-xs text-primary font-medium group-hover:underline">
                 View Details →

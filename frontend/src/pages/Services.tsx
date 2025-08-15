@@ -68,14 +68,19 @@ export default function ServicesPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className="container py-10">
+      <motion.div 
+        className="container py-8 sm:py-10 px-4 sm:px-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         <SEO title="Services | Studio Arc" description="Architectural design, planning, consulting, and visualization services." canonical="/services" />
-        <header className="mb-6">
-          <h1 className="font-heading text-3xl">Services</h1>
-          <p className="mt-2 text-muted-foreground">What we offer to bring your vision to life.</p>
-        </header>
+        <motion.header className="mb-6" variants={itemVariants}>
+          <h1 className="font-heading text-2xl sm:text-3xl">Services</h1>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">What we offer to bring your vision to life.</p>
+        </motion.header>
 
-        <div className="mb-6 max-w-sm">
+        <motion.div className="mb-6 w-full sm:max-w-sm" variants={itemVariants}>
           <CategoryFilter
             categories={categories}
             category={category}
@@ -84,31 +89,41 @@ export default function ServicesPage() {
             onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
             type="service"
           />
-        </div>
+        </motion.div>
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" variants={itemVariants}>
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-64 w-full" />
             ))}
-          </div>
+          </motion.div>
         ) : error ? (
-          <EmptyState title="Couldn't load services" description={error} />
+          <motion.div variants={itemVariants}>
+            <EmptyState title="Couldn't load services" description={error} />
+          </motion.div>
         ) : items.length === 0 ? (
-          <EmptyState title="No services found" description="Try a different category." />
+          <motion.div variants={itemVariants}>
+            <EmptyState title="No services found" description="Try a different category." />
+          </motion.div>
         ) : (
           <>
-            <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((s) => (
-                <ServiceCard key={s.id} item={s} />
+            <motion.section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" variants={itemVariants}>
+              {items.map((s, index) => (
+                <motion.div
+                  key={s.id}
+                  variants={itemVariants}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <ServiceCard item={s} />
+                </motion.div>
               ))}
-            </section>
-            <div className="mt-8 flex justify-center">
+            </motion.section>
+            <motion.div className="mt-8 flex justify-center" variants={itemVariants}>
               <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
+            </motion.div>
           </>
         )}
-      </div>
+      </motion.div>
     </Suspense>
   );
 }

@@ -78,26 +78,26 @@ export default function ServiceCard({ item }: Props) {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="space-y-3">
             <div className="flex items-start justify-between">
-              <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors duration-200">
+              <h3 className="font-semibold text-base sm:text-lg leading-tight group-hover:text-primary transition-colors duration-200">
                 {item.name}
               </h3>
             </div>
-            <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="line-clamp-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {item.description}
             </p>
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button 
                 onClick={handleBuyNow}
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
                 size="sm"
               >
                 <ShoppingCart className="h-4 w-4 mr-1" />
                 Buy Now
               </Button>
-              <div className="text-xs text-primary font-medium self-center group-hover:underline">
+              <div className="text-xs text-primary font-medium text-center sm:self-center group-hover:underline">
                 View Details →
               </div>
             </div>

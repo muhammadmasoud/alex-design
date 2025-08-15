@@ -20,14 +20,14 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-heading text-xl">
+      <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-2 font-heading text-lg sm:text-xl">
           <img 
             src={logoImage} 
             alt="Alex Design Logo" 
-            className="h-12 w-12 object-contain brightness-0 dark:invert"
+            className="h-10 w-10 sm:h-12 sm:w-12 object-contain brightness-0 dark:invert"
           />
-          <span>Alex Designs</span>
+          <span className="hidden xs:inline sm:inline">Alex Designs</span>
         </Link>
         <nav className="hidden md:flex items-center gap-1">
           <NavLink to="/" className={linkClass} end>Home</NavLink>
@@ -39,15 +39,15 @@ export default function Navbar() {
             <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
           )}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Mobile menu trigger */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+              <Button variant="ghost" size="icon" className="md:hidden h-10 w-10" aria-label="Open menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 sm:w-80">
+            <SheetContent side="right" className="w-80 sm:w-96 p-6">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   <img 
@@ -58,29 +58,29 @@ export default function Navbar() {
                   Alex Design
                 </SheetTitle>
               </SheetHeader>
-              <nav className="mt-6 grid gap-2">
-                <SheetClose asChild><NavLink to="/" className={linkClass} end>Home</NavLink></SheetClose>
-                <SheetClose asChild><NavLink to="/projects" className={linkClass}>Projects</NavLink></SheetClose>
-                <SheetClose asChild><NavLink to="/services" className={linkClass}>Services</NavLink></SheetClose>
-                <SheetClose asChild><NavLink to="/about" className={linkClass}>About</NavLink></SheetClose>
-                <SheetClose asChild><NavLink to="/contact" className={linkClass}>Contact</NavLink></SheetClose>
+              <nav className="mt-8 grid gap-3">
+                <SheetClose asChild><NavLink to="/" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors" end>Home</NavLink></SheetClose>
+                <SheetClose asChild><NavLink to="/projects" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Projects</NavLink></SheetClose>
+                <SheetClose asChild><NavLink to="/services" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Services</NavLink></SheetClose>
+                <SheetClose asChild><NavLink to="/about" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">About</NavLink></SheetClose>
+                <SheetClose asChild><NavLink to="/contact" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Contact</NavLink></SheetClose>
                 {isAdmin && (
-                  <SheetClose asChild><NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink></SheetClose>
+                  <SheetClose asChild><NavLink to="/admin-dashboard" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Admin</NavLink></SheetClose>
                 )}
               </nav>
-              <div className="mt-6">
+              <div className="mt-8 pt-6 border-t border-border">
                 {!isAuthenticated ? (
-                  <div className="grid gap-2">
-                    <SheetClose asChild><Button variant="outline" asChild><Link to="/login">Log in</Link></Button></SheetClose>
-                    <SheetClose asChild><Button asChild><Link to="/register">Sign up</Link></Button></SheetClose>
+                  <div className="grid gap-3">
+                    <SheetClose asChild><Button variant="outline" size="lg" className="w-full" asChild><Link to="/login">Log in</Link></Button></SheetClose>
+                    <SheetClose asChild><Button size="lg" className="w-full" asChild><Link to="/register">Sign up</Link></Button></SheetClose>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 px-2 py-1 text-sm">
-                      <User className="h-4 w-4" />
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-lg text-sm">
+                      <User className="h-5 w-5" />
                       <span>Welcome, {user?.username}</span>
                     </div>
-                    <SheetClose asChild><Button variant="secondary" onClick={handleLogout} className="w-full">Logout</Button></SheetClose>
+                    <SheetClose asChild><Button variant="secondary" size="lg" onClick={handleLogout} className="w-full">Logout</Button></SheetClose>
                   </div>
                 )}
               </div>

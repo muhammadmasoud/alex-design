@@ -9,7 +9,7 @@ import { containerVariants, itemVariants } from "@/components/PageTransition";
 export default function About() {
   return (
     <motion.div
-      className="container py-10"
+      className="container py-8 sm:py-10 px-4 sm:px-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -21,48 +21,48 @@ export default function About() {
       />
 
       {/* Hero Section */}
-      <motion.section className="text-center mb-16" variants={itemVariants}>
-        <h1 className="font-heading text-4xl md:text-5xl mb-6">About Alex Designs</h1>
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+      <motion.section className="text-center mb-12 sm:mb-16" variants={itemVariants}>
+        <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6">About Alex Designs</h1>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
           We create thoughtfully designed spaces that seamlessly blend form and function, 
           emphasizing sustainable design, natural light integration, and timeless minimalist aesthetics.
         </p>
       </motion.section>
 
       {/* CEO Section */}
-      <motion.section className="mb-16" variants={itemVariants}>
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <motion.section className="mb-12 sm:mb-16" variants={itemVariants}>
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           <div>
             <motion.div variants={itemVariants}>
-              <Badge variant="secondary" className="mb-4">CEO & Founder</Badge>
-              <h2 className="font-heading text-3xl mb-4">Muhammad Aboelhamd</h2>
-              <p className="text-muted-foreground mb-6 leading-relaxed">
+              <Badge variant="secondary" className="mb-3 sm:mb-4">CEO & Founder</Badge>
+              <h2 className="font-heading text-2xl sm:text-3xl mb-3 sm:mb-4">Muhammad Aboelhamd</h2>
+              <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed">
                 A forward-thinking architect passionate about architectural excellence, Muhammad leads Alex Designs 
                 with a Master's Degree in Architecture and RIAI Post-Graduate Membership. Based between Alexandria, Egypt, 
                 and international projects, he brings global expertise to every design.
               </p>
               
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <Award className="h-5 w-5 text-primary" />
-                  <span>Master Degree in Architecture</span>
+              <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                <div className="flex items-start gap-3">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5" />
+                  <span className="text-sm sm:text-base">Master Degree in Architecture</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Award className="h-5 w-5 text-primary" />
-                  <span>RIAI Post-Graduate Membership</span>
+                <div className="flex items-start gap-3">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5" />
+                  <span className="text-sm sm:text-base">RIAI Post-Graduate Membership</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-primary" />
-                  <span>CEO | Architect | Interior Designer | BIM Coordinator</span>
+                <div className="flex items-start gap-3">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5" />
+                  <span className="text-sm sm:text-base">CEO | Architect | Interior Designer | BIM Coordinator</span>
                 </div>
               </div>
 
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="w-full sm:w-auto">
                 <a 
                   href="https://www.behance.net/mohamedaboelhamd" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex items-center justify-center gap-2"
                 >
                   View Portfolio on Behance
                   <ExternalLink className="h-4 w-4" />
@@ -71,25 +71,25 @@ export default function About() {
             </motion.div>
           </div>
 
-          <motion.div variants={itemVariants}>
-            <Card className="p-6">
+          <motion.div variants={itemVariants} className="mt-8 lg:mt-0">
+            <Card className="p-4 sm:p-6">
               <CardContent className="p-0">
-                <div className="grid grid-cols-2 gap-6 text-center">
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 text-center">
                   <div>
-                    <div className="text-3xl font-bold text-primary mb-2">86K+</div>
-                    <div className="text-sm text-muted-foreground">Project Views</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">86K+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Project Views</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary mb-2">14K+</div>
-                    <div className="text-sm text-muted-foreground">Appreciations</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">14K+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Appreciations</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary mb-2">4.7K+</div>
-                    <div className="text-sm text-muted-foreground">Followers</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">4.7K+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary mb-2">10+</div>
-                    <div className="text-sm text-muted-foreground">Years Experience</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">10+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Years Experience</div>
                   </div>
                 </div>
               </CardContent>
@@ -99,15 +99,15 @@ export default function About() {
       </motion.section>
 
       {/* Values Section */}
-      <motion.section className="mb-16" variants={itemVariants}>
-        <div className="text-center mb-12">
-          <h2 className="font-heading text-3xl mb-4">Our Values</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+      <motion.section className="mb-12 sm:mb-16" variants={itemVariants}>
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="font-heading text-2xl sm:text-3xl mb-3 sm:mb-4">Our Values</h2>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
             The principles that guide every design decision and client relationship.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           <motion.div variants={itemVariants}>
             <Card className="text-center p-6 h-full">
               <CardHeader>
@@ -163,14 +163,14 @@ export default function About() {
 
       {/* Services Overview */}
       <motion.section variants={itemVariants}>
-        <div className="text-center mb-12">
-          <h2 className="font-heading text-3xl mb-4">What We Do</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="font-heading text-2xl sm:text-3xl mb-3 sm:mb-4">What We Do</h2>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
             From concept to completion, we provide comprehensive architectural and design services.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
             "Architectural Design",
             "Interior Design", 
@@ -186,9 +186,9 @@ export default function About() {
               variants={itemVariants}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="p-4 text-center hover:shadow-lg transition-shadow">
-                <CardContent className="p-2">
-                  <h3 className="font-semibold">{service}</h3>
+              <Card className="p-3 sm:p-4 text-center hover:shadow-lg transition-shadow">
+                <CardContent className="p-1 sm:p-2">
+                  <h3 className="font-semibold text-sm sm:text-base">{service}</h3>
                 </CardContent>
               </Card>
             </motion.div>

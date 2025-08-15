@@ -90,8 +90,42 @@
 
 @layer base {
   * { @apply border-border; }
-  html { font-family: theme('fontFamily.sans'); }
-  body { @apply bg-background text-foreground; }
+  html { 
+    font-family: theme('fontFamily.sans'); 
+    /* Improve touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent zoom on input focus on mobile */
+    touch-action: manipulation;
+  }
+  body { 
+    @apply bg-background text-foreground; 
+    /* Improve text rendering on mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+  }
+  
+  /* Improve touch targets for mobile */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Ensure proper sizing on mobile */
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Better focus states for mobile accessibility */
+  button:focus-visible, 
+  a:focus-visible, 
+  input:focus-visible, 
+  select:focus-visible, 
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
