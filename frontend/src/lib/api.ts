@@ -59,7 +59,9 @@ export interface PaginatedResponse<T> {
 
 export const endpoints = {
   projects: "/projects/",
+  projectDetail: (id: string | number) => `/projects/${id}/`,
   services: "/services/",
+  serviceDetail: (id: string | number) => `/services/${id}/`,
   auth: {
     login: "/auth/login/",
     register: "/auth/register/",

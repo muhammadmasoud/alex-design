@@ -6,6 +6,8 @@ export interface Project {
   created_at: string;
   category?: string;
   subcategory?: string;
+  category_name?: string;
+  subcategory_name?: string;
 }
 
 export interface ServiceItem {
@@ -15,4 +17,7 @@ export interface ServiceItem {
   icon: string; // This will contain the full URL from the backend
   price: number;
   category?: string;
+  subcategory?: string;
+  category_name?: string;
+  subcategory_name?: string;
 }
