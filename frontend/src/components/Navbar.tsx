@@ -35,7 +35,7 @@ export default function Navbar() {
           <NavLink to="/services" className={linkClass}>Services</NavLink>
           <NavLink to="/contact" className={linkClass}>Contact</NavLink>
           {isAdmin && (
-            <NavLink to="/admin" className={linkClass}>Admin</NavLink>
+            <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
           )}
         </nav>
         <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ export default function Navbar() {
                 <SheetClose asChild><NavLink to="/services" className={linkClass}>Services</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/contact" className={linkClass}>Contact</NavLink></SheetClose>
                 {isAdmin && (
-                  <SheetClose asChild><NavLink to="/admin" className={linkClass}>Admin</NavLink></SheetClose>
+                  <SheetClose asChild><NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink></SheetClose>
                 )}
               </nav>
               <div className="mt-6">
