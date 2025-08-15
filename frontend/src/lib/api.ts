@@ -4,7 +4,19 @@ export const API_BASE_URL = "/api"; // Use proxy for local development
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // Important for CSRF cookies
 });
+
+// Function to get CSRF token
+const getCSRFToken = () => {
+  // Try to get from meta tag first
+  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (metaToken) return metaToken;
+  
+  // Fallback to cookie
+  const token = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+  return token;
+};
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
@@ -12,6 +24,16 @@ api.interceptors.request.use((config) => {
     const headers = (config.headers ?? {}) as Record<string, any>;
     headers.Authorization = `Token ${token}`;
     config.headers = headers as any;
+  }
+  
+  // Add CSRF token for POST/PUT/DELETE requests
+  if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+    const csrfToken = getCSRFToken();
+    if (csrfToken) {
+      const headers = (config.headers ?? {}) as Record<string, any>;
+      headers['X-CSRFToken'] = csrfToken;
+      config.headers = headers as any;
+    }
   }
   
   // Set Content-Type only if it's not FormData

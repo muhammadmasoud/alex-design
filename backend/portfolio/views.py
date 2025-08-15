@@ -310,6 +310,7 @@ class AdminDashboardView(APIView):
         })
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class AdminCheckView(APIView):
     """
     Check if current user is admin

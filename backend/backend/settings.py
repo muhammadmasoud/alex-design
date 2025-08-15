@@ -29,9 +29,10 @@ def load_env_file():
 
 load_env_file()
 
+# Detect environment
+IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production' or os.environ.get('PRODUCTION') == 'true'
+IS_LIGHTSAIL = os.environ.get('LIGHTSAIL') == 'true'
 
-MEDIA_URL = '/media/'  # URL to access media files
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory to store uploaded files
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -39,9 +40,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory to store uploaded file
 SECRET_KEY = 'django-insecure-+2u1*3#gjno))10f#=5eo51r4_p^&8)y!x)syiv61t3s^pp+qp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = not IS_PRODUCTION
 
-ALLOWED_HOSTS = ["*"]
+# Host settings based on environment
+if IS_PRODUCTION:
+    ALLOWED_HOSTS = [
+        "52.47.162.66",
+        "2a05:d012:18a:1600:539:6792:3ed7:c389",
+        "localhost",
+        "127.0.0.1",
+    ]
+else:
+    ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -95,16 +105,30 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'alex_designs',      
-        'USER': 'a7aa',       
-        'PASSWORD': 'admin',
-        'HOST': '127.0.0.1',           
-        'PORT': '5432',                
+if IS_PRODUCTION:
+    # Production database (AWS Lightsail)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'alex_designs',
+            'USER': 'a7aa',
+            'PASSWORD': 'admin',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
     }
-}
+else:
+    # Local development database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'alex_designs',      
+            'USER': 'postgres',       
+            'PASSWORD': 'admin',
+            'HOST': '127.0.0.1',           
+            'PORT': '5432',                
+        }
+    }
 
 
 # Password validation
@@ -141,8 +165,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure Django admin static files are included
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Django admin specific settings
+ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -152,22 +188,60 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'portfolio.User'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://localhost:8081",
-    "http://127.0.0.1:8081",
-]
+# CORS and CSRF settings based on environment
+if IS_PRODUCTION:
+    # Production CORS settings
+    CORS_ALLOWED_ORIGINS = [
+        "http://52.47.162.66",
+        "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    
+    CSRF_TRUSTED_ORIGINS = [
+        "http://52.47.162.66",
+        "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
+    ]
+    
+    # Production CSRF settings
+    CSRF_COOKIE_SECURE = False  # Set to True only if using HTTPS
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_USE_SESSIONS = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_DOMAIN = None
+    CSRF_COOKIE_PATH = '/'
+    
+    # Production session settings
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Production security settings
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    # Local development CORS settings
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+    ]
+    
+    CSRF_TRUSTED_ORIGINS = [
+        "http://52.47.95.169",
+        "https://52.47.95.169"
+    ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://52.47.95.169",
-    "https://52.47.95.169"
-]
-
+# Common CORS settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 
