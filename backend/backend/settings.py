@@ -187,7 +187,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files configuration
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+if IS_PRODUCTION:
+    # Production: Use absolute paths for Ubuntu server
+    MEDIA_ROOT = '/home/ubuntu/alex-design/backend/media'
+    STATIC_ROOT = '/home/ubuntu/alex-design/backend/staticfiles'
+else:
+    # Development: Use relative paths
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Ensure Django admin static files are included
 STATICFILES_DIRS = [
@@ -196,6 +203,14 @@ STATICFILES_DIRS = [
 
 # Django admin specific settings
 ADMIN_MEDIA_PREFIX = '/static/admin/'
+
+# File upload settings for production
+if IS_PRODUCTION:
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+    FILE_UPLOAD_TEMP_DIR = '/tmp'
+    FILE_UPLOAD_PERMISSIONS = 0o644
+    FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
