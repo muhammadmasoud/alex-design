@@ -215,6 +215,18 @@ if IS_PRODUCTION:
     FILE_UPLOAD_TEMP_DIR = '/tmp'
     FILE_UPLOAD_PERMISSIONS = 0o644
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+    
+    # File upload handlers for production
+    FILE_UPLOAD_HANDLERS = [
+        'django.core.files.uploadhandler.MemoryFileUploadHandler',
+        'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+    ]
+else:
+    # File upload handlers for development
+    FILE_UPLOAD_HANDLERS = [
+        'django.core.files.uploadhandler.MemoryFileUploadHandler',
+        'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+    ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -280,6 +292,21 @@ else:
 # Common CORS settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Content type settings for file uploads
+if IS_PRODUCTION:
+    # Allow multipart form data for file uploads
+    CORS_ALLOW_HEADERS = [
+        'accept',
+        'accept-encoding',
+        'authorization',
+        'content-type',
+        'dnt',
+        'origin',
+        'user-agent',
+        'x-csrftoken',
+        'x-requested-with',
+    ]
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
