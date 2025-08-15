@@ -36,24 +36,34 @@ const Index = () => {
   return (
     <div className="">
       <SEO title="Studio Arc — Modern Architecture" description="Minimal, elegant portfolio of modern architecture: featured projects, services, and contact." canonical="/" />
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden animate-hero-entrance">
         <div className="relative h-[60vh] w-full">
+          {/* Main hero image with Ken Burns effect */}
           <img 
             src={hero} 
             alt="Modern architecture facade hero" 
-            className="h-full w-full object-cover animate-hero-zoom" 
+            className="h-full w-full object-cover animate-hero-ken-burns" 
           />
-          {/* Animated overlay elements */}
+          
+          {/* Dynamic gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/20 animate-hero-shimmer" />
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-hero-float" />
-          {/* Floating geometric shapes */}
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/30 rounded-full animate-hero-float-delayed" />
-          <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-secondary/40 rounded-full animate-hero-float-reverse" />
-          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-accent/50 rounded-full animate-hero-float-slow" />
+          <div className="absolute inset-0 animate-hero-gradient-shift opacity-60" />
+          
+          {/* Enhanced floating geometric elements */}
+          <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-primary/40 rounded-full animate-hero-float-dynamic" />
+          <div className="absolute top-1/5 right-1/3 w-2 h-2 bg-accent/60 rounded-full animate-hero-pulse-glow" />
+          <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-secondary/50 rounded-full animate-hero-float-reverse" />
+          <div className="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-accent/70 rounded-full animate-hero-float-slow" />
+          <div className="absolute bottom-1/4 right-1/2 w-1 h-1 bg-primary/60 rounded-full animate-hero-spiral" />
+          <div className="absolute top-1/2 left-1/5 w-1.5 h-1.5 bg-secondary/40 rounded-full animate-hero-float-delayed" />
+          
+          {/* Additional eye-catching elements */}
+          <div className="absolute top-1/6 left-1/2 w-4 h-0.5 bg-accent/30 animate-hero-pulse-glow" />
+          <div className="absolute bottom-1/5 left-1/4 w-0.5 h-4 bg-primary/40 animate-hero-float-dynamic" />
         </div>
+        
         <div className="container absolute inset-0 flex items-end pb-12">
-          <div className="max-w-2xl animate-enter">
+          <div className="max-w-2xl animate-hero-entrance" style={{animationDelay: '0.5s'}}>
             <h1 className="font-heading text-4xl sm:text-5xl">Designing spaces with clarity and purpose.</h1>
             <p className="mt-3 text-muted-foreground">Residential, commercial, and public architecture with a focus on minimalism and light.</p>
             <div className="mt-6 flex gap-3">

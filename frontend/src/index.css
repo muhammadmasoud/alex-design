@@ -101,66 +101,151 @@
   .hover-scale { @apply transition-transform duration-200 hover:scale-105; }
 }
 
-/* Hero Animation Keyframes */
-@keyframes hero-zoom {
-  0% { transform: scale(1.1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1.1); }
+/* Hero Animation Keyframes - Ken Burns Effect with Modern Enhancements */
+@keyframes hero-ken-burns {
+  0% { 
+    transform: scale(1) translateX(0%) translateY(0%); 
+    filter: brightness(0.8) contrast(1.1);
+  }
+  25% { 
+    transform: scale(1.08) translateX(-2%) translateY(-1%); 
+    filter: brightness(0.9) contrast(1.15);
+  }
+  50% { 
+    transform: scale(1.15) translateX(-4%) translateY(2%); 
+    filter: brightness(1) contrast(1.2);
+  }
+  75% { 
+    transform: scale(1.12) translateX(2%) translateY(-2%); 
+    filter: brightness(0.95) contrast(1.1);
+  }
+  100% { 
+    transform: scale(1) translateX(0%) translateY(0%); 
+    filter: brightness(0.8) contrast(1.1);
+  }
 }
 
-@keyframes hero-shimmer {
-  0% { transform: translateX(-100%); opacity: 0; }
-  50% { transform: translateX(0%); opacity: 0.3; }
-  100% { transform: translateX(100%); opacity: 0; }
+@keyframes hero-gradient-shift {
+  0% { 
+    background: linear-gradient(45deg, rgba(var(--primary), 0.1), rgba(var(--accent), 0.05), rgba(var(--secondary), 0.1)); 
+    transform: rotate(0deg);
+  }
+  33% { 
+    background: linear-gradient(135deg, rgba(var(--accent), 0.15), rgba(var(--primary), 0.08), rgba(var(--secondary), 0.05)); 
+    transform: rotate(120deg);
+  }
+  66% { 
+    background: linear-gradient(225deg, rgba(var(--secondary), 0.12), rgba(var(--accent), 0.1), rgba(var(--primary), 0.06)); 
+    transform: rotate(240deg);
+  }
+  100% { 
+    background: linear-gradient(45deg, rgba(var(--primary), 0.1), rgba(var(--accent), 0.05), rgba(var(--secondary), 0.1)); 
+    transform: rotate(360deg);
+  }
 }
 
-@keyframes hero-float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-10px) rotate(120deg); }
-  66% { transform: translateY(5px) rotate(240deg); }
+@keyframes hero-pulse-glow {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(1); 
+    box-shadow: 0 0 20px rgba(var(--accent), 0.2);
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.1); 
+    box-shadow: 0 0 40px rgba(var(--accent), 0.4);
+  }
 }
 
-@keyframes hero-float-delayed {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-15px) rotate(180deg); }
-  66% { transform: translateY(8px) rotate(360deg); }
+@keyframes hero-float-dynamic {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px) rotate(0deg) scale(1); 
+    opacity: 0.4;
+  }
+  25% { 
+    transform: translateY(-20px) translateX(10px) rotate(90deg) scale(1.2); 
+    opacity: 0.8;
+  }
+  50% { 
+    transform: translateY(-10px) translateX(-15px) rotate(180deg) scale(0.9); 
+    opacity: 0.6;
+  }
+  75% { 
+    transform: translateY(15px) translateX(5px) rotate(270deg) scale(1.1); 
+    opacity: 0.9;
+  }
 }
 
-@keyframes hero-float-reverse {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(12px) rotate(-120deg); }
-  66% { transform: translateY(-6px) rotate(-240deg); }
+@keyframes hero-spiral {
+  0% { 
+    transform: translateY(0px) rotate(0deg) scale(0.8); 
+    opacity: 0.2;
+  }
+  25% { 
+    transform: translateY(-30px) rotate(90deg) scale(1.2); 
+    opacity: 0.6;
+  }
+  50% { 
+    transform: translateY(-15px) rotate(180deg) scale(1); 
+    opacity: 0.8;
+  }
+  75% { 
+    transform: translateY(10px) rotate(270deg) scale(1.3); 
+    opacity: 0.4;
+  }
+  100% { 
+    transform: translateY(0px) rotate(360deg) scale(0.8); 
+    opacity: 0.2;
+  }
 }
 
-@keyframes hero-float-slow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(180deg); }
+@keyframes hero-entrance {
+  0% { 
+    opacity: 0; 
+    transform: translateY(50px) scale(0.95); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0px) scale(1); 
+  }
 }
 
 /* Hero Animation Classes */
-.animate-hero-zoom {
-  animation: hero-zoom 20s ease-in-out infinite;
+.animate-hero-ken-burns {
+  animation: hero-ken-burns 30s ease-in-out infinite;
 }
 
-.animate-hero-shimmer {
-  animation: hero-shimmer 8s ease-in-out infinite;
+.animate-hero-gradient-shift {
+  animation: hero-gradient-shift 15s ease-in-out infinite;
 }
 
-.animate-hero-float {
-  animation: hero-float 12s ease-in-out infinite;
+.animate-hero-pulse-glow {
+  animation: hero-pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-hero-float-dynamic {
+  animation: hero-float-dynamic 8s ease-in-out infinite;
+}
+
+.animate-hero-spiral {
+  animation: hero-spiral 12s ease-in-out infinite;
+}
+
+.animate-hero-entrance {
+  animation: hero-entrance 1.5s ease-out forwards;
 }
 
 .animate-hero-float-delayed {
-  animation: hero-float-delayed 15s ease-in-out infinite;
+  animation: hero-float-dynamic 10s ease-in-out infinite;
   animation-delay: 2s;
 }
 
 .animate-hero-float-reverse {
-  animation: hero-float-reverse 18s ease-in-out infinite;
-  animation-delay: 4s;
+  animation: hero-spiral 14s ease-in-out infinite reverse;
+  animation-delay: 3s;
 }
 
 .animate-hero-float-slow {
-  animation: hero-float-slow 25s ease-in-out infinite;
-  animation-delay: 6s;
+  animation: hero-float-dynamic 16s ease-in-out infinite;
+  animation-delay: 4s;
 }
