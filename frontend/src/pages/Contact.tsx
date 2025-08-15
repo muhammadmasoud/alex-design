@@ -96,9 +96,10 @@ export default function ContactPage() {
       const price = state.price ? ` (${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(state.price)})` : '';
       
       // Check if the message already contains service information to avoid duplication
+      const formattedPrice = state.price ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(state.price) : '';
       const isPrefilledMessage = formValues.message && 
         formValues.message.includes(state.service) && 
-        (state.price ? formValues.message.includes(state.price.toString()) : true);
+        (formattedPrice ? formValues.message.includes(formattedPrice) : true);
       
       if (isPrefilledMessage) {
         // Use the existing message as is since it already contains service info
