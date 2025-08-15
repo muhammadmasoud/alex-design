@@ -65,7 +65,7 @@ const Index = () => {
         <div className="container absolute inset-0 flex items-end pb-12">
           <div className="max-w-2xl animate-hero-entrance" style={{animationDelay: '0.5s'}}>
             <h1 className="font-heading text-4xl sm:text-5xl">Designing spaces with clarity and purpose.</h1>
-            <p className="mt-3 text-muted-foreground">Residential, commercial, and public architecture with a focus on minimalism and light.</p>
+            <p className="mt-3 text-muted-foreground">We create thoughtfully designed spaces that seamlessly blend form and function. From intimate residential homes to bold commercial structures and inspiring public spaces, our practice emphasizes sustainable design, natural light integration, and timeless minimalist aesthetics that enhance the human experience.</p>
             <div className="mt-6 flex gap-3">
               <Button asChild><Link to="/projects">Browse projects</Link></Button>
               <Button variant="secondary" asChild><Link to="/contact">Start a project</Link></Button>
