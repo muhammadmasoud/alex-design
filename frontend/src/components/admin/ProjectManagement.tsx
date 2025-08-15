@@ -323,9 +323,12 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
                 <label className="text-sm font-medium mb-2 block">Image</label>
                 <Input 
                   type="file" 
-                  accept="image/*"
+                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif"
                   {...form.register("image")}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Supports: JPG, JPEG, PNG, GIF, BMP, WebP, SVG, TIFF
+                </p>
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
