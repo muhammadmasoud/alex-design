@@ -82,6 +82,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'title']
     ordering = ['-created_at']
 
+    def get_serializer_context(self):
+        """Add request to serializer context so it can build absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_permissions(self):
         """
         Allow public read access, but require admin for write operations
@@ -112,6 +118,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['name']
     ordering = ['name']
+
+    def get_serializer_context(self):
+        """Add request to serializer context so it can build absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_permissions(self):
         """
