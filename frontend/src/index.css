@@ -100,3 +100,67 @@
   }
   .hover-scale { @apply transition-transform duration-200 hover:scale-105; }
 }
+
+/* Hero Animation Keyframes */
+@keyframes hero-zoom {
+  0% { transform: scale(1.1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes hero-shimmer {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { transform: translateX(0%); opacity: 0.3; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(120deg); }
+  66% { transform: translateY(5px) rotate(240deg); }
+}
+
+@keyframes hero-float-delayed {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-15px) rotate(180deg); }
+  66% { transform: translateY(8px) rotate(360deg); }
+}
+
+@keyframes hero-float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(12px) rotate(-120deg); }
+  66% { transform: translateY(-6px) rotate(-240deg); }
+}
+
+@keyframes hero-float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(180deg); }
+}
+
+/* Hero Animation Classes */
+.animate-hero-zoom {
+  animation: hero-zoom 20s ease-in-out infinite;
+}
+
+.animate-hero-shimmer {
+  animation: hero-shimmer 8s ease-in-out infinite;
+}
+
+.animate-hero-float {
+  animation: hero-float 12s ease-in-out infinite;
+}
+
+.animate-hero-float-delayed {
+  animation: hero-float-delayed 15s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-hero-float-reverse {
+  animation: hero-float-reverse 18s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+.animate-hero-float-slow {
+  animation: hero-float-slow 25s ease-in-out infinite;
+  animation-delay: 6s;
+}

@@ -36,9 +36,22 @@ const Index = () => {
   return (
     <div className="">
       <SEO title="Studio Arc — Modern Architecture" description="Minimal, elegant portfolio of modern architecture: featured projects, services, and contact." canonical="/" />
-      <section className="relative">
-        <img src={hero} alt="Modern architecture facade hero" className="h-[60vh] w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
+      <section className="relative overflow-hidden">
+        <div className="relative h-[60vh] w-full">
+          <img 
+            src={hero} 
+            alt="Modern architecture facade hero" 
+            className="h-full w-full object-cover animate-hero-zoom" 
+          />
+          {/* Animated overlay elements */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/20 animate-hero-shimmer" />
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-hero-float" />
+          {/* Floating geometric shapes */}
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/30 rounded-full animate-hero-float-delayed" />
+          <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-secondary/40 rounded-full animate-hero-float-reverse" />
+          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-accent/50 rounded-full animate-hero-float-slow" />
+        </div>
         <div className="container absolute inset-0 flex items-end pb-12">
           <div className="max-w-2xl animate-enter">
             <h1 className="font-heading text-4xl sm:text-5xl">Designing spaces with clarity and purpose.</h1>
