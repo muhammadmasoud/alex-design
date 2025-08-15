@@ -25,7 +25,7 @@ export default function Navbar() {
           <img 
             src={logoImage} 
             alt="Alex Design Logo" 
-            className="h-12 w-12 object-contain brightness-0 invert"
+            className="h-12 w-12 object-contain brightness-0 dark:invert"
           />
           <span>Alex Design</span>
         </Link>
@@ -52,7 +52,7 @@ export default function Navbar() {
                   <img 
                     src={logoImage} 
                     alt="Alex Design Logo" 
-                    className="h-10 w-10 object-contain brightness-0 invert"
+                    className="h-10 w-10 object-contain brightness-0 dark:invert"
                   />
                   Alex Design
                 </SheetTitle>
