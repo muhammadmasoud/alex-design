@@ -27,12 +27,13 @@ export default function Navbar() {
             alt="Alex Design Logo" 
             className="h-12 w-12 object-contain brightness-0 dark:invert"
           />
-          <span>Alex Design</span>
+          <span>Alex Designs</span>
         </Link>
         <nav className="hidden md:flex items-center gap-1">
           <NavLink to="/" className={linkClass} end>Home</NavLink>
           <NavLink to="/projects" className={linkClass}>Projects</NavLink>
           <NavLink to="/services" className={linkClass}>Services</NavLink>
+          <NavLink to="/about" className={linkClass}>About</NavLink>
           <NavLink to="/contact" className={linkClass}>Contact</NavLink>
           {isAdmin && (
             <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
@@ -61,6 +62,7 @@ export default function Navbar() {
                 <SheetClose asChild><NavLink to="/" className={linkClass} end>Home</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/projects" className={linkClass}>Projects</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/services" className={linkClass}>Services</NavLink></SheetClose>
+                <SheetClose asChild><NavLink to="/about" className={linkClass}>About</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/contact" className={linkClass}>Contact</NavLink></SheetClose>
                 {isAdmin && (
                   <SheetClose asChild><NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink></SheetClose>
