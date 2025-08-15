@@ -47,8 +47,8 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     // Enable source maps for production debugging (disabled for production)
     sourcemap: mode === 'production' ? false : true,
-    // Minify for production
-    minify: mode === 'production' ? 'terser' : false,
+    // Minify for production (using default esbuild which is faster)
+    minify: mode === 'production' ? true : false,
     // Target modern browsers for smaller bundles
     target: 'es2020',
   },
