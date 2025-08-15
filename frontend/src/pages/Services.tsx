@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import SEO from "@/components/SEO";
 import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { ServiceItem } from "@/types";
+import { containerVariants, itemVariants } from "@/components/PageTransition";
 
 const ServiceCard = lazy(() => import("@/components/ServiceCard"));
 const PaginationControls = lazy(() => import("@/components/Pagination"));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -8,10 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, BarChart3, Settings, ImageIcon, FileText, FolderOpen } from "lucide-react";
 import SEO from "@/components/SEO";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import ProjectManagement from "@/components/admin/ProjectManagement";
-import ServiceManagement from "@/components/admin/ServiceManagement";
-import CategoryManagement from "@/components/admin/CategoryManagement";
-import AdminStats from "@/components/admin/AdminStats";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load admin components since they're heavy and only used by admins
+const ProjectManagement = lazy(() => import("@/components/admin/ProjectManagement"));
+const ServiceManagement = lazy(() => import("@/components/admin/ServiceManagement"));
+const CategoryManagement = lazy(() => import("@/components/admin/CategoryManagement"));
+const AdminStats = lazy(() => import("@/components/admin/AdminStats"));
 
 interface DashboardData {
   user: {
@@ -115,7 +118,23 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <AdminStats statistics={dashboardData.statistics} />
+        <Suspense fallback={
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        }>
+          <AdminStats statistics={dashboardData.statistics} />
+        </Suspense>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
           <TabsList className="grid w-full grid-cols-3">
@@ -134,21 +153,69 @@ export default function AdminDashboard() {
           </TabsList>
 
           <TabsContent value="projects" className="mt-6">
-            <ProjectManagement 
-              onUpdate={handleDataUpdate}
-            />
+            <Suspense fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            }>
+              <ProjectManagement 
+                onUpdate={handleDataUpdate}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="services" className="mt-6">
-            <ServiceManagement 
-              onUpdate={handleDataUpdate}
-            />
+            <Suspense fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            }>
+              <ServiceManagement 
+                onUpdate={handleDataUpdate}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="categories" className="mt-6">
-            <CategoryManagement 
-              onUpdate={handleDataUpdate}
-            />
+            <Suspense fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            }>
+              <CategoryManagement 
+                onUpdate={handleDataUpdate}
+              />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>

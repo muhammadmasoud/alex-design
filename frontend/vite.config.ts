@@ -28,4 +28,40 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Production optimizations
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting for better caching
+                 manualChunks: {
+           vendor: ['react', 'react-dom', 'react-router-dom'],
+           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs'],
+           motion: ['framer-motion'],
+           utils: ['clsx', 'tailwind-merge', 'class-variance-authority'],
+           query: ['@tanstack/react-query', 'axios'],
+           icons: ['lucide-react'],
+         },
+      },
+    },
+    // Increase chunk size warning limit for large libraries
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for production debugging (disabled for production)
+    sourcemap: mode === 'production' ? false : true,
+    // Minify for production
+    minify: mode === 'production' ? 'terser' : false,
+    // Target modern browsers for smaller bundles
+    target: 'es2020',
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'framer-motion',
+      '@tanstack/react-query',
+      'axios',
+      'lucide-react',
+    ],
+  },
 }));

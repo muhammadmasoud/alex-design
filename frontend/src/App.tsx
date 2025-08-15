@@ -19,6 +19,9 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { ThemeProvider } from "./components/theme-provider";
+import ResourcePreloader from "./components/ResourcePreloader";
+import PageTransition, { LoadingPageTransition } from "./components/PageTransition";
+import heroImage from "@/assets/hero-architecture.jpg";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,9 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
+          <ResourcePreloader 
+            images={[heroImage]} 
+          />
           <Toaster />
           <Sonner />
           <BrowserRouter
@@ -35,7 +41,7 @@ const App = () => (
               v7_relativeSplatPath: true,
             }}
           >
-            <Suspense fallback={<div>Loading...</div>}>
+                         <Suspense fallback={<LoadingPageTransition />}>
               <Routes>
                 <Route path="/" element={<RootLayout />}>
                   <Route index element={<Index />} />

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, Calendar, Tag, Layers } from "lucide-react";
 import SEO from "@/components/SEO";
+import { containerVariants, itemVariants, imageVariants } from "@/components/PageTransition";
 import { api, endpoints } from "@/lib/api";
 import { Project } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -12,35 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.6,
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5 },
-  },
-};
-
-const imageVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.7 },
-  },
-};
+// Animation variants now imported from PageTransition component
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -171,6 +144,7 @@ export default function ProjectDetail() {
             <motion.img
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
+              loading="lazy"
               className="w-full h-auto object-cover"
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3 }}

@@ -1,13 +1,17 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import SEO from "@/components/SEO";
 import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
-import ProjectCard from "@/components/ProjectCard";
-import PaginationControls from "@/components/Pagination";
-import CategoryFilter from "@/components/CategoryFilter";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import EmptyState from "@/components/EmptyState";
+import { containerVariants, itemVariants } from "@/components/PageTransition";
+
+// Lazy load components for better performance
+const ProjectCard = lazy(() => import("@/components/ProjectCard"));
+const PaginationControls = lazy(() => import("@/components/Pagination"));
+const CategoryFilter = lazy(() => import("@/components/CategoryFilter"));
+const Skeleton = lazy(() => import("@/components/ui/skeleton"));
+const EmptyState = lazy(() => import("@/components/EmptyState"));
 
 const PAGE_SIZE = 12;
 
@@ -68,25 +72,30 @@ export default function ProjectsPage() {
     fetchProjects();
   }, [page, search, category, subcategory]);
 
-  return (
-    <div className="container py-10">
-      <SEO title="Projects | Studio Arc" description="Explore residential, commercial, and public architecture projects." canonical="/projects" />
-      <header className="mb-6">
-        <h1 className="font-heading text-3xl">Projects</h1>
-        <p className="mt-2 text-muted-foreground">Browse our portfolio with filters, search, and pagination.</p>
-      </header>
+     return (
+     <motion.div 
+       className="container py-10"
+       variants={containerVariants}
+       initial="hidden"
+       animate="visible"
+     >
+       <SEO title="Projects | Studio Arc" description="Explore residential, commercial, and public architecture projects." canonical="/projects" />
+       <motion.header className="mb-6" variants={itemVariants}>
+         <h1 className="font-heading text-3xl">Projects</h1>
+         <p className="mt-2 text-muted-foreground">Browse our portfolio with filters, search, and pagination.</p>
+       </motion.header>
 
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end mb-6">
-          <Input value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search projects" />
-          <CategoryFilter
-            categories={categories}
-            category={category}
-            subcategory={subcategory}
-            onCategoryChange={(v) => { setPage(1); setCategory(v); }}
-            onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
-            type="project"
-          />
-        </div>
+                 <motion.div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end mb-6" variants={itemVariants}>
+           <Input value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search projects" />
+           <CategoryFilter
+             categories={categories}
+             category={category}
+             subcategory={subcategory}
+             onCategoryChange={(v) => { setPage(1); setCategory(v); }}
+             onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
+             type="project"
+           />
+         </motion.div>
 
         {loading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,16 +109,25 @@ export default function ProjectsPage() {
           <EmptyState title="No projects found" description="Try adjusting filters or search." />
         ) : (
           <>
-            <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((p) => (
-                <ProjectCard key={p.id} project={p} />
-              ))}
-            </section>
-            <div className="mt-8 flex justify-center">
-              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
+                         <motion.section 
+               className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+               variants={itemVariants}
+             >
+               {items.map((p, index) => (
+                 <motion.div
+                   key={p.id}
+                   variants={itemVariants}
+                   transition={{ delay: index * 0.1 }}
+                 >
+                   <ProjectCard project={p} />
+                 </motion.div>
+               ))}
+             </motion.section>
+             <motion.div className="mt-8 flex justify-center" variants={itemVariants}>
+               <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+             </motion.div>
           </>
         )}
-    </div>
-  );
+         </motion.div>
+   );
 }

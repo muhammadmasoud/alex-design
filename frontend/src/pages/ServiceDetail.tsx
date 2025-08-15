@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, DollarSign, Tag, Layers, ShoppingCart, MessageCircle } from "lucide-react";
 import SEO from "@/components/SEO";
+import { containerVariants, itemVariants, imageVariants } from "@/components/PageTransition";
 import { api, endpoints } from "@/lib/api";
 import { ServiceItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -12,35 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.6,
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5 },
-  },
-};
-
-const imageVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.7 },
-  },
-};
+// Animation variants now imported from PageTransition component
 
 const priceVariants = {
   hidden: { opacity: 0, scale: 0.8 },
@@ -193,6 +166,7 @@ export default function ServiceDetail() {
             <motion.img
               src={service.icon || '/placeholder.svg'}
               alt={`${service.name} architectural service`}
+              loading="lazy"
               className="w-full h-auto object-cover aspect-square"
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3 }}

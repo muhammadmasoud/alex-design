@@ -2,11 +2,13 @@ import hero from "@/assets/hero-architecture.jpg";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { api, endpoints } from "@/lib/api";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { containerVariants, itemVariants } from "@/components/PageTransition";
 
 const Index = () => {
   const [featured, setFeatured] = useState<Project[]>([]);
@@ -34,7 +36,12 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="">
+    <motion.div 
+      className=""
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <SEO title="Studio Arc — Modern Architecture" description="Minimal, elegant portfolio of modern architecture: featured projects, services, and contact." canonical="/" />
       <section className="relative overflow-hidden animate-hero-entrance">
         <div className="relative h-[60vh] w-full">
@@ -42,6 +49,7 @@ const Index = () => {
           <img 
             src={hero} 
             alt="Modern architecture facade hero" 
+            loading="eager"
             className="h-full w-full object-cover animate-hero-ken-burns" 
           />
           
@@ -62,26 +70,30 @@ const Index = () => {
           <div className="absolute bottom-1/5 left-1/4 w-0.5 h-4 bg-primary/40 animate-hero-float-dynamic" />
         </div>
         
-        <div className="container absolute inset-0 flex items-end pb-12">
-          <div className="max-w-2xl animate-hero-entrance" style={{animationDelay: '0.5s'}}>
-            <h1 className="font-heading text-4xl sm:text-5xl">Designing spaces with clarity and purpose.</h1>
-            <p className="mt-3 text-muted-foreground">We create thoughtfully designed spaces that seamlessly blend form and function. From intimate residential homes to bold commercial structures and inspiring public spaces, our practice emphasizes sustainable design, natural light integration, and timeless minimalist aesthetics that enhance the human experience.</p>
-            <div className="mt-6 flex gap-3">
+        <motion.div className="container absolute inset-0 flex items-end pb-12" variants={itemVariants}>
+          <div className="max-w-2xl">
+            <motion.h1 className="font-heading text-4xl sm:text-5xl" variants={itemVariants}>
+              Designing spaces with clarity and purpose.
+            </motion.h1>
+            <motion.p className="mt-3 text-muted-foreground" variants={itemVariants}>
+              We create thoughtfully designed spaces that seamlessly blend form and function. From intimate residential homes to bold commercial structures and inspiring public spaces, our practice emphasizes sustainable design, natural light integration, and timeless minimalist aesthetics that enhance the human experience.
+            </motion.p>
+            <motion.div className="mt-6 flex gap-3" variants={itemVariants}>
               <Button asChild><Link to="/projects">Browse projects</Link></Button>
               <Button variant="secondary" asChild><Link to="/contact">Start a project</Link></Button>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      <section className="container py-12">
-        <header className="mb-6 flex items-end justify-between">
+      <motion.section className="container py-12" variants={itemVariants}>
+        <motion.header className="mb-6 flex items-end justify-between" variants={itemVariants}>
           <div>
             <h2 className="font-heading text-2xl">Featured projects</h2>
             <p className="text-muted-foreground">A selection from our recent work.</p>
           </div>
           <Button variant="ghost" asChild><Link to="/projects">View all</Link></Button>
-        </header>
+        </motion.header>
         {loading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -89,14 +101,23 @@ const Index = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p) => (
-              <ProjectCard key={p.id} project={p} />
+          <motion.div 
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            variants={itemVariants}
+          >
+            {featured.map((p, index) => (
+              <motion.div
+                key={p.id}
+                variants={itemVariants}
+                transition={{ delay: index * 0.1 }}
+              >
+                <ProjectCard project={p} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 };
 
