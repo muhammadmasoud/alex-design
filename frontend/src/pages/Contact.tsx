@@ -94,10 +94,22 @@ export default function ContactPage() {
     if (state?.service) {
       // Service inquiry message
       const price = state.price ? ` (${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(state.price)})` : '';
-      whatsappMessage = `Hi! I'm interested in the ${state.service}${price} service.`;
       
-      if (formValues.message && formValues.message.trim() !== '') {
-        whatsappMessage += `\n\nAdditional details:\n${formValues.message}`;
+      // Check if the message already contains service information to avoid duplication
+      const isPrefilledMessage = formValues.message && 
+        formValues.message.includes(state.service) && 
+        (state.price ? formValues.message.includes(state.price.toString()) : true);
+      
+      if (isPrefilledMessage) {
+        // Use the existing message as is since it already contains service info
+        whatsappMessage = formValues.message;
+      } else {
+        // Create new service inquiry message
+        whatsappMessage = `Hi! I'm interested in the ${state.service}${price} service.`;
+        
+        if (formValues.message && formValues.message.trim() !== '') {
+          whatsappMessage += `\n\n${formValues.message}`;
+        }
       }
       
       if (formValues.name && formValues.name.trim() !== '') {
@@ -109,10 +121,10 @@ export default function ContactPage() {
       }
     } else {
       // General inquiry message
-      whatsappMessage = 'Hi! I have an inquiry about your services.';
-      
       if (formValues.message && formValues.message.trim() !== '') {
-        whatsappMessage += `\n\nMessage:\n${formValues.message}`;
+        whatsappMessage = formValues.message;
+      } else {
+        whatsappMessage = 'Hi! I have an inquiry about your services.';
       }
       
       if (formValues.name && formValues.name.trim() !== '') {
