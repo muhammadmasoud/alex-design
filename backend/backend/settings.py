@@ -39,9 +39,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory to store uploaded file
 SECRET_KEY = 'django-insecure-+2u1*3#gjno))10f#=5eo51r4_p^&8)y!x)syiv61t3s^pp+qp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -101,7 +101,7 @@ DATABASES = {
         'NAME': 'alex_designs',      
         'USER': 'a7aa',       
         'PASSWORD': 'admin',
-        'HOST': 'localhost',           
+        'HOST': '127.0.0.1',           
         'PORT': '5432',                
     }
 }
@@ -161,6 +161,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://52.47.95.169",
+    "https://52.47.95.169"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
