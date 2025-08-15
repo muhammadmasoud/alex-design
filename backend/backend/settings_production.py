@@ -10,23 +10,23 @@ DEBUG = False
 
 # Update allowed hosts with your Lightsail IP
 ALLOWED_HOSTS = [
-    "15.237.26.46",
-    "2a05:d012:18a:1600:908e:b6f8:fc7c:27f0",
+    "52.47.162.66",
+    "2a05:d012:18a:1600:539:6792:3ed7:c389",
     "localhost",
     "127.0.0.1",
 ]
 
 # Update CORS settings for production
 CORS_ALLOWED_ORIGINS = [
-    "http://15.237.26.46",
-    "http://2a05:d012:18a:1600:908e:b6f8:fc7c:27f0",
+    "http://52.47.162.66",
+    "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://15.237.26.46",
-    "http://2a05:d012:18a:1600:908e:b6f8:fc7c:27f0",
+    "http://52.47.162.66",
+    "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
 ]
 
 # Security settings for production

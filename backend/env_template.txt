@@ -19,7 +19,7 @@ CONTACT_EMAIL=your-contact-email@gmail.com
 
 # Production Settings
 DEBUG=False
-ALLOWED_HOSTS=15.237.26.46,2a05:d012:18a:1600:908e:b6f8:fc7c:27f0
+ALLOWED_HOSTS=52.47.162.66,2a05:d012:18a:1600:539:6792:3ed7:c389
 
 # Static and Media Files
 STATIC_URL=/static/
