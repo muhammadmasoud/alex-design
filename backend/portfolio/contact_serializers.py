@@ -291,6 +291,17 @@ This email was automatically generated from your website.
             error_msg = str(e)
             logger.error(f"Error sending contact email: {error_msg}")
             print(f"Email error: {error_msg}")
+            
+            # Enhanced debugging for production
+            print(f"Email configuration debug:")
+            print(f"  EMAIL_HOST_USER: {'SET' if getattr(settings, 'EMAIL_HOST_USER', '') else 'NOT SET'}")
+            print(f"  EMAIL_HOST_PASSWORD: {'SET' if getattr(settings, 'EMAIL_HOST_PASSWORD', '') else 'NOT SET'}")
+            print(f"  EMAIL_HOST: {getattr(settings, 'EMAIL_HOST', 'NOT SET')}")
+            print(f"  EMAIL_PORT: {getattr(settings, 'EMAIL_PORT', 'NOT SET')}")
+            print(f"  EMAIL_USE_TLS: {getattr(settings, 'EMAIL_USE_TLS', 'NOT SET')}")
+            print(f"  FROM_EMAIL: {from_email}")
+            print(f"  TO_EMAIL: {recipient_email}")
+            
             # Don't raise the exception, just return False
             return False
     
