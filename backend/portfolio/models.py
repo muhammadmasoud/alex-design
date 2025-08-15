@@ -3,6 +3,9 @@ import os
 from django.utils.text import slugify
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
+from PIL import Image
+import io
 
 # Dynamic Category Models
 class ProjectCategory(models.Model):
@@ -57,6 +60,29 @@ class ServiceSubcategory(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
+def validate_image(image):
+    """
+    Validate uploaded image file
+    """
+    try:
+        # Check file size (25MB max)
+        if image.size > 25 * 1024 * 1024:
+            raise ValidationError("Image file too large. Maximum size is 25MB.")
+        
+        # Check if file is a valid image
+        img = Image.open(image)
+        img.verify()
+        
+        # Check format
+        valid_formats = ['JPEG', 'JPG', 'PNG', 'GIF', 'BMP', 'WEBP', 'TIFF']
+        if img.format not in valid_formats:
+            raise ValidationError(f"Unsupported image format. Supported formats: {', '.join(valid_formats)}")
+            
+    except Exception as e:
+        if isinstance(e, ValidationError):
+            raise e
+        raise ValidationError("Invalid image file.")
+
 def project_image_upload_path(instance, filename):
     """
     Custom upload path for project images.
@@ -108,7 +134,7 @@ def service_icon_upload_path(instance, filename):
 class Project(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True)
+    image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True, validators=[validate_image])
     
     # Category fields
     category = models.ForeignKey(
@@ -158,7 +184,7 @@ class Project(models.Model):
 class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True)
+    icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True, validators=[validate_image])
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Service price in USD")
     
     # Category fields

@@ -210,8 +210,8 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # File upload settings for production
 if IS_PRODUCTION:
-    FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024  # 15MB (increased for larger images)
-    DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024  # 15MB
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25MB (for mobile photos)
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25MB
     FILE_UPLOAD_TEMP_DIR = '/tmp'
     FILE_UPLOAD_PERMISSIONS = 0o644
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
@@ -233,7 +233,7 @@ ALLOWED_IMAGE_TYPES = [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
     'image/bmp', 'image/webp', 'image/svg+xml', 'image/tiff'
 ]
-MAX_IMAGE_SIZE = 15 * 1024 * 1024  # 15MB
+MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
