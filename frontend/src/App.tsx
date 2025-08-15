@@ -17,6 +17,7 @@ const RegisterPage = lazy(() => import("./pages/Register"));
 const ContactPage = lazy(() => import("./pages/Contact"));
 const AboutPage = lazy(() => import("./pages/About"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const GalleryDemo = lazy(() => import("./pages/GalleryDemo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { ThemeProvider } from "./components/theme-provider";
@@ -55,6 +56,7 @@ const App = () => (
                    <Route path="register" element={<RegisterPage />} />
                    <Route path="contact" element={<ContactPage />} />
                    <Route path="admin-dashboard" element={<AdminDashboard />} />
+                   <Route path="gallery-demo" element={<GalleryDemo />} />
                    <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

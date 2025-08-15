@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
+import LazyImage from "@/components/LazyImage";
 
 // Animation variants now imported from PageTransition component
 
@@ -140,20 +141,27 @@ export default function ProjectDetail() {
 
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
-          <Card className="overflow-hidden shadow-2xl">
-            <motion.img
+          <Card className="overflow-hidden shadow-2xl group">
+            <LazyImage
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
-              loading="lazy"
+              loading="eager"
               className="w-full h-auto object-cover"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg';
-              }}
+              enableLightbox={true}
+              lightboxTitle={project.title}
+              showZoomIcon={true}
             />
           </Card>
+          
+          {/* Image info */}
+          <motion.div 
+            className="text-center text-sm text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <p>Click image to view in full screen</p>
+          </motion.div>
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-6">
