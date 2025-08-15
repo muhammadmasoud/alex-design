@@ -191,10 +191,14 @@ if IS_PRODUCTION:
     # Production: Use absolute paths for Ubuntu server
     MEDIA_ROOT = '/home/ubuntu/alex-design/backend/media'
     STATIC_ROOT = '/home/ubuntu/alex-design/backend/staticfiles'
+    print(f"PRODUCTION MODE: MEDIA_ROOT = {MEDIA_ROOT}")
+    print(f"PRODUCTION MODE: STATIC_ROOT = {STATIC_ROOT}")
 else:
     # Development: Use relative paths
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    print(f"DEVELOPMENT MODE: MEDIA_ROOT = {MEDIA_ROOT}")
+    print(f"DEVELOPMENT MODE: STATIC_ROOT = {STATIC_ROOT}")
 
 # Ensure Django admin static files are included
 STATICFILES_DIRS = [
