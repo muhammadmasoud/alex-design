@@ -446,18 +446,22 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {service.album_images_count || 0} {(service.album_images_count === 1) ? 'image' : 'images'}
-                        </span>
-                        {service.album_images_count && service.album_images_count > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(`/services/${service.id}/album`, '_blank')}
-                            className="h-6 px-2 text-xs"
-                          >
-                            View
-                          </Button>
+                        {service.album_images_count && service.album_images_count > 0 ? (
+                          <>
+                            <span className="text-sm">
+                              {service.album_images_count} {(service.album_images_count === 1) ? 'image' : 'images'}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/services/${service.id}/album`, '_blank')}
+                              className="h-6 px-2 text-xs"
+                            >
+                              View
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No album</span>
                         )}
                       </div>
                     </TableCell>

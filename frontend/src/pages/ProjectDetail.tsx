@@ -160,7 +160,7 @@ export default function ProjectDetail() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {project.album_images_count && project.album_images_count > 0 && (
+            {project.album_images_count > 0 && (
               <div className="flex justify-center">
                 <Button
                   onClick={() => navigate(`/projects/${project.id}/album`)}

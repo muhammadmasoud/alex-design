@@ -182,7 +182,7 @@ export default function ServiceDetail() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {service.album_images_count && service.album_images_count > 0 && (
+            {service.album_images_count > 0 && (
               <div className="flex justify-center">
                 <Button
                   onClick={() => navigate(`/services/${service.id}/album`)}
