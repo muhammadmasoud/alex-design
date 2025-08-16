@@ -27,6 +27,14 @@ interface DashboardData {
   statistics: {
     projects_count: number;
     services_count: number;
+    storage: {
+      media_size_mb: number;
+      media_file_count: number;
+      disk_total_gb: number;
+      disk_free_gb: number;
+      disk_used_gb: number;
+      disk_usage_percent: number;
+    };
   };
   recent_projects: any[];
   categories: {

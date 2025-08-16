@@ -21,9 +21,11 @@ from rest_framework.decorators import action, permission_classes
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
 import os
+import shutil
 from .contact_serializers import ContactSerializer
 from django.db import transaction
 from django.middleware.csrf import get_token
+from django.conf import settings
 
 # Create your views here.
 
@@ -267,6 +269,57 @@ class CategorySubcategoriesView(APIView):
                 })
 
 
+def calculate_storage_info():
+    """Calculate storage usage information"""
+    media_root = settings.MEDIA_ROOT
+    total_size = 0
+    file_count = 0
+    
+    # Calculate size of media files
+    if os.path.exists(media_root):
+        for root, dirs, files in os.walk(media_root):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    total_size += os.path.getsize(file_path)
+                    file_count += 1
+                except OSError:
+                    pass
+    
+    # Also check old projects directory if it exists
+    old_projects_dir = os.path.join(os.path.dirname(media_root), 'projects')
+    if os.path.exists(old_projects_dir):
+        for root, dirs, files in os.walk(old_projects_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    total_size += os.path.getsize(file_path)
+                    file_count += 1
+                except OSError:
+                    pass
+    
+    # Convert to MB
+    total_size_mb = total_size / (1024 * 1024)
+    
+    # Get disk usage (free space)
+    try:
+        disk_usage = shutil.disk_usage(media_root)
+        total_disk_gb = disk_usage.total / (1024 * 1024 * 1024)
+        free_disk_gb = disk_usage.free / (1024 * 1024 * 1024)
+        used_disk_gb = (disk_usage.total - disk_usage.free) / (1024 * 1024 * 1024)
+    except OSError:
+        total_disk_gb = free_disk_gb = used_disk_gb = 0
+    
+    return {
+        'media_size_mb': round(total_size_mb, 2),
+        'media_file_count': file_count,
+        'disk_total_gb': round(total_disk_gb, 2),
+        'disk_free_gb': round(free_disk_gb, 2),
+        'disk_used_gb': round(used_disk_gb, 2),
+        'disk_usage_percent': round((used_disk_gb / total_disk_gb * 100), 1) if total_disk_gb > 0 else 0
+    }
+
+
 class AdminDashboardView(APIView):
     """
     Admin dashboard API endpoint for superuser only
@@ -283,6 +336,9 @@ class AdminDashboardView(APIView):
         projects_count = Project.objects.count()
         services_count = Service.objects.count()
         recent_projects = Project.objects.order_by('-created_at')[:5]
+        
+        # Get storage information
+        storage_info = calculate_storage_info()
         
         # Get dynamic categories
         project_categories = ProjectCategory.objects.prefetch_related('subcategories').all()
@@ -317,6 +373,7 @@ class AdminDashboardView(APIView):
             'statistics': {
                 'projects_count': projects_count,
                 'services_count': services_count,
+                'storage': storage_info,
             },
             'recent_projects': ProjectSerializer(recent_projects, many=True).data,
             'categories': {

@@ -128,30 +128,17 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if IS_PRODUCTION:
-    # Production database (AWS Lightsail)
-    DATABASES = {
-        'default': {
-            'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-            'NAME': os.environ.get('DB_NAME', 'alex_designs'),
-            'USER': os.environ.get('DB_USER', 'alex_designs'),
-            'PASSWORD': os.environ.get('DB_PASSWORD'),  # Removed insecure default
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
+# Database configuration - uses environment variables with appropriate defaults
+DATABASES = {
+    'default': {
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.environ.get('DB_NAME', 'alex_designs_dev' if not IS_PRODUCTION else 'alex_designs'),
+        'USER': os.environ.get('DB_USER', 'postgres' if not IS_PRODUCTION else 'alex_designs'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'admin' if not IS_PRODUCTION else ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
-else:
-    # Local development database
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'alex_designs',      
-            'USER': 'postgres',       
-            'PASSWORD': 'admin',
-            'HOST': '127.0.0.1',           
-            'PORT': '5432',                
-        }
-    }
+}
 
 
 # Password validation

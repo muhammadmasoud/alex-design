@@ -1,10 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, ImageIcon, FileText, TrendingUp } from "lucide-react";
+import { BarChart3, ImageIcon, FileText, HardDrive } from "lucide-react";
 
 interface AdminStatsProps {
   statistics: {
     projects_count: number;
     services_count: number;
+    storage: {
+      media_size_mb: number;
+      media_file_count: number;
+      disk_total_gb: number;
+      disk_free_gb: number;
+      disk_used_gb: number;
+      disk_usage_percent: number;
+    };
   };
 }
 
@@ -39,26 +47,26 @@ export default function AdminStats({ statistics }: AdminStatsProps) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Media Storage</CardTitle>
+          <HardDrive className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">+12%</div>
+          <div className="text-2xl font-bold">{statistics.storage.media_size_mb} MB</div>
           <p className="text-xs text-muted-foreground">
-            From last month
+            {statistics.storage.media_file_count} files stored
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Status</CardTitle>
+          <CardTitle className="text-sm font-medium">Disk Space</CardTitle>
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">Active</div>
+          <div className="text-2xl font-bold text-green-600">{statistics.storage.disk_free_gb} GB</div>
           <p className="text-xs text-muted-foreground">
-            System operational
+            Free of {statistics.storage.disk_total_gb} GB total
           </p>
         </CardContent>
       </Card>
