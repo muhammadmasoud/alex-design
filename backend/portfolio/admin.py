@@ -4,16 +4,62 @@ from django.utils.html import format_html
 from .models import (
     Project, Service, User, 
     ProjectCategory, ProjectSubcategory, 
-    ServiceCategory, ServiceSubcategory
+    ServiceCategory, ServiceSubcategory,
+    ProjectImage, ServiceImage
 )
+
+class ProjectImageInline(admin.TabularInline):
+    model = ProjectImage
+    extra = 3  # Allow multiple empty forms for bulk upload
+    fields = ('image', 'order', 'image_preview')
+    readonly_fields = ('image_preview',)
+    ordering = ['order', 'created_at']
+    
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 60px; max-width: 60px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
+    
+    class Media:
+        js = ('admin/js/bulk_upload.js',)  # Custom JS for bulk upload (optional)
+        css = {
+            'all': ('admin/css/bulk_upload.css',)  # Custom CSS for better styling
+        }
+
+class ServiceImageInline(admin.TabularInline):
+    model = ServiceImage
+    extra = 3  # Allow multiple empty forms for bulk upload
+    fields = ('image', 'order', 'image_preview')
+    readonly_fields = ('image_preview',)
+    ordering = ['order', 'created_at']
+    
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 60px; max-width: 60px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
+    
+    class Media:
+        js = ('admin/js/bulk_upload.js',)  # Custom JS for bulk upload (optional)
+        css = {
+            'all': ('admin/css/bulk_upload.css',)  # Custom CSS for better styling
+        }
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'subcategory', 'image_preview', 'created_at')
+    list_display = ('title', 'category', 'subcategory', 'image_preview', 'album_count', 'created_at')
     list_filter = ('category', 'subcategory', 'created_at')
     search_fields = ('title', 'description', 'category__name', 'subcategory__name')
-    readonly_fields = ('image_preview', 'created_at')
+    readonly_fields = ('image_preview', 'album_count', 'created_at')
     ordering = ('-created_at',)
+    inlines = [ProjectImageInline]
     
     fieldsets = (
         ('Basic Information', {
@@ -23,8 +69,14 @@ class ProjectAdmin(admin.ModelAdmin):
             'fields': ('category', 'subcategory'),
             'description': 'Choose a category first, then select an appropriate subcategory.'
         }),
-        ('Media', {
-            'fields': ('image', 'image_preview')
+        ('Main Display Image', {
+            'fields': ('image', 'image_preview'),
+            'description': 'This image will be shown as the main project image in listings and details.'
+        }),
+        ('Project Album', {
+            'fields': ('album_count',),
+            'description': 'Add multiple images to the project album using the "Album Images" section below. Visitors can view all images by clicking "View Album" on the project detail page.',
+            'classes': ('collapse',)
         }),
         ('Metadata', {
             'fields': ('created_at',),
@@ -40,6 +92,17 @@ class ProjectAdmin(admin.ModelAdmin):
             )
         return "No image"
     image_preview.short_description = "Image Preview"
+    
+    def album_count(self, obj):
+        """Show the number of album images"""
+        count = obj.album_images.count()
+        if count == 0:
+            return "No album images"
+        elif count == 1:
+            return "1 album image"
+        else:
+            return f"{count} album images"
+    album_count.short_description = "Album Images"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter subcategories based on selected category"""
@@ -49,10 +112,11 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'category', 'subcategory', 'icon_preview')
+    list_display = ('name', 'price', 'category', 'subcategory', 'icon_preview', 'album_count')
     list_filter = ('category', 'subcategory')
     search_fields = ('name', 'description', 'category__name', 'subcategory__name')
-    readonly_fields = ('icon_preview',)
+    readonly_fields = ('icon_preview', 'album_count')
+    inlines = [ServiceImageInline]
     
     fieldsets = (
         ('Basic Information', {
@@ -62,8 +126,14 @@ class ServiceAdmin(admin.ModelAdmin):
             'fields': ('category', 'subcategory'),
             'description': 'Choose a category first, then select an appropriate subcategory.'
         }),
-        ('Media', {
-            'fields': ('icon', 'icon_preview')
+        ('Main Display Icon', {
+            'fields': ('icon', 'icon_preview'),
+            'description': 'This icon will be shown as the main service icon in listings and details.'
+        }),
+        ('Service Album', {
+            'fields': ('album_count',),
+            'description': 'Add multiple images to the service album using the "Album Images" section below. Visitors can view all images by clicking "View Album" on the service detail page.',
+            'classes': ('collapse',)
         }),
     )
     
@@ -75,6 +145,17 @@ class ServiceAdmin(admin.ModelAdmin):
             )
         return "No icon"
     icon_preview.short_description = "Icon Preview"
+    
+    def album_count(self, obj):
+        """Show the number of album images"""
+        count = obj.album_images.count()
+        if count == 0:
+            return "No album images"
+        elif count == 1:
+            return "1 album image"
+        else:
+            return f"{count} album images"
+    album_count.short_description = "Album Images"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter subcategories based on selected category"""
@@ -252,3 +333,66 @@ class ServiceSubcategoryAdmin(admin.ModelAdmin):
     def services_count(self, obj):
         return obj.services.count()
     services_count.short_description = "Services"
+
+
+# Register Album Image Models individually for advanced management
+@admin.register(ProjectImage)
+class ProjectImageAdmin(admin.ModelAdmin):
+    list_display = ('project', 'title', 'order', 'image_preview', 'created_at')
+    list_filter = ('project', 'created_at')
+    search_fields = ('project__title', 'title', 'description')
+    readonly_fields = ('image_preview', 'created_at')
+    ordering = ('project', 'order', 'created_at')
+    
+    fieldsets = (
+        ('Project Information', {
+            'fields': ('project',)
+        }),
+        ('Image Details', {
+            'fields': ('image', 'image_preview', 'title', 'description', 'order')
+        }),
+        ('Metadata', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Image Preview"
+
+
+@admin.register(ServiceImage)
+class ServiceImageAdmin(admin.ModelAdmin):
+    list_display = ('service', 'title', 'order', 'image_preview', 'created_at')
+    list_filter = ('service', 'created_at')
+    search_fields = ('service__name', 'title', 'description')
+    readonly_fields = ('image_preview', 'created_at')
+    ordering = ('service', 'order', 'created_at')
+    
+    fieldsets = (
+        ('Service Information', {
+            'fields': ('service',)
+        }),
+        ('Image Details', {
+            'fields': ('image', 'image_preview', 'title', 'description', 'order')
+        }),
+        ('Metadata', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.image.url
+            )
+        return "No image"
+    image_preview.short_description = "Image Preview"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, DollarSign, Tag, Layers, ShoppingCart, MessageCircle } from "lucide-react";
+import { ChevronLeft, DollarSign, Tag, Layers, ShoppingCart, MessageCircle, ImageIcon, Eye } from "lucide-react";
 import SEO from "@/components/SEO";
 import { containerVariants, itemVariants, imageVariants } from "@/components/PageTransition";
 import { api, endpoints } from "@/lib/api";
@@ -175,14 +175,34 @@ export default function ServiceDetail() {
             />
           </Card>
           
-          {/* Image info */}
+          {/* Album button and Image info */}
           <motion.div 
-            className="text-center text-sm text-muted-foreground"
+            className="space-y-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <p>Click image to view in full screen</p>
+            {service.album_images_count && service.album_images_count > 0 && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => navigate(`/services/${service.id}/album`)}
+                  variant="outline"
+                  size="lg"
+                  className="group bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10"
+                >
+                  <ImageIcon className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                  View Album ({service.album_images_count} {service.album_images_count === 1 ? 'Image' : 'Images'})
+                  <Eye className="ml-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Click image to view in full screen</p>
+              {service.featured_album_images && service.featured_album_images.length > 0 && (
+                <p className="mt-1">Browse additional images in the album</p>
+              )}
+            </div>
           </motion.div>
         </motion.div>
 

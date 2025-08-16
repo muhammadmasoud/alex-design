@@ -60,8 +60,14 @@ export interface PaginatedResponse<T> {
 export const endpoints = {
   projects: "/projects/",
   projectDetail: (id: string | number) => `/projects/${id}/`,
+  projectAlbum: (id: string | number) => `/projects/${id}/album/`,
+  projectImages: "/project-images/",
+  projectImagesBulkUpload: "/project-images/bulk_upload/",
   services: "/services/",
   serviceDetail: (id: string | number) => `/services/${id}/`,
+  serviceAlbum: (id: string | number) => `/services/${id}/album/`,
+  serviceImages: "/service-images/",
+  serviceImagesBulkUpload: "/service-images/bulk_upload/",
   auth: {
     login: "/auth/login/",
     register: "/auth/register/",

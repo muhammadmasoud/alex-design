@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import Project, Service
-from .serializers import ProjectSerializer, ServiceSerializer
+from .models import Project, Service, ProjectImage, ServiceImage
+from .serializers import ProjectSerializer, ServiceSerializer, ProjectImageSerializer, ServiceImageSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,6 +22,7 @@ from django.http import JsonResponse
 from django.core.files.storage import default_storage
 import os
 from .contact_serializers import ContactSerializer
+from django.db import transaction
 
 # Create your views here.
 
@@ -380,3 +381,196 @@ class ContactView(APIView):
             'errors': serializer.errors,
             'success': False
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProjectImageViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing project album images
+    """
+    serializer_class = ProjectImageSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order', 'created_at']
+
+    def get_queryset(self):
+        """Filter images by project if project_id is provided"""
+        queryset = ProjectImage.objects.all()
+        project_id = self.request.query_params.get('project_id', None)
+        if project_id is not None:
+            queryset = queryset.filter(project_id=project_id)
+        return queryset
+
+    def get_serializer_context(self):
+        """Add request to serializer context so it can build absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def get_permissions(self):
+        """
+        Allow public read access, but require admin for write operations
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = []
+        return [permission() for permission in permission_classes]
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def bulk_upload(self, request):
+        """
+        Bulk upload multiple images for a project
+        """
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        images = request.FILES.getlist('images')
+        if not images:
+            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        created_images = []
+        with transaction.atomic():
+            for i, image in enumerate(images):
+                project_image = ProjectImage.objects.create(
+                    project=project,
+                    image=image,
+                    order=i
+                )
+                created_images.append(project_image)
+        
+        serializer = self.get_serializer(created_images, many=True)
+        return Response({
+            'message': f'{len(created_images)} images uploaded successfully',
+            'images': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+class ServiceImageViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing service album images
+    """
+    serializer_class = ServiceImageSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order', 'created_at']
+
+    def get_queryset(self):
+        """Filter images by service if service_id is provided"""
+        queryset = ServiceImage.objects.all()
+        service_id = self.request.query_params.get('service_id', None)
+        if service_id is not None:
+            queryset = queryset.filter(service_id=service_id)
+        return queryset
+
+    def get_serializer_context(self):
+        """Add request to serializer context so it can build absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def get_permissions(self):
+        """
+        Allow public read access, but require admin for write operations
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = []
+        return [permission() for permission in permission_classes]
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def bulk_upload(self, request):
+        """
+        Bulk upload multiple images for a service
+        """
+        service_id = request.data.get('service_id')
+        if not service_id:
+            return Response({'error': 'service_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        images = request.FILES.getlist('images')
+        if not images:
+            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        created_images = []
+        with transaction.atomic():
+            for i, image in enumerate(images):
+                service_image = ServiceImage.objects.create(
+                    service=service,
+                    image=image,
+                    order=i
+                )
+                created_images.append(service_image)
+        
+        serializer = self.get_serializer(created_images, many=True)
+        return Response({
+            'message': f'{len(created_images)} images uploaded successfully',
+            'images': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+class ProjectAlbumView(APIView):
+    """
+    API endpoint to get all album images for a specific project
+    """
+    def get(self, request, project_id):
+        try:
+            project = Project.objects.get(id=project_id)
+            album_images = project.album_images.all()
+            serializer = ProjectImageSerializer(album_images, many=True, context={'request': request})
+            
+            return Response({
+                'project': {
+                    'id': project.id,
+                    'title': project.title,
+                    'description': project.description,
+                    'image': request.build_absolute_uri(project.image.url) if project.image else None,
+                    'category_name': project.get_category_name(),
+                    'subcategory_name': project.get_subcategory_name()
+                },
+                'album_images': serializer.data,
+                'total_images': len(serializer.data)
+            })
+        except Project.DoesNotExist:
+            return Response({
+                'error': 'Project not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class ServiceAlbumView(APIView):
+    """
+    API endpoint to get all album images for a specific service
+    """
+    def get(self, request, service_id):
+        try:
+            service = Service.objects.get(id=service_id)
+            album_images = service.album_images.all()
+            serializer = ServiceImageSerializer(album_images, many=True, context={'request': request})
+            
+            return Response({
+                'service': {
+                    'id': service.id,
+                    'name': service.name,
+                    'description': service.description,
+                    'icon': request.build_absolute_uri(service.icon.url) if service.icon else None,
+                    'price': str(service.price),
+                    'category_name': service.get_category_name(),
+                    'subcategory_name': service.get_subcategory_name()
+                },
+                'album_images': serializer.data,
+                'total_images': len(serializer.data)
+            })
+        except Service.DoesNotExist:
+            return Response({
+                'error': 'Service not found'
+            }, status=status.HTTP_404_NOT_FOUND)

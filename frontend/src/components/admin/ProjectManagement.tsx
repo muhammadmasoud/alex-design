@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
@@ -20,6 +20,7 @@ const projectSchema = z.object({
   category: z.string().optional(),
   subcategory: z.string().optional(),
   image: z.any().optional(),
+  album_images: z.any().optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -35,6 +36,8 @@ interface Project {
   category_obj?: { id: number; name: string };
   subcategory_obj?: { id: number; name: string };
   image?: string;
+  album_images_count?: number;
+  featured_album_images?: any[];
   created_at: string;
 }
 
@@ -144,12 +147,39 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
         formData.append("image", data.image[0]);
       }
 
+      let projectId = editingProject?.id;
+      
       if (editingProject) {
         await api.patch(`${endpoints.projects}${editingProject.id}/`, formData);
         toast({ title: "Project updated successfully!" });
       } else {
-        await api.post(endpoints.projects, formData);
+        const response = await api.post(endpoints.projects, formData);
+        projectId = response.data.id;
         toast({ title: "Project created successfully!" });
+      }
+
+      // Handle album images upload if provided
+      if (data.album_images && data.album_images.length > 0 && projectId) {
+        try {
+          // Use bulk upload API for better performance
+          const albumFormData = new FormData();
+          albumFormData.append("project_id", projectId.toString());
+          
+          // Add all images to FormData
+          for (let i = 0; i < data.album_images.length; i++) {
+            albumFormData.append("images", data.album_images[i]);
+          }
+          
+          await api.post(endpoints.projectImagesBulkUpload, albumFormData);
+          toast({ title: `${data.album_images.length} album images uploaded successfully!` });
+        } catch (albumError: any) {
+          console.error("Error uploading album images:", albumError);
+          toast({
+            title: "Album Upload Warning",
+            description: "Project saved but some album images failed to upload. You can add them later.",
+            variant: "destructive",
+          });
+        }
       }
 
       setIsDialogOpen(false);
@@ -321,14 +351,30 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Image</label>
+                <label className="text-sm font-medium mb-2 block">Main Display Image</label>
                 <Input 
                   type="file" 
                   accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
                   {...form.register("image")}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports: JPG, JPEG, PNG, GIF, BMP, WebP, SVG, TIFF, HEIC (iPhone photos)
+                  This image will be shown in project listings and as the main image on the detail page.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Project Album Images
+                </label>
+                <Input 
+                  type="file" 
+                  multiple
+                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
+                  {...form.register("album_images")}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select multiple images for the project album. Visitors can view all these images by clicking "View Album" on the project detail page.
                 </p>
               </div>
 
@@ -361,6 +407,7 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
                 <TableHead>Title</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Subcategory</TableHead>
+                <TableHead>Album</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -368,7 +415,7 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
             <TableBody>
               {projects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No projects found. Create your first project to get started.
                   </TableCell>
                 </TableRow>
@@ -385,6 +432,24 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
                       {project.subcategory_name && (
                         <Badge variant="outline">{project.subcategory_name}</Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {project.album_images_count || 0} {(project.album_images_count === 1) ? 'image' : 'images'}
+                        </span>
+                        {project.album_images_count && project.album_images_count > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`/projects/${project.id}/album`, '_blank')}
+                            className="h-6 px-2 text-xs"
+                          >
+                            View
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {new Date(project.created_at).toLocaleDateString()}

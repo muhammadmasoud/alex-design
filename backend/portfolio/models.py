@@ -169,6 +169,58 @@ def service_icon_upload_path(instance, filename):
     
     return upload_path
 
+def project_album_image_upload_path(instance, filename):
+    """
+    Custom upload path for project album images.
+    Creates a unique filename to avoid conflicts when updating.
+    """
+    import uuid
+    from datetime import datetime
+    
+    # Get file extension
+    ext = filename.split('.')[-1].lower()
+    
+    # Create unique filename with timestamp and UUID
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = str(uuid.uuid4())[:8]
+    
+    if instance.project.title:
+        base_name = slugify(instance.project.title)[:50]  # Limit length
+        filename = f"{base_name}_album_{timestamp}_{unique_id}.{ext}"
+    else:
+        filename = f"project_album_{timestamp}_{unique_id}.{ext}"
+    
+    # Full path
+    upload_path = f"projects/albums/{filename}"
+    
+    return upload_path
+
+def service_album_image_upload_path(instance, filename):
+    """
+    Custom upload path for service album images.
+    Creates a unique filename to avoid conflicts when updating.
+    """
+    import uuid
+    from datetime import datetime
+    
+    # Get file extension
+    ext = filename.split('.')[-1].lower()
+    
+    # Create unique filename with timestamp and UUID
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = str(uuid.uuid4())[:8]
+    
+    if instance.service.name:
+        base_name = slugify(instance.service.name)[:50]  # Limit length
+        filename = f"{base_name}_album_{timestamp}_{unique_id}.{ext}"
+    else:
+        filename = f"service_album_{timestamp}_{unique_id}.{ext}"
+    
+    # Full path
+    upload_path = f"services/albums/{filename}"
+    
+    return upload_path
+
 # Create your models here.
 
 class Project(models.Model):
@@ -210,6 +262,14 @@ class Project(models.Model):
         if self.subcategory:
             return self.subcategory.name
         return None
+
+    def get_album_images_count(self):
+        """Get the count of album images for this project"""
+        return self.album_images.count()
+    
+    def get_featured_album_images(self, limit=6):
+        """Get first few album images for preview"""
+        return self.album_images.all()[:limit]
 
     def save(self, *args, **kwargs):
         # Delete old image if updating and a new image is provided
@@ -265,6 +325,14 @@ class Service(models.Model):
             return self.subcategory.name
         return None
 
+    def get_album_images_count(self):
+        """Get the count of album images for this service"""
+        return self.album_images.count()
+    
+    def get_featured_album_images(self, limit=6):
+        """Get first few album images for preview"""
+        return self.album_images.all()[:limit]
+
     def save(self, *args, **kwargs):
         # Delete old icon if updating and a new icon is provided
         if self.pk:
@@ -280,6 +348,136 @@ class Service(models.Model):
             except Service.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
+
+
+class ProjectImage(models.Model):
+    """
+    Model for storing multiple images for each project
+    """
+    project = models.ForeignKey(
+        Project, 
+        on_delete=models.CASCADE, 
+        related_name='album_images',
+        help_text="Project this image belongs to"
+    )
+    image = models.ImageField(
+        upload_to=project_album_image_upload_path, 
+        validators=[validate_image],
+        help_text="Album image file"
+    )
+    title = models.CharField(
+        max_length=200, 
+        blank=True, 
+        null=True,
+        help_text="Optional title/caption for this image (leave empty for bulk uploads)"
+    )
+    description = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Optional description for this image (leave empty for bulk uploads)"
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Order in which images should be displayed (0 = first)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Project Image"
+        verbose_name_plural = "Project Images"
+    
+    def __str__(self):
+        if self.title:
+            return f"{self.project.title} - {self.title}"
+        return f"{self.project.title} - Image {self.pk}"
+    
+    def save(self, *args, **kwargs):
+        # Delete old image if updating and a new image is provided
+        if self.pk:
+            try:
+                old_instance = ProjectImage.objects.get(pk=self.pk)
+                # Check if image field has changed and old image exists
+                if (old_instance.image and 
+                    hasattr(self.image, 'file') and 
+                    self.image.file and 
+                    old_instance.image.name != self.image.name):
+                    # Delete the old image file
+                    old_instance.image.delete(save=False)
+            except ProjectImage.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete the image file when deleting the model instance
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
+
+
+class ServiceImage(models.Model):
+    """
+    Model for storing multiple images for each service
+    """
+    service = models.ForeignKey(
+        Service, 
+        on_delete=models.CASCADE, 
+        related_name='album_images',
+        help_text="Service this image belongs to"
+    )
+    image = models.ImageField(
+        upload_to=service_album_image_upload_path, 
+        validators=[validate_image],
+        help_text="Album image file"
+    )
+    title = models.CharField(
+        max_length=200, 
+        blank=True, 
+        null=True,
+        help_text="Optional title/caption for this image (leave empty for bulk uploads)"
+    )
+    description = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Optional description for this image (leave empty for bulk uploads)"
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Order in which images should be displayed (0 = first)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order', 'created_at']
+        verbose_name = "Service Image"
+        verbose_name_plural = "Service Images"
+    
+    def __str__(self):
+        if self.title:
+            return f"{self.service.name} - {self.title}"
+        return f"{self.service.name} - Image {self.pk}"
+    
+    def save(self, *args, **kwargs):
+        # Delete old image if updating and a new image is provided
+        if self.pk:
+            try:
+                old_instance = ServiceImage.objects.get(pk=self.pk)
+                # Check if image field has changed and old image exists
+                if (old_instance.image and 
+                    hasattr(self.image, 'file') and 
+                    self.image.file and 
+                    old_instance.image.name != self.image.name):
+                    # Delete the old image file
+                    old_instance.image.delete(save=False)
+            except ServiceImage.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete the image file when deleting the model instance
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
 
 
 class User(AbstractUser):

@@ -1,3 +1,13 @@
+export interface AlbumImage {
+  id: number;
+  image: string;
+  image_url: string;
+  title?: string;
+  description?: string;
+  order: number;
+  created_at: string;
+}
+
 export interface Project {
   id: number;
   title: string;
@@ -8,6 +18,8 @@ export interface Project {
   subcategory?: string;
   category_name?: string;
   subcategory_name?: string;
+  album_images_count?: number;
+  featured_album_images?: AlbumImage[];
 }
 
 export interface ServiceItem {
@@ -20,4 +32,33 @@ export interface ServiceItem {
   subcategory?: string;
   category_name?: string;
   subcategory_name?: string;
+  album_images_count?: number;
+  featured_album_images?: AlbumImage[];
+}
+
+export interface ProjectAlbumResponse {
+  project: {
+    id: number;
+    title: string;
+    description: string;
+    image: string | null;
+    category_name: string | null;
+    subcategory_name: string | null;
+  };
+  album_images: AlbumImage[];
+  total_images: number;
+}
+
+export interface ServiceAlbumResponse {
+  service: {
+    id: number;
+    name: string;
+    description: string;
+    icon: string | null;
+    price: string;
+    category_name: string | null;
+    subcategory_name: string | null;
+  };
+  album_images: AlbumImage[];
+  total_images: number;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ZoomOut, Download, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
 
-  // Reset state when lightbox opens/closes
+  // Reset state when lightbox opens/closes and handle body scroll
   useEffect(() => {
     if (isOpen) {
       setScale(1);
@@ -27,7 +28,21 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
       setPosition({ x: 0, y: 0 });
       setLastPosition({ x: 0, y: 0 });
       setIsDragging(false);
+      
+      // Prevent body scroll when lightbox is open
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      // Restore body scroll when lightbox is closed
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Handle keyboard events
@@ -204,17 +219,26 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
 
   if (!isOpen) return null;
 
-  return (
+  const lightboxContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm"
+        className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm overflow-hidden"
+        style={{
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          position: 'fixed'
+        }}
         onClick={onClose}
       >
         {/* Controls */}
-        <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <div className="absolute top-4 right-4 z-10 flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="secondary"
             size="icon"
@@ -266,7 +290,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
         </div>
 
         {/* Title and Zoom Level */}
-        <div className="absolute top-4 left-4 z-10 space-y-2">
+        <div className="absolute top-4 left-4 z-10 space-y-2" onClick={(e) => e.stopPropagation()}>
           {title && (
             <h3 className="text-white text-lg font-semibold">{title}</h3>
           )}
@@ -277,8 +301,13 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
 
         {/* Image Container */}
         <div
-          className="flex items-center justify-center h-full p-8"
-          onClick={(e) => e.stopPropagation()}
+          className="flex items-center justify-center w-full h-full p-8"
+          style={{
+            width: '100vw',
+            height: '100vh',
+            position: 'relative'
+          }}
+          onClick={onClose}
           onWheel={handleWheel}
         >
           <motion.img
@@ -298,6 +327,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
             onTouchStart={handleTouchStart}
             onClick={(e) => {
               e.stopPropagation();
+              // Only zoom in if we're not dragging and scale is 1
               if (scale === 1 && !isDragging) handleZoomIn();
             }}
             draggable={false}
@@ -305,7 +335,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
         </div>
 
         {/* Instructions */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10" onClick={(e) => e.stopPropagation()}>
           <div className="bg-black/50 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm text-center">
             <p>
               {scale === 1 ? 'Click to zoom' : 'Drag to pan'} • Scroll to zoom
@@ -317,4 +347,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
       </motion.div>
     </AnimatePresence>
   );
+
+  // Render the lightbox in a portal to ensure it's at the top level
+  return createPortal(lightboxContent, document.body);
 }

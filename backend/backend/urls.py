@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 from django.views.decorators.csrf import csrf_exempt
 from portfolio.views import (
     ProjectViewSet, ServiceViewSet, RegistrationView, LoginView, 
-    CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView
+    CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView,
+    ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
@@ -16,6 +17,8 @@ from django.conf.urls.static import static
 router = DefaultRouter()
 router.register(r'projects', ProjectViewSet)
 router.register(r'services', ServiceViewSet)
+router.register(r'project-images', ProjectImageViewSet, basename='projectimage')
+router.register(r'service-images', ServiceImageViewSet, basename='serviceimage')
 router.register(r'admin/project-categories', ProjectCategoryViewSet)
 router.register(r'admin/project-subcategories', ProjectSubcategoryViewSet)
 router.register(r'admin/service-categories', ServiceCategoryViewSet)
@@ -30,4 +33,6 @@ urlpatterns = [
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/admin/check/', csrf_exempt(AdminCheckView.as_view()), name='admin-check'),
     path('api/contact/', ContactView.as_view(), name='contact'),
+    path('api/projects/<int:project_id>/album/', ProjectAlbumView.as_view(), name='project-album'),
+    path('api/services/<int:service_id>/album/', ServiceAlbumView.as_view(), name='service-album'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
