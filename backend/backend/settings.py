@@ -205,6 +205,11 @@ else:
 #     os.path.join(BASE_DIR, 'static'),
 # ]
 
+# File upload settings for production
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
 # Django admin specific settings
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
