@@ -35,7 +35,6 @@ export default function Navbar() {
           <NavLink to="/services" className={linkClass}>Services</NavLink>
           <NavLink to="/about" className={linkClass}>About</NavLink>
           <NavLink to="/contact" className={linkClass}>Contact</NavLink>
-          <NavLink to="/gallery-demo" className={linkClass}>Gallery Demo</NavLink>
           {isAdmin && (
             <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
           )}
@@ -65,7 +64,6 @@ export default function Navbar() {
                 <SheetClose asChild><NavLink to="/services" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Services</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/about" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">About</NavLink></SheetClose>
                 <SheetClose asChild><NavLink to="/contact" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Contact</NavLink></SheetClose>
-                <SheetClose asChild><NavLink to="/gallery-demo" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Gallery Demo</NavLink></SheetClose>
                 {isAdmin && (
                   <SheetClose asChild><NavLink to="/admin-dashboard" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Admin</NavLink></SheetClose>
                 )}
