@@ -23,6 +23,7 @@ from django.core.files.storage import default_storage
 import os
 from .contact_serializers import ContactSerializer
 from django.db import transaction
+from django.middleware.csrf import get_token
 
 # Create your views here.
 
@@ -339,6 +340,17 @@ class AdminCheckView(APIView):
             'username': user.username,
             'email': user.email
         })
+
+
+class CSRFTokenView(APIView):
+    """
+    Return CSRF token for frontend use
+    """
+    permission_classes = []
+    
+    def get(self, request):
+        token = get_token(request)
+        return JsonResponse({'csrfToken': token})
 
 
 class ContactView(APIView):

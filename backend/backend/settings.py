@@ -48,19 +48,21 @@ DEBUG = not IS_PRODUCTION
 
 # CSRF Configuration for Production
 if IS_PRODUCTION:
-    CSRF_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
-    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = False  # Set to False for HTTP, True for HTTPS
+    CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF token
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_DOMAIN = None
     CSRF_COOKIE_PATH = '/'
     CSRF_TRUSTED_ORIGINS = [
         "http://52.47.162.66",
+        "https://52.47.162.66", 
         "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
+        "https://2a05:d012:18a:1600:539:6792:3ed7:c389",
     ]
 else:
     CSRF_COOKIE_SECURE = False
-    CSRF_COOKIE_HTTPONLY = True  # Always secure in development too
+    CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access in development too
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
 
@@ -220,7 +222,7 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # File upload settings optimized for production performance
 if IS_PRODUCTION:
-    FILE_UPLOAD_TEMP_DIR = '/tmp'
+    FILE_UPLOAD_TEMP_DIR = '/tmp' if not os.name == 'nt' else None  # Windows compatibility
     FILE_UPLOAD_PERMISSIONS = 0o644
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
     
@@ -261,21 +263,8 @@ if IS_PRODUCTION:
         "http://127.0.0.1:3000",
     ]
     
-    CSRF_TRUSTED_ORIGINS = [
-        "http://52.47.162.66",
-        "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
-    ]
-    
-    # Production CSRF settings
-    CSRF_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
-    CSRF_COOKIE_HTTPONLY = True
-    CSRF_USE_SESSIONS = False
-    CSRF_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_DOMAIN = None
-    CSRF_COOKIE_PATH = '/'
-    
     # Production session settings
-    SESSION_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
+    SESSION_COOKIE_SECURE = False  # Set to False for HTTP, True for HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
@@ -310,12 +299,6 @@ else:
 
 # Common CORS settings
 CORS_ALLOW_CREDENTIALS = True
-# Use only specific origins:
-if IS_PRODUCTION:
-    CORS_ALLOWED_ORIGINS = [
-        "https://yourdomain.com",  # Your actual domain
-        "https://52.47.162.66",   # Use HTTPS
-    ]
 
 # Content type settings for file uploads
 if IS_PRODUCTION:

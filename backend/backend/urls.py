@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from portfolio.views import (
     ProjectViewSet, ServiceViewSet, RegistrationView, LoginView, 
     CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView,
-    ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView
+    ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView,
+    CSRFTokenView
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
@@ -32,7 +33,8 @@ urlpatterns = [
     path('api/categories/subcategories/', CategorySubcategoriesView.as_view(), name='category-subcategories'),
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/admin/check/', csrf_exempt(AdminCheckView.as_view()), name='admin-check'),
-    path('api/contact/', ContactView.as_view(), name='contact'),
+    path('api/csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
+    path('api/contact/', csrf_exempt(ContactView.as_view()), name='contact'),
     path('api/projects/<int:project_id>/album/', ProjectAlbumView.as_view(), name='project-album'),
     path('api/services/<int:service_id>/album/', ServiceAlbumView.as_view(), name='service-album'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

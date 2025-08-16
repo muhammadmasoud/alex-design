@@ -1,3 +1,4 @@
+
 import axios from "axios";
 
 export const API_BASE_URL = "/api"; // Use proxy for local development
@@ -18,6 +19,18 @@ const getCSRFToken = () => {
   return token;
 };
 
+// Function to initialize CSRF token
+const initializeCSRFToken = async () => {
+  try {
+    const response = await axios.get('/api/csrf-token/', { baseURL: API_BASE_URL, withCredentials: true });
+    // Token will be set in cookie automatically by Django
+    return response.data.csrfToken;
+  } catch (error) {
+    console.warn('Failed to initialize CSRF token:', error);
+    return null;
+  }
+};
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
   if (token) {
@@ -26,9 +39,6 @@ api.interceptors.request.use((config) => {
     config.headers = headers as any;
   }
   
-  // CSRF TOKEN SENDING DISABLED - CAUSES LOGIN/REGISTRATION ERRORS
-  // The following code is commented out to prevent CSRF token issues:
-  /*
   // Add CSRF token for POST/PUT/DELETE requests
   if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
     const csrfToken = getCSRFToken();
@@ -38,7 +48,6 @@ api.interceptors.request.use((config) => {
       config.headers = headers as any;
     }
   }
-  */
   
   // Set Content-Type only if it's not FormData
   if (!(config.data instanceof FormData)) {
@@ -49,6 +58,9 @@ api.interceptors.request.use((config) => {
   
   return config;
 });
+
+// Initialize CSRF token when the module loads
+initializeCSRFToken();
 
 export interface PaginatedResponse<T> {
   count: number;
