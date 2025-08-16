@@ -331,7 +331,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@alexdesign.com')
-CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'mohamedmas3oud5@gmail.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'mohamedaboelhamd765@gmail.com')
 
 # For development, use console backend to see emails in terminal
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
