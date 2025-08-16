@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
 import os
+
+env = environ.Env()
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,15 +41,15 @@ IS_LIGHTSAIL = os.environ.get('LIGHTSAIL') == 'true'
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+2u1*3#gjno))10f#=5eo51r4_p^&8)y!x)syiv61t3s^pp+qp'
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not IS_PRODUCTION
 
 # CSRF Configuration for Production
 if IS_PRODUCTION:
-    CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
-    CSRF_COOKIE_HTTPONLY = False
+    CSRF_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
+    CSRF_COOKIE_HTTPONLY = True
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_DOMAIN = None
@@ -56,7 +60,7 @@ if IS_PRODUCTION:
     ]
 else:
     CSRF_COOKIE_SECURE = False
-    CSRF_COOKIE_HTTPONLY = False
+    CSRF_COOKIE_HTTPONLY = True  # Always secure in development too
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
 
@@ -129,7 +133,7 @@ if IS_PRODUCTION:
             'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
             'NAME': os.environ.get('DB_NAME', 'alex_designs'),
             'USER': os.environ.get('DB_USER', 'alex_designs'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'admin'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),  # Removed insecure default
             'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
@@ -191,14 +195,10 @@ if IS_PRODUCTION:
     # Production: Use absolute paths for Ubuntu server
     MEDIA_ROOT = '/home/ubuntu/alex-design/backend/media'
     STATIC_ROOT = '/home/ubuntu/alex-design/backend/staticfiles'
-    print(f"PRODUCTION MODE: MEDIA_ROOT = {MEDIA_ROOT}")
-    print(f"PRODUCTION MODE: STATIC_ROOT = {STATIC_ROOT}")
 else:
     # Development: Use relative paths
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    print(f"DEVELOPMENT MODE: MEDIA_ROOT = {MEDIA_ROOT}")
-    print(f"DEVELOPMENT MODE: STATIC_ROOT = {STATIC_ROOT}")
 
 # Additional static files directories (currently none needed)
 # STATICFILES_DIRS = [
@@ -267,15 +267,15 @@ if IS_PRODUCTION:
     ]
     
     # Production CSRF settings
-    CSRF_COOKIE_SECURE = False  # Set to True only if using HTTPS
-    CSRF_COOKIE_HTTPONLY = False
+    CSRF_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
+    CSRF_COOKIE_HTTPONLY = True
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_DOMAIN = None
     CSRF_COOKIE_PATH = '/'
     
     # Production session settings
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = True  # Set to True for HTTPS (recommended for production)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
@@ -286,6 +286,10 @@ if IS_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    
+    # Additional security headers for production
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # SECURE_SSL_REDIRECT = True  # Uncomment when HTTPS is properly configured
 else:
     # Local development CORS settings
     CORS_ALLOWED_ORIGINS = [
@@ -306,7 +310,12 @@ else:
 
 # Common CORS settings
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True
+# Use only specific origins:
+if IS_PRODUCTION:
+    CORS_ALLOWED_ORIGINS = [
+        "https://yourdomain.com",  # Your actual domain
+        "https://52.47.162.66",   # Use HTTPS
+    ]
 
 # Content type settings for file uploads
 if IS_PRODUCTION:
