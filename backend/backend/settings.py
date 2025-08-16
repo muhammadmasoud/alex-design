@@ -200,10 +200,10 @@ else:
     print(f"DEVELOPMENT MODE: MEDIA_ROOT = {MEDIA_ROOT}")
     print(f"DEVELOPMENT MODE: STATIC_ROOT = {STATIC_ROOT}")
 
-# Ensure Django admin static files are included
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+# Additional static files directories (currently none needed)
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'static'),
+# ]
 
 # Django admin specific settings
 ADMIN_MEDIA_PREFIX = '/static/admin/'
