@@ -206,8 +206,8 @@ else:
 # ]
 
 # File upload settings for large architecture images
-FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2.5 * 1024 * 1024  # 2.5MB - force disk streaming for large files
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10MB - overall memory limit
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Allow many album images
 ALLOWED_UPLOAD_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg',
@@ -218,24 +218,22 @@ ALLOWED_UPLOAD_EXTENSIONS = [
 # Django admin specific settings
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
-# File upload settings for production
+# File upload settings optimized for production performance
 if IS_PRODUCTION:
-    FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25MB (for mobile photos)
-    DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25MB
     FILE_UPLOAD_TEMP_DIR = '/tmp'
     FILE_UPLOAD_PERMISSIONS = 0o644
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
     
-    # File upload handlers for production
+    # Optimized file upload handlers for production - stream to disk for better performance
     FILE_UPLOAD_HANDLERS = [
-        'django.core.files.uploadhandler.MemoryFileUploadHandler',
-        'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+        'django.core.files.uploadhandler.TemporaryFileUploadHandler',  # Stream to disk first
+        'django.core.files.uploadhandler.MemoryFileUploadHandler',     # Small files in memory
     ]
 else:
     # File upload handlers for development
     FILE_UPLOAD_HANDLERS = [
-        'django.core.files.uploadhandler.MemoryFileUploadHandler',
         'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+        'django.core.files.uploadhandler.MemoryFileUploadHandler',
     ]
 
 # Image validation settings

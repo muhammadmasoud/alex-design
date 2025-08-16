@@ -5,15 +5,19 @@ import multiprocessing
 bind = "0.0.0.0:8000"
 backlog = 2048
 
-# Worker processes
+# Worker processes optimized for file uploads
 workers = multiprocessing.cpu_count() * 2 + 1
 worker_class = "sync"
 worker_connections = 1000
 timeout = 300  # Extended timeout for large image uploads
 keepalive = 2
 
+# Optimize for large file uploads
+worker_tmp_dir = "/dev/shm"  # Use memory for temporary files
+preload_app = True          # Preload for better performance
+
 # Restart workers after this many requests, to help prevent memory leaks
-max_requests = 1000
+max_requests = 500          # Balanced for large file uploads
 max_requests_jitter = 50
 
 # Logging
