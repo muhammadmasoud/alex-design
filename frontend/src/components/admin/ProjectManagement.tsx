@@ -153,17 +153,27 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
 
       let projectId = editingProject?.id;
       
+      // Check if we have album images to upload
+      const hasAlbumImages = data.album_images && data.album_images.length > 0;
+      
       if (editingProject) {
         await api.patch(`${endpoints.projects}${editingProject.id}/`, formData);
-        toast({ title: "Project updated successfully!" });
+        if (!hasAlbumImages) {
+          toast({ title: "Project updated successfully!" });
+        }
       } else {
         const response = await api.post(endpoints.projects, formData);
         projectId = response.data.id;
-        toast({ title: "Project created successfully!" });
+        if (!hasAlbumImages) {
+          toast({ title: "Project created successfully!" });
+        }
       }
 
       // Handle album images upload if provided
-      if (data.album_images && data.album_images.length > 0 && projectId) {
+      if (hasAlbumImages && projectId) {
+        // Close the dialog immediately and show progress bar
+        setIsDialogOpen(false);
+        
         const albumFiles = Array.from(data.album_images).map((file: File) => ({
           file,
           name: file.name,
@@ -178,8 +188,10 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
           endpoints.projectImagesBulkUpload,
           albumFormData,
           (response) => {
-            toast({ title: `${albumFiles.length} album images uploaded successfully!` });
-            setIsDialogOpen(false);
+            toast({ 
+              title: editingProject ? "Project updated successfully!" : "Project created successfully!",
+              description: `${albumFiles.length} album images uploaded successfully!`
+            });
             setEditingProject(null);
             form.reset();
             fetchProjects();
@@ -194,7 +206,7 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
           }
         );
         
-        // Don't close dialog immediately if uploading - let upload progress handle it
+        // Exit early - upload progress will handle the rest
         return;
       }
 

@@ -132,37 +132,61 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
 
       let serviceId = editingService?.id;
       
+      // Check if we have album images to upload
+      const hasAlbumImages = data.album_images && data.album_images.length > 0;
+      
       if (editingService) {
         await api.patch(`${endpoints.services}${editingService.id}/`, formData);
-        toast({ title: "Service updated successfully!" });
+        if (!hasAlbumImages) {
+          toast({ title: "Service updated successfully!" });
+        }
       } else {
         const response = await api.post(endpoints.services, formData);
         serviceId = response.data.id;
-        toast({ title: "Service created successfully!" });
+        if (!hasAlbumImages) {
+          toast({ title: "Service created successfully!" });
+        }
       }
 
       // Handle album images upload if provided
-      if (data.album_images && data.album_images.length > 0 && serviceId) {
-        try {
-          // Use bulk upload API for better performance
-          const albumFormData = new FormData();
-          albumFormData.append("service_id", serviceId.toString());
-          
-          // Add all images to FormData
-          for (let i = 0; i < data.album_images.length; i++) {
-            albumFormData.append("images", data.album_images[i]);
+      if (hasAlbumImages && serviceId) {
+        // Close the dialog immediately and show progress bar
+        setIsDialogOpen(false);
+        
+        const albumFiles = Array.from(data.album_images).map((file: File) => ({
+          file,
+          name: file.name,
+          size: file.size
+        }));
+
+        const albumFormData = new FormData();
+        albumFormData.append("service_id", serviceId.toString());
+
+        await uploadFiles(
+          albumFiles,
+          endpoints.serviceImagesBulkUpload,
+          albumFormData,
+          (response) => {
+            toast({ 
+              title: editingService ? "Service updated successfully!" : "Service created successfully!",
+              description: `${albumFiles.length} album images uploaded successfully!`
+            });
+            setEditingService(null);
+            form.reset();
+            fetchData();
+            onUpdate();
+          },
+          (error) => {
+            toast({
+              title: "Album Upload Error",
+              description: error,
+              variant: "destructive",
+            });
           }
-          
-          await api.post(endpoints.serviceImagesBulkUpload, albumFormData);
-          toast({ title: `${data.album_images.length} album images uploaded successfully!` });
-        } catch (albumError: any) {
-          console.error("Error uploading album images:", albumError);
-          toast({
-            title: "Album Upload Warning",
-            description: "Service saved but some album images failed to upload. You can add them later.",
-            variant: "destructive",
-          });
-        }
+        );
+        
+        // Exit early - upload progress will handle the rest
+        return;
       }
 
       setIsDialogOpen(false);
