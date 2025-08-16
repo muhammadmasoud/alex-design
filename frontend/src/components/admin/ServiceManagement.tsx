@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import UploadProgress from "@/components/UploadProgress";
+import { useUploadProgress } from "@/hooks/useUploadProgress";
 
 const serviceSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -67,6 +69,8 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  
+  const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -230,7 +234,8 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Service Management</CardTitle>
@@ -500,5 +505,35 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
         </div>
       </CardContent>
     </Card>
+
+    {/* Upload Progress Modal */}
+    <UploadProgress
+      isOpen={uploadState.isUploading || uploadState.isCompleted}
+      onClose={() => {
+        resetUpload();
+        if (uploadState.isCompleted && !uploadState.error) {
+          setIsDialogOpen(false);
+          setEditingService(null);
+          form.reset();
+          fetchData();
+          onUpdate();
+        }
+      }}
+      title={editingService ? "Updating Service Album" : "Creating Service with Album"}
+      totalFiles={uploadState.totalFiles}
+      uploadedFiles={uploadState.uploadedFiles}
+      currentFileName={uploadState.currentFileName}
+      currentFileProgress={uploadState.currentFileProgress}
+      overallProgress={uploadState.overallProgress}
+      uploadSpeed={uploadState.uploadSpeed}
+      estimatedTimeRemaining={uploadState.estimatedTimeRemaining}
+      error={uploadState.error}
+      isCompleted={uploadState.isCompleted}
+      isPaused={uploadState.isPaused}
+      onPause={pauseUpload}
+      onResume={resumeUpload}
+      onCancel={cancelUpload}
+    />
+    </>
   );
 }

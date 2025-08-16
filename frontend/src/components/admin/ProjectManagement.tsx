@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import UploadProgress from "@/components/UploadProgress";
+import { useUploadProgress } from "@/hooks/useUploadProgress";
 
 const projectSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -51,6 +53,8 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectCategories, setProjectCategories] = useState<any[]>([]);
+  
+  const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [subcategories, setSubcategories] = useState<any[]>([]);
 
@@ -160,26 +164,38 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
 
       // Handle album images upload if provided
       if (data.album_images && data.album_images.length > 0 && projectId) {
-        try {
-          // Use bulk upload API for better performance
-          const albumFormData = new FormData();
-          albumFormData.append("project_id", projectId.toString());
-          
-          // Add all images to FormData
-          for (let i = 0; i < data.album_images.length; i++) {
-            albumFormData.append("images", data.album_images[i]);
+        const albumFiles = Array.from(data.album_images).map((file: File) => ({
+          file,
+          name: file.name,
+          size: file.size
+        }));
+
+        const albumFormData = new FormData();
+        albumFormData.append("project_id", projectId.toString());
+
+        await uploadFiles(
+          albumFiles,
+          endpoints.projectImagesBulkUpload,
+          albumFormData,
+          (response) => {
+            toast({ title: `${albumFiles.length} album images uploaded successfully!` });
+            setIsDialogOpen(false);
+            setEditingProject(null);
+            form.reset();
+            fetchProjects();
+            onUpdate();
+          },
+          (error) => {
+            toast({
+              title: "Album Upload Error",
+              description: error,
+              variant: "destructive",
+            });
           }
-          
-          await api.post(endpoints.projectImagesBulkUpload, albumFormData);
-          toast({ title: `${data.album_images.length} album images uploaded successfully!` });
-        } catch (albumError: any) {
-          console.error("Error uploading album images:", albumError);
-          toast({
-            title: "Album Upload Warning",
-            description: "Project saved but some album images failed to upload. You can add them later.",
-            variant: "destructive",
-          });
-        }
+        );
+        
+        // Don't close dialog immediately if uploading - let upload progress handle it
+        return;
       }
 
       setIsDialogOpen(false);
@@ -251,7 +267,8 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Project Management</CardTitle>
@@ -493,5 +510,35 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
         </div>
       </CardContent>
     </Card>
+
+    {/* Upload Progress Modal */}
+    <UploadProgress
+      isOpen={uploadState.isUploading || uploadState.isCompleted}
+      onClose={() => {
+        resetUpload();
+        if (uploadState.isCompleted && !uploadState.error) {
+          setIsDialogOpen(false);
+          setEditingProject(null);
+          form.reset();
+          fetchProjects();
+          onUpdate();
+        }
+      }}
+      title={editingProject ? "Updating Project Album" : "Creating Project with Album"}
+      totalFiles={uploadState.totalFiles}
+      uploadedFiles={uploadState.uploadedFiles}
+      currentFileName={uploadState.currentFileName}
+      currentFileProgress={uploadState.currentFileProgress}
+      overallProgress={uploadState.overallProgress}
+      uploadSpeed={uploadState.uploadSpeed}
+      estimatedTimeRemaining={uploadState.estimatedTimeRemaining}
+      error={uploadState.error}
+      isCompleted={uploadState.isCompleted}
+      isPaused={uploadState.isPaused}
+      onPause={pauseUpload}
+      onResume={resumeUpload}
+      onCancel={cancelUpload}
+    />
+    </>
   );
 }
