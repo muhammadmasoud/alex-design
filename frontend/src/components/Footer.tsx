@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="border-t">
       <div className="container py-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Alex Designs. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Alx Designs. All rights reserved.</p>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <a href="#" className="story-link">Privacy</a>
             <a href="#" className="story-link">Terms</a>

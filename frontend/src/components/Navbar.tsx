@@ -27,7 +27,7 @@ export default function Navbar() {
             alt="Alex Design Logo" 
             className="h-10 w-10 sm:h-12 sm:w-12 object-contain brightness-0 dark:invert"
           />
-          <span className="hidden xs:inline sm:inline">Alex Designs</span>
+          <span className="hidden xs:inline sm:inline">Alx Designs</span>
         </Link>
         <nav className="hidden md:flex items-center gap-1">
           <NavLink to="/" className={linkClass} end>Home</NavLink>
@@ -55,7 +55,7 @@ export default function Navbar() {
                     alt="Alex Design Logo" 
                     className="h-10 w-10 object-contain brightness-0 dark:invert"
                   />
-                  Alex Design
+                  Alx Design
                 </SheetTitle>
               </SheetHeader>
               <nav className="mt-8 grid gap-3">
