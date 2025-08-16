@@ -551,6 +551,9 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
       overallProgress={uploadState.overallProgress}
       uploadSpeed={uploadState.uploadSpeed}
       estimatedTimeRemaining={uploadState.estimatedTimeRemaining}
+      totalBytes={uploadState.totalBytes}
+      uploadedBytes={uploadState.uploadedBytes}
+      remainingBytes={uploadState.remainingBytes}
       error={uploadState.error}
       isCompleted={uploadState.isCompleted}
       isPaused={uploadState.isPaused}

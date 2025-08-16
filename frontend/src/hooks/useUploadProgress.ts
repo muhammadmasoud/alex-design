@@ -12,6 +12,9 @@ export interface UploadState {
   overallProgress: number;
   uploadSpeed: number;
   estimatedTimeRemaining: number;
+  totalBytes: number;
+  uploadedBytes: number;
+  remainingBytes: number;
   error: string | null;
 }
 
@@ -33,6 +36,9 @@ export function useUploadProgress() {
     overallProgress: 0,
     uploadSpeed: 0,
     estimatedTimeRemaining: 0,
+    totalBytes: 0,
+    uploadedBytes: 0,
+    remainingBytes: 0,
     error: null,
   });
 
@@ -66,6 +72,8 @@ export function useUploadProgress() {
   ) => {
     if (files.length === 0) return;
 
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    
     // Reset state
     setUploadState({
       isUploading: true,
@@ -78,6 +86,9 @@ export function useUploadProgress() {
       overallProgress: 0,
       uploadSpeed: 0,
       estimatedTimeRemaining: 0,
+      totalBytes,
+      uploadedBytes: 0,
+      remainingBytes: totalBytes,
       error: null,
     });
 
@@ -86,10 +97,6 @@ export function useUploadProgress() {
     uploadedBytesRef.current = 0;
 
     try {
-      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-      let completedFiles = 0;
-      let uploadedBytes = 0;
-
       // Create FormData for bulk upload
       const uploadFormData = new FormData();
       
@@ -133,6 +140,9 @@ export function useUploadProgress() {
             overallProgress,
             uploadSpeed: speed,
             estimatedTimeRemaining: eta,
+            totalBytes: total,
+            uploadedBytes: loaded,
+            remainingBytes: Math.max(0, total - loaded),
           }));
         },
       });
@@ -145,6 +155,8 @@ export function useUploadProgress() {
         uploadedFiles: files.length,
         overallProgress: 100,
         currentFileProgress: 100,
+        uploadedBytes: prev.totalBytes,
+        remainingBytes: 0,
       }));
 
       onSuccess?.(response.data);
@@ -199,6 +211,9 @@ export function useUploadProgress() {
       overallProgress: 0,
       uploadSpeed: 0,
       estimatedTimeRemaining: 0,
+      totalBytes: 0,
+      uploadedBytes: 0,
+      remainingBytes: 0,
       error: null,
     });
     uploadedBytesRef.current = 0;

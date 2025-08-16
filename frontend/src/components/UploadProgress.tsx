@@ -16,6 +16,9 @@ export interface UploadProgressProps {
   overallProgress: number;
   uploadSpeed?: number; // bytes per second
   estimatedTimeRemaining?: number; // seconds
+  totalBytes?: number; // total bytes to upload
+  uploadedBytes?: number; // bytes uploaded so far
+  remainingBytes?: number; // bytes remaining
   error?: string;
   isCompleted: boolean;
   isPaused?: boolean;
@@ -35,6 +38,9 @@ export default function UploadProgress({
   overallProgress,
   uploadSpeed,
   estimatedTimeRemaining,
+  totalBytes,
+  uploadedBytes,
+  remainingBytes,
   error,
   isCompleted,
   isPaused = false,
@@ -148,10 +154,27 @@ export default function UploadProgress({
 
               {/* Upload Statistics */}
               <div className="space-y-2 mb-4">
+                {/* Data Transfer Information */}
+                {(uploadedBytes !== undefined && totalBytes !== undefined) && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Data Transfer:</span>
+                    <span className="font-medium">
+                      {formatFileSize(uploadedBytes)} / {formatFileSize(totalBytes)}
+                    </span>
+                  </div>
+                )}
+                
+                {remainingBytes !== undefined && remainingBytes > 0 && !isCompleted && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Remaining:</span>
+                    <span className="font-medium text-orange-500">{formatFileSize(remainingBytes)}</span>
+                  </div>
+                )}
+                
                 {uploadSpeed && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Upload Speed:</span>
-                    <span className="font-medium">{formatFileSize(uploadSpeed)}/s</span>
+                    <span className="font-medium text-green-500">{formatFileSize(uploadSpeed)}/s</span>
                   </div>
                 )}
                 
@@ -161,7 +184,7 @@ export default function UploadProgress({
                       <Clock className="h-3 w-3 text-muted-foreground" />
                       <span className="text-muted-foreground">Time Remaining:</span>
                     </div>
-                    <span className="font-medium">{formatTime(estimatedTimeRemaining)}</span>
+                    <span className="font-medium text-blue-500">{formatTime(estimatedTimeRemaining)}</span>
                   </div>
                 )}
               </div>
@@ -198,6 +221,30 @@ export default function UploadProgress({
                         <div className="flex justify-between">
                           <span>Current File:</span>
                           <span>{currentFileProgress.toFixed(1)}%</span>
+                        </div>
+                      )}
+                      {(uploadedBytes !== undefined && totalBytes !== undefined) && (
+                        <>
+                          <div className="flex justify-between">
+                            <span>Data Uploaded:</span>
+                            <span className="text-green-500">{formatFileSize(uploadedBytes)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Size:</span>
+                            <span>{formatFileSize(totalBytes)}</span>
+                          </div>
+                          {remainingBytes !== undefined && (
+                            <div className="flex justify-between">
+                              <span>Remaining:</span>
+                              <span className="text-orange-500">{formatFileSize(remainingBytes)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {uploadSpeed && (
+                        <div className="flex justify-between">
+                          <span>Transfer Rate:</span>
+                          <span className="text-blue-500">{formatFileSize(uploadSpeed)}/s</span>
                         </div>
                       )}
                       <div className="flex justify-between">
