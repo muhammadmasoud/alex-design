@@ -45,9 +45,10 @@ interface Project {
 
 interface ProjectManagementProps {
   onUpdate: () => void;
+  onStorageUpdate?: () => void;
 }
 
-export default function ProjectManagement({ onUpdate }: ProjectManagementProps) {
+export default function ProjectManagement({ onUpdate, onStorageUpdate }: ProjectManagementProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -196,6 +197,7 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
             form.reset();
             fetchProjects();
             onUpdate();
+            onStorageUpdate?.(); // Update storage stats after file uploads
           },
           (error) => {
             toast({
@@ -215,6 +217,10 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
       form.reset();
       fetchProjects();
       onUpdate();
+      // Update storage stats if an image was uploaded
+      if (data.image && data.image[0]) {
+        onStorageUpdate?.();
+      }
     } catch (error: any) {
       console.error("Error saving project:", error);
       toast({
@@ -246,6 +252,7 @@ export default function ProjectManagement({ onUpdate }: ProjectManagementProps) 
       toast({ title: "Project deleted successfully!" });
       fetchProjects();
       onUpdate();
+      onStorageUpdate?.(); // Update storage stats after project deletion
     } catch (error) {
       console.error("Error deleting project:", error);
       toast({

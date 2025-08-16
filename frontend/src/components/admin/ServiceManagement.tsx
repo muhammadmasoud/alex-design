@@ -58,9 +58,10 @@ interface Subcategory {
 
 interface ServiceManagementProps {
   onUpdate: () => void;
+  onStorageUpdate?: () => void;
 }
 
-export default function ServiceManagement({ onUpdate }: ServiceManagementProps) {
+export default function ServiceManagement({ onUpdate, onStorageUpdate }: ServiceManagementProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -175,6 +176,7 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
             form.reset();
             fetchData();
             onUpdate();
+            onStorageUpdate?.(); // Update storage stats after file uploads
           },
           (error) => {
             toast({
@@ -194,6 +196,10 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
       form.reset();
       fetchData();
       onUpdate();
+      // Update storage stats if an icon was uploaded
+      if (data.icon && data.icon[0]) {
+        onStorageUpdate?.();
+      }
     } catch (error: any) {
       console.error("Error saving service:", error);
       toast({
@@ -225,6 +231,7 @@ export default function ServiceManagement({ onUpdate }: ServiceManagementProps) 
       toast({ title: "Service deleted successfully!" });
       fetchData();
       onUpdate();
+      onStorageUpdate?.(); // Update storage stats after service deletion
     } catch (error) {
       console.error("Error deleting service:", error);
       toast({

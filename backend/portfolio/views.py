@@ -320,6 +320,19 @@ def calculate_storage_info():
     }
 
 
+class AdminStorageStatsView(APIView):
+    """
+    API endpoint for getting only storage statistics (faster than full dashboard)
+    """
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        storage_info = calculate_storage_info()
+        return Response({
+            'storage': storage_info
+        })
+
+
 class AdminDashboardView(APIView):
     """
     Admin dashboard API endpoint for superuser only

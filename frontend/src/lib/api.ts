@@ -86,6 +86,7 @@ export const endpoints = {
   },
   admin: {
     dashboard: "/admin/dashboard/",
+    storageStats: "/admin/storage-stats/",
     check: "/admin/check/",
     projectCategories: "/admin/project-categories/",
     projectSubcategories: "/admin/project-subcategories/",

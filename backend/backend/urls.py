@@ -6,7 +6,7 @@ from portfolio.views import (
     ProjectViewSet, ServiceViewSet, RegistrationView, LoginView, 
     CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView,
     ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView,
-    CSRFTokenView
+    CSRFTokenView, AdminStorageStatsView
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='login'),
     path('api/categories/subcategories/', CategorySubcategoriesView.as_view(), name='category-subcategories'),
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
+    path('api/admin/storage-stats/', AdminStorageStatsView.as_view(), name='admin-storage-stats'),
     path('api/admin/check/', csrf_exempt(AdminCheckView.as_view()), name='admin-check'),
     path('api/csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
     path('api/contact/', csrf_exempt(ContactView.as_view()), name='contact'),

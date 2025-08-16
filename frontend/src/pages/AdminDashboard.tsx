@@ -87,6 +87,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleStorageUpdate = async () => {
+    // Update only storage statistics for better performance
+    if (!dashboardData) return;
+    
+    try {
+      const response = await api.get(endpoints.admin.storageStats);
+      setDashboardData(prev => prev ? {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          storage: response.data.storage
+        }
+      } : null);
+    } catch (error) {
+      console.error("Error refreshing storage data:", error);
+      // Fallback to full dashboard refresh
+      handleDataUpdate();
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="container py-10">
@@ -178,6 +198,7 @@ export default function AdminDashboard() {
             }>
               <ProjectManagement 
                 onUpdate={handleDataUpdate}
+                onStorageUpdate={handleStorageUpdate}
               />
             </Suspense>
           </TabsContent>
@@ -200,6 +221,7 @@ export default function AdminDashboard() {
             }>
               <ServiceManagement 
                 onUpdate={handleDataUpdate}
+                onStorageUpdate={handleStorageUpdate}
               />
             </Suspense>
           </TabsContent>

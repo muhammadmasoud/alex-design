@@ -7,12 +7,15 @@ import type {
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
+const TOAST_AUTO_DISMISS_DELAY = 2000 // 2 seconds
+const TOAST_ERROR_DISMISS_DELAY = 4000 // 4 seconds for errors
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number
 }
 
 const actionTypes = {
@@ -54,6 +57,7 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+const autoDismissTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -147,7 +151,14 @@ function toast({ ...props }: Toast) {
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+  const dismiss = () => {
+    // Clear auto-dismiss timeout if it exists
+    if (autoDismissTimeouts.has(id)) {
+      clearTimeout(autoDismissTimeouts.get(id))
+      autoDismissTimeouts.delete(id)
+    }
+    dispatch({ type: "DISMISS_TOAST", toastId: id })
+  }
 
   dispatch({
     type: "ADD_TOAST",
@@ -160,6 +171,21 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  // Auto-dismiss after 2 seconds unless explicitly disabled
+  const autoDismiss = props.duration !== Infinity && props.duration !== 0
+  if (autoDismiss) {
+    // Use longer duration for error toasts, shorter for success
+    const defaultDuration = props.variant === 'destructive' ? TOAST_ERROR_DISMISS_DELAY : TOAST_AUTO_DISMISS_DELAY
+    const duration = props.duration || defaultDuration
+    
+    const timeout = setTimeout(() => {
+      dismiss()
+      autoDismissTimeouts.delete(id)
+    }, duration)
+    
+    autoDismissTimeouts.set(id, timeout)
+  }
 
   return {
     id: id,
