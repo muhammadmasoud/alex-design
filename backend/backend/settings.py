@@ -205,10 +205,15 @@ else:
 #     os.path.join(BASE_DIR, 'static'),
 # ]
 
-# File upload settings for production
-FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+# File upload settings for large architecture images
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Allow many album images
+ALLOWED_UPLOAD_EXTENSIONS = [
+    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg',
+    'JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'TIFF', 'TIF', 'WEBP', 'SVG',
+    'heic', 'heif', 'HEIC', 'HEIF'  # Apple formats
+]
 
 # Django admin specific settings
 ADMIN_MEDIA_PREFIX = '/static/admin/'
