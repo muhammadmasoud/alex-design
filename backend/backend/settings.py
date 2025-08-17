@@ -236,10 +236,10 @@ MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
 # Image optimization settings for production
 IMAGE_OPTIMIZATION = {
     'ENABLE_OPTIMIZATION': IS_PRODUCTION,  # Only optimize in production
-    'MAX_WIDTH': 1920,
-    'MAX_HEIGHT': 1080,
-    'QUALITY': 85,
-    'FORMAT': 'JPEG',  # Default format for optimized images
+    'MAX_WIDTH': 2560,  # Increased for better quality on large screens
+    'MAX_HEIGHT': 1440, # Increased for better quality on large screens
+    'QUALITY': 92,      # Higher quality (sweet spot for web - good quality, reasonable size)
+    'FORMAT': 'JPEG',   # Default format for optimized images
     'THUMBNAIL_SIZE': (300, 300),
     'MEDIUM_SIZE': (800, 600),
 }

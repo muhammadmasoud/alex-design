@@ -8,7 +8,7 @@ from django.core.files.base import ContentFile
 import io
 
 
-def optimize_image(image_field, max_width=1920, max_height=1080, quality=85, format='JPEG'):
+def optimize_image(image_field, max_width=None, max_height=None, quality=None, format='JPEG'):
     """
     Optimize image for web delivery:
     - Resize to max dimensions while maintaining aspect ratio
@@ -17,6 +17,18 @@ def optimize_image(image_field, max_width=1920, max_height=1080, quality=85, for
     """
     if not image_field:
         return
+    
+    # Import here to avoid circular imports
+    from django.conf import settings
+    
+    # Use settings defaults if not provided
+    optimization_settings = getattr(settings, 'IMAGE_OPTIMIZATION', {})
+    if max_width is None:
+        max_width = optimization_settings.get('MAX_WIDTH', 2560)
+    if max_height is None:
+        max_height = optimization_settings.get('MAX_HEIGHT', 1440)
+    if quality is None:
+        quality = optimization_settings.get('QUALITY', 92)
     
     try:
         # Open the image
