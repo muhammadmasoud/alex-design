@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -19,48 +20,48 @@ export default function OptimizedImage({
   className,
   width,
   height,
+  effect = 'blur',
+  placeholder = '/placeholder.svg',
   onError,
   onClick,
 }: OptimizedImageProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-
-  const handleLoad = () => {
-    setImageLoaded(true);
-  };
-
   const handleError = (e: any) => {
-    setImageError(true);
-    if (onError) onError(e);
+    if (onError) {
+      onError(e);
+    } else {
+      // Default error handling
+      const target = e.target as HTMLImageElement;
+      target.src = placeholder;
+    }
   };
-
-  if (imageError) {
-    return (
-      <div className={cn("bg-gray-100 flex items-center justify-center", className)}>
-        <span className="text-gray-500 text-sm">Failed to load</span>
-      </div>
-    );
-  }
 
   return (
-    <div className={cn("relative", className)} onClick={onClick}>
-      {!imageLoaded && (
-        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center z-10">
-          <span className="text-gray-500 text-sm">Loading...</span>
+    <LazyLoadImage
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      effect={effect}
+      className={cn(className)}
+      onError={handleError}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block'
+      }}
+      placeholder={
+        <div className={cn(
+          "bg-muted animate-pulse flex items-center justify-center",
+          className
+        )}>
+          <div className="text-muted-foreground text-sm">Loading...</div>
         </div>
-      )}
-      <img
-        src={src}
-        alt={alt}
-        className="w-full h-full object-cover"
-        style={{
-          width: width || '100%',
-          height: height || '100%',
-          display: imageLoaded ? 'block' : 'none'
-        }}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
-    </div>
+      }
+      // Additional performance optimizations
+      loading="lazy"
+      decoding="async"
+    />
   );
 }
