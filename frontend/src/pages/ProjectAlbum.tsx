@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
 import ImageLightbox from "@/components/ImageLightbox";
+import OptimizedImage from "@/components/OptimizedImage";
 import { cn } from "@/lib/utils";
 
 const albumGridVariants = {
@@ -229,11 +230,11 @@ export default function ProjectAlbum() {
                 className="relative cursor-pointer group"
                 onClick={() => handleImageClick(image, index)}
               >
-                <img
+                <OptimizedImage
                   src={image.image}
                   alt={image.title || `${project.title} - Image ${index + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
+                  effect="blur"
                 />
                 
                 {/* Zoom overlay */}

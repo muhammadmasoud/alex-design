@@ -4,6 +4,7 @@ import { Project } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Tag, Eye } from "lucide-react";
 import { motion } from "framer-motion";
+import OptimizedImage from "@/components/OptimizedImage";
 
 interface Props {
   project: Project;
@@ -35,11 +36,11 @@ export default function ProjectCard({ project }: Props) {
       >
         <CardHeader className="p-0 relative">
           <div className="relative overflow-hidden">
-            <img
+            <OptimizedImage
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
-              loading="lazy"
               className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+              effect="blur"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder.svg';
