@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
 import ImageLightbox from "@/components/ImageLightbox";
+import OptimizedImage from "@/components/OptimizedImage";
 import { cn } from "@/lib/utils";
 
 const albumGridVariants = {
@@ -30,10 +31,6 @@ const albumItemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
   },
 };
 
@@ -145,7 +142,6 @@ export default function ServiceAlbum() {
         <EmptyState
           title="No Album Images"
           description="This service doesn't have any album images yet."
-          icon={<ImageIcon className="h-12 w-12 text-muted-foreground" />}
         />
       </motion.div>
     );
@@ -227,11 +223,11 @@ export default function ServiceAlbum() {
                 className="relative cursor-pointer group"
                 onClick={() => handleImageClick(image, index)}
               >
-                <img
+                <OptimizedImage
                   src={image.image}
                   alt={image.title || `${service.name} - Image ${index + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
+                  effect="blur"
                 />
                 
                 {/* Zoom overlay */}

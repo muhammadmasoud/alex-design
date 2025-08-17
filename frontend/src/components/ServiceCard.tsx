@@ -5,6 +5,7 @@ import { ServiceItem } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Eye, DollarSign, Tag } from "lucide-react";
 import { motion } from "framer-motion";
+import OptimizedImage from "@/components/OptimizedImage";
 
 interface Props {
   item: ServiceItem;
@@ -48,11 +49,11 @@ export default function ServiceCard({ item }: Props) {
       >
         <CardHeader className="p-0 relative">
           <div className="relative overflow-hidden">
-            <img
+            <OptimizedImage
               src={item.icon || '/placeholder.svg'}
               alt={`${item.name} architectural service`}
-              loading="lazy"
               className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+              effect="blur"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder.svg';

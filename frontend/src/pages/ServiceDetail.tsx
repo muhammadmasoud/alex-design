@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
-import LazyImage from "@/components/LazyImage";
+import OptimizedImage from "@/components/OptimizedImage";
 
 // Animation variants now imported from PageTransition component
 
@@ -164,14 +164,12 @@ export default function ServiceDetail() {
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
           <Card className="overflow-hidden shadow-2xl group">
-            <LazyImage
+            <OptimizedImage
               src={service.icon || '/placeholder.svg'}
               alt={`${service.name} architectural service`}
-              loading="eager"
               className="w-full h-auto object-cover aspect-square"
-              enableLightbox={true}
-              lightboxTitle={service.name}
-              showZoomIcon={true}
+              effect="blur"
+              placeholder="/placeholder.svg"
             />
           </Card>
           

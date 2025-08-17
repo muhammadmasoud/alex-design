@@ -31,10 +31,6 @@ const albumItemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
   },
 };
 
@@ -154,7 +150,6 @@ export default function ProjectAlbum() {
         <EmptyState
           title="No Album Images"
           description="This project doesn't have any album images yet."
-          icon={<ImageIcon className="h-12 w-12 text-muted-foreground" />}
         />
       </motion.div>
     );

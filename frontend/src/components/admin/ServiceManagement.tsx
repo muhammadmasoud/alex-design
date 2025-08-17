@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
+import FileUpload from "@/components/FileUpload";
 import { useUploadProgress } from "@/hooks/useUploadProgress";
 
 const serviceSchema = z.object({
