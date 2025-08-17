@@ -26,12 +26,10 @@ class ServiceSubcategorySimpleSerializer(serializers.ModelSerializer):
 
 class ProjectImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
-    thumbnail_url = serializers.SerializerMethodField()
-    medium_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectImage
-        fields = ['id', 'image', 'image_url', 'thumbnail_url', 'medium_url', 'title', 'description', 'order', 'created_at']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'created_at']
     
     def get_image_url(self, obj):
         """Get the full image URL"""
@@ -42,44 +40,22 @@ class ProjectImageSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
     
-    def get_thumbnail_url(self, obj):
-        """Get the thumbnail URL"""
-        if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return obj.thumbnail.url
-        return None
-    
-    def get_medium_url(self, obj):
-        """Get the medium size URL"""
-        if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.medium.url)
-            return obj.medium.url
-        return None
-    
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs"""
         representation = super().to_representation(instance)
         
-        # Provide multiple image sizes for responsive loading
+        # Provide full URL for image field
         if instance.image:
             request = self.context.get('request')
             if request:
-                # Use thumbnail for list views, medium for details
-                representation['image'] = request.build_absolute_uri(instance.medium.url)
-                representation['thumbnail'] = request.build_absolute_uri(instance.thumbnail.url)
-                representation['full_size'] = request.build_absolute_uri(instance.image.url)
+                representation['image'] = request.build_absolute_uri(instance.image.url)
+                representation['image_url'] = request.build_absolute_uri(instance.image.url)
             else:
-                representation['image'] = instance.medium.url
-                representation['thumbnail'] = instance.thumbnail.url
-                representation['full_size'] = instance.image.url
+                representation['image'] = instance.image.url
+                representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
-            representation['thumbnail'] = None
-            representation['full_size'] = None
+            representation['image_url'] = None
         return representation
 
 class ServiceImageSerializer(serializers.ModelSerializer):
@@ -99,23 +75,24 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         return None
     
     def to_representation(self, instance):
-        """Custom representation to include both image field and image_url"""
+        """Custom representation to include full URLs"""
         representation = super().to_representation(instance)
         # Keep the original image field for the frontend, but also provide image_url
         if instance.image:
             request = self.context.get('request')
             if request:
                 representation['image'] = request.build_absolute_uri(instance.image.url)
+                representation['image_url'] = request.build_absolute_uri(instance.image.url)
             else:
                 representation['image'] = instance.image.url
+                representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
+            representation['image_url'] = None
         return representation
 
 class ProjectSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()  # For reading the full URL
-    thumbnail_url = serializers.SerializerMethodField()
-    medium_url = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()
     subcategory_name = serializers.SerializerMethodField()
     category_obj = ProjectCategorySimpleSerializer(source='category', read_only=True)
@@ -134,24 +111,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
-        return None
-    
-    def get_thumbnail_url(self, obj):
-        """Get the thumbnail URL"""
-        if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return obj.thumbnail.url
-        return None
-    
-    def get_medium_url(self, obj):
-        """Get the medium size URL"""
-        if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.medium.url)
-            return obj.medium.url
         return None
     
     def get_category_name(self, obj):
@@ -180,26 +139,23 @@ class ProjectSerializer(serializers.ModelSerializer):
         """Custom representation to include optimized image URLs"""
         representation = super().to_representation(instance)
         
-        # Use thumbnail for card views to improve loading speed
+        # Provide full URL for image field
         if instance.image:
             request = self.context.get('request')
             if request:
-                # Default to medium size for main image
-                representation['image'] = request.build_absolute_uri(instance.medium.url)
-                representation['thumbnail'] = request.build_absolute_uri(instance.thumbnail.url)
-                representation['full_size'] = request.build_absolute_uri(instance.image.url)
+                representation['image'] = request.build_absolute_uri(instance.image.url)
+                representation['image_url'] = request.build_absolute_uri(instance.image.url)
             else:
-                representation['image'] = instance.medium.url
-                representation['thumbnail'] = instance.thumbnail.url
-                representation['full_size'] = instance.image.url
+                representation['image'] = instance.image.url
+                representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
-            representation['thumbnail'] = None
-            representation['full_size'] = None
+            representation['image_url'] = None
         return representation
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    icon_url = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()
     subcategory_name = serializers.SerializerMethodField()
     category_obj = ServiceCategorySimpleSerializer(source='category', read_only=True)
@@ -210,6 +166,15 @@ class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = '__all__'
+    
+    def get_icon_url(self, obj):
+        """Get the full icon URL"""
+        if obj.icon:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.icon.url)
+            return obj.icon.url
+        return None
     
     def get_category_name(self, obj):
         """Get category name"""
@@ -236,8 +201,11 @@ class ServiceSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 representation['icon'] = request.build_absolute_uri(instance.icon.url)
+                representation['icon_url'] = request.build_absolute_uri(instance.icon.url)
             else:
                 representation['icon'] = instance.icon.url
+                representation['icon_url'] = instance.icon.url
         else:
             representation['icon'] = None
+            representation['icon_url'] = None
         return representation

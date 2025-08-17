@@ -104,7 +104,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'portfolio.middleware.MediaCacheMiddleware',  # Add caching for media files
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -178,31 +177,31 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files configuration
 MEDIA_URL = '/media/'
+
 if IS_PRODUCTION:
     # Production: Use absolute paths for Ubuntu server
     MEDIA_ROOT = '/home/ubuntu/alex-design/backend/media'
     STATIC_ROOT = '/home/ubuntu/alex-design/backend/staticfiles'
 else:
     # Development: Use relative paths
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    MEDIA_ROOT = BASE_DIR / 'media'
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Additional static files directories (currently none needed)
 # STATICFILES_DIRS = [
 #     os.path.join(BASE_DIR, 'static'),
 # ]
 
-# File upload settings for large architecture images
+# File upload settings for large architecture images - Production Optimized
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2.5 * 1024 * 1024  # 2.5MB - force disk streaming for large files
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10MB - overall memory limit
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Allow many album images
 ALLOWED_UPLOAD_EXTENSIONS = [
-    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg',
-    'JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'TIFF', 'TIF', 'WEBP', 'SVG',
+    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp',
+    'JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'TIFF', 'TIF', 'WEBP',
     'heic', 'heif', 'HEIC', 'HEIF'  # Apple formats
 ]
 
@@ -211,7 +210,7 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # File upload settings optimized for production performance
 if IS_PRODUCTION:
-    FILE_UPLOAD_TEMP_DIR = '/tmp' if not os.name == 'nt' else None  # Windows compatibility
+    FILE_UPLOAD_TEMP_DIR = '/tmp'
     FILE_UPLOAD_PERMISSIONS = 0o644
     FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
     
@@ -227,12 +226,23 @@ else:
         'django.core.files.uploadhandler.MemoryFileUploadHandler',
     ]
 
-# Image validation settings
+# Image validation and optimization settings
 ALLOWED_IMAGE_TYPES = [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
-    'image/bmp', 'image/webp', 'image/svg+xml', 'image/tiff'
+    'image/bmp', 'image/webp', 'image/tiff'
 ]
 MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
+
+# Image optimization settings for production
+IMAGE_OPTIMIZATION = {
+    'ENABLE_OPTIMIZATION': IS_PRODUCTION,  # Only optimize in production
+    'MAX_WIDTH': 1920,
+    'MAX_HEIGHT': 1080,
+    'QUALITY': 85,
+    'FORMAT': 'JPEG',  # Default format for optimized images
+    'THUMBNAIL_SIZE': (300, 300),
+    'MEDIUM_SIZE': (800, 600),
+}
 
 # Media file caching settings for better performance
 MEDIA_CACHE_MAX_AGE = 86400 * 30  # 30 days for images
@@ -321,17 +331,31 @@ CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'mohamedaboelhamd765@gmail.com')
 # For development, use console backend to see emails in terminal
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# REST Framework settings
+# REST Framework settings - Production Optimized
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 12,
+    'PAGE_SIZE': 12,  # Reasonable page size for image-heavy content
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1000/hour',  # Allow reasonable API usage
+        'user': '2000/hour'
+    } if IS_PRODUCTION else {
+        'anon': '10000/hour',  # More lenient for development
+        'user': '20000/hour'
+    }
 }
