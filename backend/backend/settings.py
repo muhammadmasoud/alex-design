@@ -238,10 +238,13 @@ IMAGE_OPTIMIZATION = {
     'ENABLE_OPTIMIZATION': IS_PRODUCTION,  # Only optimize in production
     'MAX_WIDTH': 2560,  # Increased for better quality on large screens
     'MAX_HEIGHT': 1440, # Increased for better quality on large screens
-    'QUALITY': 92,      # Higher quality (sweet spot for web - good quality, reasonable size)
+    'QUALITY': 96,      # Very high quality (near-lossless for web)
     'FORMAT': 'JPEG',   # Default format for optimized images
     'THUMBNAIL_SIZE': (300, 300),
     'MEDIUM_SIZE': (800, 600),
+    'USE_WEBP': True,   # Enable WebP for better compression at high quality
+    'WEBP_QUALITY': 95, # WebP quality setting
+    'PROGRESSIVE_JPEG': True,  # Progressive JPEG loading
 }
 
 # Media file caching settings for better performance

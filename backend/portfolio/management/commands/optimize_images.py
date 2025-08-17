@@ -34,11 +34,50 @@ class Command(BaseCommand):
             default=10,
             help='Number of images to process in each batch (default: 10)',
         )
+        parser.add_argument(
+            '--high-quality',
+            action='store_true',
+            help='Use high-quality settings (96% quality, larger dimensions)',
+        )
+        parser.add_argument(
+            '--quality',
+            type=int,
+            default=None,
+            help='Override quality setting (1-100, default: 85 or 96 with --high-quality)',
+        )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         force_optimize = options['force']
         batch_size = options['batch_size']
+        high_quality = options['high_quality']
+        custom_quality = options['quality']
+        
+        # Determine quality settings
+        if high_quality:
+            default_quality = 96
+            max_width = 2560
+            max_height = 1440
+            icon_quality = 95
+            self.stdout.write(
+                self.style.SUCCESS('Using HIGH QUALITY settings (96% quality, 2560x1440 max)')
+            )
+        else:
+            default_quality = 85
+            max_width = 1920
+            max_height = 1080
+            icon_quality = 90
+            self.stdout.write(
+                self.style.SUCCESS('Using standard quality settings (85% quality, 1920x1080 max)')
+            )
+        
+        # Override with custom quality if provided
+        if custom_quality:
+            default_quality = custom_quality
+            icon_quality = custom_quality
+            self.stdout.write(
+                self.style.WARNING(f'Using custom quality: {custom_quality}%')
+            )
         
         self.stdout.write(
             self.style.SUCCESS('Starting image optimization process...')
@@ -63,14 +102,16 @@ class Command(BaseCommand):
         self.stdout.write('Optimizing Project images...')
         projects = Project.objects.filter(image__isnull=False)
         stats.update(self._optimize_model_images(
-            projects, 'image', 'Project', dry_run, force_optimize, batch_size
+            projects, 'image', 'Project', dry_run, force_optimize, batch_size,
+            max_width, max_height, default_quality
         ))
         
         # Optimize Service icons
         self.stdout.write('Optimizing Service icons...')
         services = Service.objects.filter(icon__isnull=False)
         service_stats = self._optimize_model_images(
-            services, 'icon', 'Service', dry_run, force_optimize, batch_size
+            services, 'icon', 'Service', dry_run, force_optimize, batch_size,
+            512, 512, icon_quality  # Icons get smaller dimensions
         )
         stats['services_optimized'] = service_stats['projects_optimized']  # Reuse counter
         stats['space_saved'] += service_stats['space_saved']
@@ -80,7 +121,8 @@ class Command(BaseCommand):
         self.stdout.write('Optimizing ProjectImage album images...')
         project_images = ProjectImage.objects.filter(image__isnull=False)
         proj_img_stats = self._optimize_model_images(
-            project_images, 'image', 'ProjectImage', dry_run, force_optimize, batch_size
+            project_images, 'image', 'ProjectImage', dry_run, force_optimize, batch_size,
+            max_width, max_height, default_quality
         )
         stats['project_images_optimized'] = proj_img_stats['projects_optimized']
         stats['space_saved'] += proj_img_stats['space_saved']
@@ -90,7 +132,8 @@ class Command(BaseCommand):
         self.stdout.write('Optimizing ServiceImage album images...')
         service_images = ServiceImage.objects.filter(image__isnull=False)
         serv_img_stats = self._optimize_model_images(
-            service_images, 'image', 'ServiceImage', dry_run, force_optimize, batch_size
+            service_images, 'image', 'ServiceImage', dry_run, force_optimize, batch_size,
+            max_width, max_height, default_quality
         )
         stats['service_images_optimized'] = serv_img_stats['projects_optimized']
         stats['space_saved'] += serv_img_stats['space_saved']
@@ -118,7 +161,7 @@ class Command(BaseCommand):
             self.stdout.write('3. Clear any CDN/proxy caches')
             self.stdout.write('4. Consider running database VACUUM after deployment')
 
-    def _optimize_model_images(self, queryset, field_name, model_name, dry_run, force_optimize, batch_size):
+    def _optimize_model_images(self, queryset, field_name, model_name, dry_run, force_optimize, batch_size, max_width, max_height, quality):
         """Optimize images for a specific model and field"""
         stats = {'projects_optimized': 0, 'space_saved': 0, 'errors': 0}
         total = queryset.count()
@@ -128,6 +171,7 @@ class Command(BaseCommand):
             return stats
         
         self.stdout.write(f'  Found {total} {model_name} images to process...')
+        self.stdout.write(f'  Using settings: {max_width}x{max_height}, quality {quality}%')
         
         # Process in batches
         for i in range(0, total, batch_size):
@@ -169,9 +213,9 @@ class Command(BaseCommand):
                     
                     optimized = optimize_image(
                         image_field,
-                        max_width=1920 if field_name != 'icon' else 512,
-                        max_height=1080 if field_name != 'icon' else 512,
-                        quality=85 if field_name != 'icon' else 90
+                        max_width=max_width,
+                        max_height=max_height,
+                        quality=quality
                     )
                     
                     if optimized:
@@ -185,13 +229,20 @@ class Command(BaseCommand):
                             new_size = getattr(instance, field_name).size
                             space_saved = original_size - new_size
                             stats['space_saved'] += max(0, space_saved)
+                            
+                            # Show the actual result
+                            size_change = ((new_size - original_size) / original_size) * 100
+                            self.stdout.write(
+                                f'    ✓ Optimized {model_name} ID {instance.id} '
+                                f'({original_size/1024:.1f}KB → {new_size/1024:.1f}KB, '
+                                f'{size_change:+.1f}%)'
+                            )
                         except (OSError, FileNotFoundError):
-                            pass
+                            self.stdout.write(
+                                f'    ✓ Optimized {model_name} ID {instance.id}'
+                            )
                         
                         stats['projects_optimized'] += 1
-                        self.stdout.write(
-                            f'    ✓ Optimized {model_name} ID {instance.id}'
-                        )
                     else:
                         self.stdout.write(
                             self.style.WARNING(f'    Failed to optimize {model_name} ID {instance.id}')

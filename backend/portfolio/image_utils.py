@@ -8,12 +8,13 @@ from django.core.files.base import ContentFile
 import io
 
 
-def optimize_image(image_field, max_width=None, max_height=None, quality=None, format='JPEG'):
+def optimize_image(image_field, max_width=None, max_height=None, quality=None, format=None):
     """
-    Optimize image for web delivery:
+    Optimize image for web delivery with high quality preservation:
+    - Smart format selection (WebP for better compression, JPEG fallback)
     - Resize to max dimensions while maintaining aspect ratio
-    - Compress to reduce file size
-    - Convert to optimized format (JPEG for photos, PNG for graphics with transparency)
+    - High-quality compression with minimal quality loss
+    - Convert to optimized format based on content
     """
     if not image_field:
         return
@@ -28,11 +29,38 @@ def optimize_image(image_field, max_width=None, max_height=None, quality=None, f
     if max_height is None:
         max_height = optimization_settings.get('MAX_HEIGHT', 1440)
     if quality is None:
-        quality = optimization_settings.get('QUALITY', 92)
+        quality = optimization_settings.get('QUALITY', 96)
+    
+    # Smart format selection
+    use_webp = optimization_settings.get('USE_WEBP', True)
+    webp_quality = optimization_settings.get('WEBP_QUALITY', 95)
+    progressive_jpeg = optimization_settings.get('PROGRESSIVE_JPEG', True)
     
     try:
         # Open the image
         image = Image.open(image_field)
+        original_format = image.format
+        
+        # Auto-orient based on EXIF data
+        image = ImageOps.exif_transpose(image)
+        
+        # Determine best output format
+        if format is None:
+            # Smart format selection based on image characteristics
+            if use_webp:
+                # Use WebP for better compression at high quality
+                format = 'WEBP'
+                target_quality = webp_quality
+            elif image.mode in ('RGBA', 'LA') or (hasattr(image, 'transparency') and image.transparency is not None):
+                # Use PNG for images with transparency
+                format = 'PNG'
+                target_quality = None  # PNG doesn't use quality
+            else:
+                # Use JPEG for photos
+                format = 'JPEG'
+                target_quality = quality
+        else:
+            target_quality = quality
         
         # Convert RGBA to RGB for JPEG format to avoid transparency issues
         if format.upper() == 'JPEG' and image.mode in ('RGBA', 'LA', 'P'):
@@ -43,14 +71,15 @@ def optimize_image(image_field, max_width=None, max_height=None, quality=None, f
             background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
             image = background
         
-        # Auto-orient based on EXIF data
-        image = ImageOps.exif_transpose(image)
-        
         # Calculate new dimensions while maintaining aspect ratio
         original_width, original_height = image.size
         
-        # Only resize if image is larger than max dimensions
-        if original_width > max_width or original_height > max_height:
+        # Only resize if image is significantly larger than max dimensions
+        # Use a threshold to avoid unnecessary resizing of slightly larger images
+        resize_threshold = 1.1
+        if (original_width > max_width * resize_threshold or 
+            original_height > max_height * resize_threshold):
+            
             # Calculate aspect ratios
             width_ratio = max_width / original_width
             height_ratio = max_height / original_height
@@ -61,8 +90,13 @@ def optimize_image(image_field, max_width=None, max_height=None, quality=None, f
             new_width = int(original_width * ratio)
             new_height = int(original_height * ratio)
             
-            # Resize using high-quality resampling
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # Use the highest quality resampling method
+            if hasattr(Image.Resampling, 'LANCZOS'):
+                resample_method = Image.Resampling.LANCZOS
+            else:
+                resample_method = Image.LANCZOS
+            
+            image = image.resize((new_width, new_height), resample_method)
         
         # Save optimized image to memory
         output = io.BytesIO()
@@ -72,17 +106,20 @@ def optimize_image(image_field, max_width=None, max_height=None, quality=None, f
         
         if format.upper() == 'JPEG':
             save_kwargs.update({
-                'quality': quality,
-                'progressive': True,  # Progressive JPEG for better perceived loading
+                'quality': target_quality,
+                'progressive': progressive_jpeg,
+                'subsampling': 0,  # Disable chroma subsampling for better quality
             })
         elif format.upper() == 'PNG':
             save_kwargs.update({
                 'compress_level': 6,  # Good compression without too much CPU
+                'optimize': True,
             })
         elif format.upper() == 'WEBP':
             save_kwargs.update({
-                'quality': quality,
-                'method': 6,  # Best compression
+                'quality': target_quality,
+                'method': 6,  # Best compression method
+                'lossless': target_quality >= 95,  # Use lossless for very high quality
             })
         
         image.save(output, **save_kwargs)
