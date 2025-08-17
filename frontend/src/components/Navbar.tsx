@@ -20,14 +20,14 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 font-heading text-lg sm:text-xl">
+      <div className="container flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
+        <Link to="/" className="flex items-center gap-2 font-heading text-base sm:text-lg md:text-xl">
           <img 
             src={logoImage} 
             alt="Alex Design Logo" 
-            className="h-10 w-10 sm:h-12 sm:w-12 object-contain brightness-0 dark:invert"
+            className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain brightness-0 dark:invert"
           />
-          <span className="hidden xs:inline sm:inline">Alx Designs</span>
+          <span className="hidden sm:inline">Alx Designs</span>
         </Link>
         <nav className="hidden md:flex items-center gap-1">
           <NavLink to="/" className={linkClass} end>Home</NavLink>
@@ -39,12 +39,12 @@ export default function Navbar() {
             <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
           )}
         </nav>
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1">
           {/* Mobile menu trigger */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden h-10 w-10" aria-label="Open menu">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" aria-label="Open menu">
+                <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80 sm:w-96 p-6">
@@ -89,17 +89,18 @@ export default function Navbar() {
 
           {/* Desktop auth section */}
           {!isAuthenticated ? (
-            <div className="hidden sm:flex gap-2">
-              <Button variant="ghost" asChild><Link to="/login">Log in</Link></Button>
-              <Button asChild><Link to="/register">Sign up</Link></Button>
+            <div className="hidden sm:flex gap-1 md:gap-2">
+              <Button variant="ghost" size="sm" asChild><Link to="/login">Log in</Link></Button>
+              <Button size="sm" asChild><Link to="/register">Sign up</Link></Button>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4" />
-                <span>Welcome, {user?.username}</span>
+            <div className="hidden sm:flex items-center gap-2 md:gap-3">
+              <div className="flex items-center gap-2 text-xs md:text-sm">
+                <User className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden md:inline">Welcome, {user?.username}</span>
+                <span className="md:hidden">{user?.username}</span>
               </div>
-              <Button variant="secondary" onClick={handleLogout}>Logout</Button>
+              <Button variant="secondary" size="sm" onClick={handleLogout}>Logout</Button>
             </div>
           )}
 

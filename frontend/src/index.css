@@ -104,6 +104,8 @@
     -moz-osx-font-smoothing: grayscale;
     /* Prevent horizontal scrolling on mobile */
     overflow-x: hidden;
+    /* Ensure minimum font size on mobile */
+    min-width: 320px;
   }
   
   /* Improve touch targets for mobile */
@@ -125,6 +127,14 @@
   textarea:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+  }
+  
+  /* Mobile-specific container adjustments */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
   }
 }
 

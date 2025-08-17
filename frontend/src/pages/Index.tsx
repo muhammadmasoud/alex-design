@@ -44,7 +44,7 @@ const Index = () => {
     >
       <SEO title="Studio Arc — Modern Architecture" description="Minimal, elegant portfolio of modern architecture: featured projects, services, and contact." canonical="/" />
       <section className="relative overflow-hidden animate-hero-entrance">
-        <div className="relative h-[50vh] sm:h-[60vh] lg:h-[70vh] w-full">
+        <div className="relative h-[45vh] sm:h-[55vh] md:h-[65vh] lg:h-[70vh] w-full">
           {/* Main hero image with Ken Burns effect */}
           <img 
             src={hero} 
@@ -70,39 +70,39 @@ const Index = () => {
           <div className="absolute bottom-1/5 left-1/4 w-0.5 h-4 bg-primary/40 animate-hero-float-dynamic" />
         </div>
         
-        <motion.div className="container absolute inset-0 flex items-end pb-8 sm:pb-12 px-4 sm:px-6" variants={itemVariants}>
+        <motion.div className="container absolute inset-0 flex items-end pb-4 sm:pb-8 md:pb-12 px-3 sm:px-6" variants={itemVariants}>
           <div className="max-w-2xl w-full">
-            <motion.h1 className="font-heading text-2xl sm:text-4xl lg:text-5xl leading-tight" variants={itemVariants}>
+            <motion.h1 className="font-heading text-xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight" variants={itemVariants}>
               Designing spaces with clarity and purpose.
             </motion.h1>
-            <motion.p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed" variants={itemVariants}>
+            <motion.p className="mt-2 sm:mt-3 md:mt-4 text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed" variants={itemVariants}>
               We create thoughtfully designed spaces that seamlessly blend form and function. From intimate residential homes to bold commercial structures and inspiring public spaces, our practice emphasizes sustainable design, natural light integration, and timeless minimalist aesthetics that enhance the human experience.
             </motion.p>
-            <motion.div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-3" variants={itemVariants}>
-              <Button className="w-full sm:w-auto" asChild><Link to="/projects">Browse projects</Link></Button>
-              <Button variant="secondary" className="w-full sm:w-auto" asChild><Link to="/contact">Start a project</Link></Button>
+            <motion.div className="mt-3 sm:mt-4 md:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-3" variants={itemVariants}>
+              <Button className="w-full sm:w-auto text-sm" size="sm" asChild><Link to="/projects">Browse projects</Link></Button>
+              <Button variant="secondary" className="w-full sm:w-auto text-sm" size="sm" asChild><Link to="/contact">Start a project</Link></Button>
             </motion.div>
           </div>
         </motion.div>
       </section>
 
-      <motion.section className="container py-8 sm:py-12 px-4 sm:px-6" variants={itemVariants}>
-        <motion.header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4" variants={itemVariants}>
+      <motion.section className="container py-6 sm:py-8 md:py-12 px-3 sm:px-6" variants={itemVariants}>
+        <motion.header className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4" variants={itemVariants}>
           <div>
-            <h2 className="font-heading text-xl sm:text-2xl">Featured projects</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">A selection from our recent work.</p>
+            <h2 className="font-heading text-lg sm:text-xl md:text-2xl">Featured projects</h2>
+            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">A selection from our recent work.</p>
           </div>
-          <Button variant="ghost" className="self-start sm:self-auto" asChild><Link to="/projects">View all</Link></Button>
+          <Button variant="ghost" size="sm" className="self-start sm:self-auto text-sm" asChild><Link to="/projects">View all</Link></Button>
         </motion.header>
         {loading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-72 w-full" />
+              <Skeleton key={i} className="h-64 sm:h-72 w-full" />
             ))}
           </div>
         ) : (
           <motion.div 
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3"
             variants={itemVariants}
           >
             {featured.map((p, index) => (
