@@ -45,6 +45,12 @@ export default function OptimizedImage({
       className={cn(className)}
       onError={handleError}
       onClick={onClick}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block'
+      }}
       placeholder={
         <div className={cn(
           "bg-muted animate-pulse flex items-center justify-center",

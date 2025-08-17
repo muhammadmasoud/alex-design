@@ -35,11 +35,11 @@ export default function ProjectCard({ project }: Props) {
         onClick={handleClick}
       >
         <CardHeader className="p-0 relative">
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-hidden h-48">
             <OptimizedImage
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
-              className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
               effect="blur"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

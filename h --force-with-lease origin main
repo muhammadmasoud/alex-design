@@ -1,0 +1,5 @@
+[33m3988916[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m production phase fixes
+[33md7779be[m fix database user
+[33m79b4dc6[m fix database user
+[33ma09dde5[m edit email to be the client's
+[33mf0529ba[m Upload performance optimizations

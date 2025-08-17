@@ -48,11 +48,11 @@ export default function ServiceCard({ item }: Props) {
         onClick={handleViewDetails}
       >
         <CardHeader className="p-0 relative">
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-hidden h-44">
             <OptimizedImage
               src={item.icon || '/placeholder.svg'}
               alt={`${item.name} architectural service`}
-              className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
               effect="blur"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
