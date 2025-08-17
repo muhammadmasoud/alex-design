@@ -91,6 +91,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
+    'imagekit',
     'portfolio',
 ]
 
@@ -103,6 +104,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'portfolio.middleware.MediaCacheMiddleware',  # Add caching for media files
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -231,6 +233,10 @@ ALLOWED_IMAGE_TYPES = [
     'image/bmp', 'image/webp', 'image/svg+xml', 'image/tiff'
 ]
 MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
+
+# Media file caching settings for better performance
+MEDIA_CACHE_MAX_AGE = 86400 * 30  # 30 days for images
+STATIC_CACHE_MAX_AGE = 86400 * 365  # 1 year for static files
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
