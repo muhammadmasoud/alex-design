@@ -14,6 +14,8 @@ from portfolio.category_views import (
 )
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
+from django.urls import re_path
 
 router = DefaultRouter()
 router.register(r'projects', ProjectViewSet)
@@ -38,4 +40,17 @@ urlpatterns = [
     path('api/contact/', csrf_exempt(ContactView.as_view()), name='contact'),
     path('api/projects/<int:project_id>/album/', ProjectAlbumView.as_view(), name='project-album'),
     path('api/services/<int:service_id>/album/', ServiceAlbumView.as_view(), name='service-album'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Enhanced media file serving for better image loading
+if settings.DEBUG:
+    # Development: serve media files directly
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Production: serve media files with proper headers
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {
+            'document_root': settings.MEDIA_ROOT,
+            'show_indexes': False,
+        }),
+    ]

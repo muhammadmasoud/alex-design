@@ -65,9 +65,20 @@ export default function ServiceAlbum() {
   }, [id]);
 
   const handleImageClick = (image: AlbumImage, index: number) => {
+    // Ensure we have a valid image URL before opening lightbox
+    if (!image.image || image.image.includes('placeholder')) {
+      console.warn('Cannot open lightbox: invalid image URL', image.image);
+      return;
+    }
+    
     setCurrentImage(image);
     setCurrentImageIndex(index);
     setLightboxOpen(true);
+  };
+
+  const handleImageError = (image: AlbumImage) => {
+    console.warn('Image failed to load:', image.image);
+    // You could implement additional error handling here
   };
 
   if (loading) {
@@ -228,6 +239,7 @@ export default function ServiceAlbum() {
                   alt={image.title || `${service.name} - Image ${index + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
                   effect="blur"
+                  onError={() => handleImageError(image)}
                 />
                 
                 {/* Zoom overlay */}
