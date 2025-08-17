@@ -400,7 +400,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                <label className="text-sm font-medium mb-2 flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
                   Project Album Images
                 </label>
