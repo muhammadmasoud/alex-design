@@ -1,4 +1,24 @@
 # ================================
+# OPTIMIZATION & PERFORMANCE
+# ================================
+
+# Bundle analysis files
+frontend/dist/stats.html
+frontend/analyze-deps.cjs
+stats.html
+
+# Image optimization folders
+backend/projects/optimized/
+backend/projects/webp/
+backend/projects/originals/
+backend/media/optimized/
+backend/media/webp/
+
+# Performance monitoring
+bundlesize.json
+.bundlewatch.json
+
+# ================================
 # ENVIRONMENT & SECURITY FILES
 # ================================
 

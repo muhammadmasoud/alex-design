@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "analyze": "npm run build && npx rollup-plugin-visualizer dist/stats.html --open",
+    "size-check": "npm run build && npx vite-bundle-analyzer",
+    "perf:check": "npm run build && echo \"Build size:\" && (du -sh dist/ 2>/dev/null || powershell \"Get-ChildItem -Path dist -Recurse | Measure-Object -Property Length -Sum | ForEach-Object { [math]::Round($_.Sum / 1MB, 2).ToString() + ' MB' }\")"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -77,9 +80,11 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "postcss": "^8.5.6",
+    "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-bundle-analyzer": "^1.2.1"
   }
 }
