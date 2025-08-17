@@ -244,21 +244,6 @@ export default function ProjectAlbum() {
                   effect="blur"
                   onError={() => handleImageError(image)}
                 />
-                
-                {/* Zoom overlay */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  className="absolute inset-0 bg-black/20 flex items-center justify-center"
-                >
-                  <motion.div
-                    initial={{ scale: 0.8 }}
-                    whileHover={{ scale: 1 }}
-                    className="bg-white/90 dark:bg-black/90 rounded-full p-3 backdrop-blur-sm"
-                  >
-                    <Expand className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                  </motion.div>
-                </motion.div>
 
                 {image.title && (
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
