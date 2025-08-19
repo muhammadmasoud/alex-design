@@ -93,10 +93,12 @@ class ServiceImageSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()  # For reading the full URL
-    category_name = serializers.SerializerMethodField()
-    subcategory_name = serializers.SerializerMethodField()
-    category_obj = ProjectCategorySimpleSerializer(source='category', read_only=True)
-    subcategory_obj = ProjectSubcategorySimpleSerializer(source='subcategory', read_only=True)
+    category_names = serializers.SerializerMethodField()
+    subcategory_names = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()  # For backward compatibility
+    subcategory_name = serializers.SerializerMethodField()  # For backward compatibility
+    category_objs = ProjectCategorySimpleSerializer(source='categories', many=True, read_only=True)
+    subcategory_objs = ProjectSubcategorySimpleSerializer(source='subcategories', many=True, read_only=True)
     album_images_count = serializers.SerializerMethodField()
     featured_album_images = serializers.SerializerMethodField()
     
@@ -120,6 +122,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_subcategory_name(self, obj):
         """Get subcategory name"""
         return obj.get_subcategory_name()
+    
+    def get_category_names(self, obj):
+        """Get all category names as a list"""
+        return obj.get_category_names()
+
+    def get_subcategory_names(self, obj):
+        """Get all subcategory names as a list"""
+        return obj.get_subcategory_names()
     
     def get_album_images_count(self, obj):
         """Get the count of album images - optimized to avoid extra queries"""
@@ -156,10 +166,12 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class ServiceSerializer(serializers.ModelSerializer):
     icon_url = serializers.SerializerMethodField()
-    category_name = serializers.SerializerMethodField()
-    subcategory_name = serializers.SerializerMethodField()
-    category_obj = ServiceCategorySimpleSerializer(source='category', read_only=True)
-    subcategory_obj = ServiceSubcategorySimpleSerializer(source='subcategory', read_only=True)
+    category_names = serializers.SerializerMethodField()
+    subcategory_names = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()  # For backward compatibility
+    subcategory_name = serializers.SerializerMethodField()  # For backward compatibility
+    category_objs = ServiceCategorySimpleSerializer(source='categories', many=True, read_only=True)
+    subcategory_objs = ServiceSubcategorySimpleSerializer(source='subcategories', many=True, read_only=True)
     album_images_count = serializers.SerializerMethodField()
     featured_album_images = serializers.SerializerMethodField()
     
@@ -176,12 +188,20 @@ class ServiceSerializer(serializers.ModelSerializer):
             return obj.icon.url
         return None
     
+    def get_category_names(self, obj):
+        """Get all category names as a list"""
+        return obj.get_category_names()
+
+    def get_subcategory_names(self, obj):
+        """Get all subcategory names as a list"""
+        return obj.get_subcategory_names()
+    
     def get_category_name(self, obj):
-        """Get category name"""
+        """Get first category name for backward compatibility"""
         return obj.get_category_name()
     
     def get_subcategory_name(self, obj):
-        """Get subcategory name"""
+        """Get first subcategory name for backward compatibility"""
         return obj.get_subcategory_name()
     
     def get_album_images_count(self, obj):

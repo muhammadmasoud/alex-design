@@ -21,8 +21,8 @@ const serviceSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   price: z.number().min(0, "Price must be positive").optional(),
-  category: z.number().optional(),
-  subcategory: z.number().optional(),
+  categories: z.array(z.string()).optional(),
+  subcategories: z.array(z.string()).optional(),
   icon: z.any().optional(),
   album_images: z.any().optional(),
 });
@@ -34,8 +34,10 @@ interface Service {
   name: string;
   description: string;
   price?: number;
-  category?: number;
-  subcategory?: number;
+  categories?: number[];
+  subcategories?: number[];
+  category_names?: string[];
+  subcategory_names?: string[];
   category_name?: string;
   subcategory_name?: string;
   icon?: string;

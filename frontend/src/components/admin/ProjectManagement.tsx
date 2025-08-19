@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,8 @@ const projectSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   project_date: z.string().min(1, "Project date is required"),
-  category: z.string().optional(),
-  subcategory: z.string().optional(),
+  categories: z.array(z.string()).optional(),
+  subcategories: z.array(z.string()).optional(),
   image: z.any().optional(),
   album_images: z.any().optional(),
 });
@@ -34,12 +35,12 @@ interface Project {
   title: string;
   description: string;
   project_date: string;  // The manually entered project date
-  category?: number;  // Now a foreign key ID
-  subcategory?: number;  // Now a foreign key ID
-  category_name?: string;
-  subcategory_name?: string;
-  category_obj?: { id: number; name: string };
-  subcategory_obj?: { id: number; name: string };
+  categories?: number[];  // Array of category IDs
+  subcategories?: number[];  // Array of subcategory IDs
+  category_names?: string[];  // Array of category names from API
+  subcategory_names?: string[];  // Array of subcategory names from API
+  category_name?: string;  // First category name for display
+  subcategory_name?: string;  // First subcategory name for display
   image?: string;
   album_images_count?: number;
   featured_album_images?: any[];
@@ -67,8 +68,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       title: "",
       description: "",
       project_date: "",
-      category: "",
-      subcategory: "",
+      categories: [],
+      subcategories: [],
     },
   });
 
@@ -138,17 +139,17 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       formData.append("description", data.description);
       formData.append("project_date", data.project_date);
       
-      // Send category and subcategory IDs instead of names
-      if (selectedCategoryId) {
-        formData.append("category", selectedCategoryId.toString());
+      // Send category and subcategory IDs arrays
+      if (data.categories && data.categories.length > 0) {
+        data.categories.forEach(categoryId => {
+          formData.append("categories", categoryId);
+        });
       }
       
-      // Find subcategory ID by name
-      if (data.subcategory) {
-        const selectedSubcategory = subcategories.find(sub => sub.name === data.subcategory);
-        if (selectedSubcategory) {
-          formData.append("subcategory", selectedSubcategory.id.toString());
-        }
+      if (data.subcategories && data.subcategories.length > 0) {
+        data.subcategories.forEach(subcategoryId => {
+          formData.append("subcategories", subcategoryId);
+        });
       }
       
       // Always append image if provided (for both create and update)
@@ -237,14 +238,14 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
-    // Use the category ID from the project
-    setSelectedCategoryId(typeof project.category === 'number' ? project.category : null);
+    // Set selected categories and subcategories
+    setSelectedCategoryId(project.categories?.[0] || null); // For backward compatibility
     form.reset({
       title: project.title,
       description: project.description,
       project_date: project.project_date,
-      category: project.category?.toString() || "",
-      subcategory: project.subcategory_name || "",
+      categories: project.categories?.map(id => id.toString()) || [],
+      subcategories: project.subcategories?.map(id => id.toString()) || [],
     });
     setIsDialogOpen(true);
   };
@@ -277,8 +278,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       title: "",
       description: "",
       project_date: today,
-      category: "",
-      subcategory: "",
+      categories: [],
+      subcategories: [],
     });
     setIsDialogOpen(true);
   };
@@ -372,47 +373,70 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Category</label>
-                  <Select 
-                    value={selectedCategoryId?.toString() || ""} 
-                    onValueChange={(value) => {
-                      const categoryId = value ? parseInt(value) : null;
-                      setSelectedCategoryId(categoryId);
-                      // Clear subcategory when category changes
-                      form.setValue("subcategory", "");
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projectCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
+                  <label className="text-sm font-medium mb-2 block">Categories</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    {projectCategories.map((category) => (
+                      <div key={category.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`category-${category.id}`}
+                          checked={form.watch("categories")?.includes(category.id.toString()) || false}
+                          onCheckedChange={(checked) => {
+                            const currentCategories = form.watch("categories") || [];
+                            if (checked) {
+                              form.setValue("categories", [...currentCategories, category.id.toString()]);
+                            } else {
+                              form.setValue("categories", currentCategories.filter(id => id !== category.id.toString()));
+                              // Clear subcategories when category is unchecked
+                              const currentSubcategories = form.watch("subcategories") || [];
+                              const categorySubcategories = subcategories
+                                .filter(sub => sub.category_id === category.id)
+                                .map(sub => sub.id.toString());
+                              form.setValue("subcategories", 
+                                currentSubcategories.filter(id => !categorySubcategories.includes(id))
+                              );
+                            }
+                          }}
+                        />
+                        <label htmlFor={`category-${category.id}`} className="text-sm">
                           {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Subcategory</label>
-                  <Select 
-                    value={form.watch("subcategory")} 
-                    onValueChange={(value) => form.setValue("subcategory", value)}
-                    disabled={!selectedCategoryId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={selectedCategoryId ? "Select subcategory" : "Select category first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subcategories.map((subcat) => (
-                        <SelectItem key={subcat.id} value={subcat.name}>
-                          {subcat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium mb-2 block">Subcategories</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    {subcategories.map((subcat) => {
+                      // Only show subcategories for selected categories
+                      const selectedCategories = form.watch("categories") || [];
+                      const shouldShow = selectedCategories.length === 0 || 
+                        selectedCategories.includes(subcat.category_id.toString());
+                      
+                      if (!shouldShow) return null;
+                      
+                      return (
+                        <div key={subcat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`subcategory-${subcat.id}`}
+                            checked={form.watch("subcategories")?.includes(subcat.id.toString()) || false}
+                            onCheckedChange={(checked) => {
+                              const currentSubcategories = form.watch("subcategories") || [];
+                              if (checked) {
+                                form.setValue("subcategories", [...currentSubcategories, subcat.id.toString()]);
+                              } else {
+                                form.setValue("subcategories", currentSubcategories.filter(id => id !== subcat.id.toString()));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`subcategory-${subcat.id}`} className="text-sm">
+                            {subcat.name}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -490,14 +514,26 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">{project.title}</TableCell>
                     <TableCell>
-                      {project.category_name && (
-                        <Badge variant="secondary">{project.category_name}</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {project.category_names && project.category_names.length > 0 ? (
+                          project.category_names.map((categoryName, index) => (
+                            <Badge key={index} variant="secondary">{categoryName}</Badge>
+                          ))
+                        ) : project.category_name ? (
+                          <Badge variant="secondary">{project.category_name}</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {project.subcategory_name && (
-                        <Badge variant="outline">{project.subcategory_name}</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {project.subcategory_names && project.subcategory_names.length > 0 ? (
+                          project.subcategory_names.map((subcategoryName, index) => (
+                            <Badge key={index} variant="outline">{subcategoryName}</Badge>
+                          ))
+                        ) : project.subcategory_name ? (
+                          <Badge variant="outline">{project.subcategory_name}</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -54,20 +54,21 @@ class ServiceImageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'subcategory', 'project_date', 'image_preview', 'album_count')
-    list_filter = ('category', 'subcategory', 'project_date')
-    search_fields = ('title', 'description', 'category__name', 'subcategory__name')
+    list_display = ('title', 'display_categories', 'display_subcategories', 'project_date', 'image_preview', 'album_count')
+    list_filter = ('categories', 'subcategories', 'project_date')
+    search_fields = ('title', 'description', 'categories__name', 'subcategories__name')
     readonly_fields = ('image_preview', 'album_count')
     ordering = ('-project_date',)
     inlines = [ProjectImageInline]
+    filter_horizontal = ('categories', 'subcategories')  # Add this for better many-to-many interface
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('title', 'description', 'project_date')
         }),
         ('Categorization', {
-            'fields': ('category', 'subcategory'),
-            'description': 'Choose a category first, then select an appropriate subcategory.'
+            'fields': ('categories', 'subcategories'),
+            'description': 'Choose one or more categories and subcategories for this project.'
         }),
         ('Main Display Image', {
             'fields': ('image', 'image_preview'),
@@ -99,6 +100,22 @@ class ProjectAdmin(admin.ModelAdmin):
         else:
             return f"{count} album images"
     album_count.short_description = "Album Images"
+    
+    def display_categories(self, obj):
+        """Display all categories for this project"""
+        categories = obj.categories.all()
+        if categories:
+            return ", ".join([cat.name for cat in categories])
+        return "No categories"
+    display_categories.short_description = "Categories"
+    
+    def display_subcategories(self, obj):
+        """Display all subcategories for this project"""
+        subcategories = obj.subcategories.all()
+        if subcategories:
+            return ", ".join([subcat.name for subcat in subcategories])
+        return "No subcategories"
+    display_subcategories.short_description = "Subcategories"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter subcategories based on selected category"""
@@ -108,20 +125,21 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'category', 'subcategory', 'icon_preview', 'album_count')
-    list_filter = ('category', 'subcategory')
-    search_fields = ('name', 'description', 'category__name', 'subcategory__name')
+    list_display = ('name', 'price', 'display_categories', 'display_subcategories', 'icon_preview', 'album_count')
+    list_filter = ('categories', 'subcategories')
+    search_fields = ('name', 'description', 'categories__name', 'subcategories__name')
     readonly_fields = ('icon_preview', 'album_count')
     ordering = ('name',)
     inlines = [ServiceImageInline]
+    filter_horizontal = ('categories', 'subcategories')  # Add this for better many-to-many interface
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'description', 'price')
         }),
         ('Categorization', {
-            'fields': ('category', 'subcategory'),
-            'description': 'Choose a category first, then select an appropriate subcategory.'
+            'fields': ('categories', 'subcategories'),
+            'description': 'Choose one or more categories and subcategories for this service.'
         }),
         ('Main Display Icon', {
             'fields': ('icon', 'icon_preview'),
@@ -153,6 +171,22 @@ class ServiceAdmin(admin.ModelAdmin):
         else:
             return f"{count} album images"
     album_count.short_description = "Album Images"
+    
+    def display_categories(self, obj):
+        """Display all categories for this service"""
+        categories = obj.categories.all()
+        if categories:
+            return ", ".join([cat.name for cat in categories])
+        return "No categories"
+    display_categories.short_description = "Categories"
+    
+    def display_subcategories(self, obj):
+        """Display all subcategories for this service"""
+        subcategories = obj.subcategories.all()
+        if subcategories:
+            return ", ".join([subcat.name for subcat in subcategories])
+        return "No subcategories"
+    display_subcategories.short_description = "Subcategories"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter subcategories based on selected category"""

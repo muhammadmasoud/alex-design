@@ -228,22 +228,18 @@ class Project(models.Model):
     description = models.TextField()
     image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True, validators=[validate_image])
     
-    # Category fields
-    category = models.ForeignKey(
+    # Category fields - Multiple categories allowed
+    categories = models.ManyToManyField(
         ProjectCategory, 
-        on_delete=models.SET_NULL, 
-        null=True, 
         blank=True,
         related_name='projects',
-        help_text="Select the main category for this project"
+        help_text="Select one or more categories for this project"
     )
-    subcategory = models.ForeignKey(
+    subcategories = models.ManyToManyField(
         ProjectSubcategory, 
-        on_delete=models.SET_NULL, 
-        null=True, 
         blank=True,
         related_name='projects',
-        help_text="Select a subcategory (optional)"
+        help_text="Select one or more subcategories (optional)"
     )
     
     # Date fields
@@ -255,17 +251,31 @@ class Project(models.Model):
     def __str__(self):
         return self.title
 
+    def get_category_names(self):
+        """Get all category names as a list"""
+        return [category.name for category in self.categories.all()]
+
+    def get_subcategory_names(self):
+        """Get all subcategory names as a list"""
+        return [subcategory.name for subcategory in self.subcategories.all()]
+    
+    def get_primary_category_name(self):
+        """Get the first category name for backward compatibility"""
+        first_category = self.categories.first()
+        return first_category.name if first_category else None
+
+    def get_primary_subcategory_name(self):
+        """Get the first subcategory name for backward compatibility"""
+        first_subcategory = self.subcategories.first()
+        return first_subcategory.name if first_subcategory else None
+
     def get_category_name(self):
-        """Get category name"""
-        if self.category:
-            return self.category.name
-        return None
+        """Get category name - backward compatibility method"""
+        return self.get_primary_category_name()
 
     def get_subcategory_name(self):
-        """Get subcategory name"""
-        if self.subcategory:
-            return self.subcategory.name
-        return None
+        """Get subcategory name - backward compatibility method"""
+        return self.get_primary_subcategory_name()
 
     def get_album_images_count(self):
         """Get the count of album images for this project"""
@@ -296,38 +306,48 @@ class Service(models.Model):
     icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True, validators=[validate_image])
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Service price in USD")
     
-    # Category fields
-    category = models.ForeignKey(
+    # Category fields - Multiple categories allowed
+    categories = models.ManyToManyField(
         ServiceCategory, 
-        on_delete=models.SET_NULL, 
-        null=True, 
         blank=True,
         related_name='services',
-        help_text="Select the main category for this service"
+        help_text="Select one or more categories for this service"
     )
-    subcategory = models.ForeignKey(
+    subcategories = models.ManyToManyField(
         ServiceSubcategory, 
-        on_delete=models.SET_NULL, 
-        null=True, 
         blank=True,
         related_name='services',
-        help_text="Select a subcategory (optional)"
+        help_text="Select one or more subcategories (optional)"
     )
 
     def __str__(self):
         return self.name
 
+    def get_category_names(self):
+        """Get all category names as a list"""
+        return [category.name for category in self.categories.all()]
+
+    def get_subcategory_names(self):
+        """Get all subcategory names as a list"""
+        return [subcategory.name for subcategory in self.subcategories.all()]
+    
+    def get_primary_category_name(self):
+        """Get the first category name for backward compatibility"""
+        first_category = self.categories.first()
+        return first_category.name if first_category else None
+
+    def get_primary_subcategory_name(self):
+        """Get the first subcategory name for backward compatibility"""
+        first_subcategory = self.subcategories.first()
+        return first_subcategory.name if first_subcategory else None
+
     def get_category_name(self):
-        """Get category name"""
-        if self.category:
-            return self.category.name
-        return None
+        """Get category name - backward compatibility method"""
+        return self.get_primary_category_name()
 
     def get_subcategory_name(self):
-        """Get subcategory name"""
-        if self.subcategory:
-            return self.subcategory.name
-        return None
+        """Get subcategory name - backward compatibility method"""
+        return self.get_primary_subcategory_name()
 
     def get_album_images_count(self):
         """Get the count of album images for this service"""
