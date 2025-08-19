@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, ChevronUp, ChevronDown, Tag, Layers } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
@@ -22,6 +22,7 @@ const serviceSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   price: z.number().min(0, "Price must be positive").optional(),
+  order: z.coerce.number().min(1, "Order must be at least 1").optional(),
   categories: z.array(z.string()).optional(),
   subcategories: z.array(z.string()).optional(),
   icon: z.any().optional(),
@@ -35,6 +36,7 @@ interface Service {
   name: string;
   description: string;
   price?: number;
+  order?: number;
   categories?: number[];
   subcategories?: number[];
   category_names?: string[];
@@ -42,6 +44,7 @@ interface Service {
   category_name?: string;
   subcategory_name?: string;
   icon?: string;
+  original_filename?: string;  // Original filename when uploaded
   album_images_count?: number;
   featured_album_images?: any[];
 }
@@ -81,6 +84,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       name: "",
       description: "",
       price: 0,
+      order: 1,
       categories: [],
       subcategories: [],
     },
@@ -119,6 +123,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       formData.append("name", data.name);
       formData.append("description", data.description);
       if (data.price !== undefined) formData.append("price", data.price.toString());
+      formData.append("order", data.order?.toString() || "0");
       
       // Append multiple categories
       if (data.categories) {
@@ -223,6 +228,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       name: service.name,
       description: service.description,
       price: service.price || 0,
+      order: service.order || 1,
       categories: service.categories?.map(id => id.toString()) || [],
       subcategories: service.subcategories?.map(id => id.toString()) || [],
     });
@@ -250,15 +256,52 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
   const handleNewService = () => {
     setEditingService(null);
-    // Set default date to today
+    // Set default order to next available position
     form.reset({
       name: "",
       description: "",
       price: 0,
+      order: services.length + 1,
       categories: [],
       subcategories: [],
     });
     setIsDialogOpen(true);
+  };
+
+  const handleReorder = async (serviceId: number, direction: 'up' | 'down') => {
+    try {
+      await api.post(`${endpoints.services}${serviceId}/reorder/`, { direction });
+      toast({ 
+        title: `Service moved ${direction} successfully!`
+      });
+      fetchData(); // Refresh the list to show new order
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error reordering service:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to reorder service",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOrderChange = async (serviceId: number, newOrder: number) => {
+    try {
+      await api.post(`${endpoints.services}${serviceId}/reorder/`, { new_order: newOrder });
+      toast({ 
+        title: "Service order updated successfully!"
+      });
+      fetchData(); // Refresh the list to show new order
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error updating service order:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to update service order",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -291,7 +334,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
               Add Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[1200px] max-h-[95vh]">
             <DialogHeader>
               <DialogTitle>
                 {editingService ? "Edit Service" : "Add New Service"}
@@ -303,20 +346,40 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                 }
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Name</label>
-                <Input 
-                  {...form.register("name")} 
-                  placeholder="Enter service name"
-                />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.name.message}
-                  </p>
-                )}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Name</label>
+                  <Input 
+                    {...form.register("name")} 
+                    placeholder="Enter service name"
+                  />
+                  {form.formState.errors.name && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Price (USD)</label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...form.register("price", { valueAsNumber: true })} 
+                    placeholder="0.00"
+                  />
+                  {form.formState.errors.price && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.price.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
+              {/* Description - Full Width */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Description</label>
                 <Textarea 
@@ -331,28 +394,39 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                 )}
               </div>
 
+              {/* Display Order - Single Column */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Price (USD)</label>
+                <label className="text-sm font-medium mb-2 block">Display Order</label>
                 <Input 
                   type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register("price", { valueAsNumber: true })} 
-                  placeholder="0.00"
+                  min="1"
+                  {...form.register("order")} 
+                  placeholder="1"
+                  className="w-32"
                 />
-                {form.formState.errors.price && (
+                {form.formState.errors.order && (
                   <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.price.message}
+                    {form.formState.errors.order.message}
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Services are ordered by this field first, then by name. Lower numbers appear first.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Categories and Subcategories - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Categories</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                  <label className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Categories
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (Select one or more)
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50 max-h-48 overflow-y-auto">
                     {categories.map((category) => (
-                      <div key={category.id} className="flex items-center space-x-2">
+                      <div key={category.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-background transition-colors">
                         <Checkbox
                           id={`category-${category.id}`}
                           checked={form.watch("categories")?.includes(category.id.toString()) || false}
@@ -373,7 +447,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                             }
                           }}
                         />
-                        <label htmlFor={`category-${category.id}`} className="text-sm">
+                        <label htmlFor={`category-${category.id}`} className="text-sm font-medium cursor-pointer">
                           {category.name}
                         </label>
                       </div>
@@ -382,8 +456,14 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Subcategories</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                  <label className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    Subcategories
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (Available for selected categories)
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50 max-h-48 overflow-y-auto">
                     {subcategories.map((subcat) => {
                       // Only show subcategories for selected categories
                       const selectedCategories = form.watch("categories") || [];
@@ -393,7 +473,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                       if (!shouldShow) return null;
                       
                       return (
-                        <div key={subcat.id} className="flex items-center space-x-2">
+                        <div key={subcat.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-background transition-colors">
                           <Checkbox
                             id={`subcategory-${subcat.id}`}
                             checked={form.watch("subcategories")?.includes(subcat.id.toString()) || false}
@@ -406,45 +486,95 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                               }
                             }}
                           />
-                          <label htmlFor={`subcategory-${subcat.id}`} className="text-sm">
+                          <label htmlFor={`subcategory-${subcat.id}`} className="text-sm font-medium cursor-pointer">
                             {subcat.name}
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({subcat.category_name})
+                            </span>
                           </label>
                         </div>
                       );
                     })}
+                    {subcategories.length === 0 && (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">No subcategories available</p>
+                      </div>
+                    )}
+                    {subcategories.length > 0 && !subcategories.some(subcat => {
+                      const selectedCategories = form.watch("categories") || [];
+                      return selectedCategories.length === 0 || selectedCategories.includes(subcat.category.toString());
+                    }) && (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">
+                          {form.watch("categories")?.length > 0 
+                            ? "No subcategories available for selected categories" 
+                            : "Select categories to see available subcategories"
+                          }
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Main Display Icon</label>
-                <Input 
-                  type="file" 
-                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
-                  {...form.register("icon")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This icon will be shown in service listings and as the main icon on the detail page.
-                </p>
+              {/* Images - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Main Display Icon</label>
+                  {editingService?.icon && (
+                    <div className="mb-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">Current icon:</p>
+                      <p className="text-sm font-mono break-all">
+                        {editingService.original_filename?.replace(/\.[^/.]+$/, "") || 
+                         editingService.icon.split('/').pop()?.replace(/\.[^/.]+$/, "") || 
+                         'Unknown filename'}
+                      </p>
+                    </div>
+                  )}
+                  <Input 
+                    type="file" 
+                    accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
+                    {...form.register("icon")}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This icon will be shown in service listings and as the main icon on the detail page.
+                    {editingService?.icon && " Leave empty to keep current icon."}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Service Album Images
+                  </label>
+                  {editingService?.featured_album_images && editingService.featured_album_images.length > 0 && (
+                    <div className="mb-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">Current album images ({editingService.featured_album_images.length}):</p>
+                      <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+                        {editingService.featured_album_images.map((albumImage, index) => (
+                          <p key={albumImage.id} className="text-xs font-mono break-all">
+                            {index + 1}. {albumImage.original_filename?.replace(/\.[^/.]+$/, "") || 
+                                         albumImage.image.split('/').pop()?.replace(/\.[^/.]+$/, "") || 
+                                         'Unknown filename'}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <Input 
+                    type="file" 
+                    multiple
+                    accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
+                    {...form.register("album_images")}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select multiple images for the service album. Visitors can view all these images by clicking "View Album" on the service detail page.
+                    {editingService?.featured_album_images && editingService.featured_album_images.length > 0 && " Leave empty to keep current images, or select new images to add to the album."}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Service Album Images
-                </label>
-                <Input 
-                  type="file" 
-                  multiple
-                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
-                  {...form.register("album_images")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select multiple images for the service album. Visitors can view all these images by clicking "View Album" on the service detail page.
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -475,13 +605,14 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                 <TableHead>Category</TableHead>
                 <TableHead>Subcategory</TableHead>
                 <TableHead>Album</TableHead>
+                <TableHead>Order</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {services.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No services found. Create your first service to get started.
                   </TableCell>
                 </TableRow>
@@ -543,6 +674,42 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                         ) : (
                           <span className="text-sm text-muted-foreground">No album</span>
                         )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={service.order || 1}
+                          onChange={(e) => {
+                            const newOrder = parseInt(e.target.value);
+                            if (!isNaN(newOrder) && newOrder !== service.order) {
+                              handleOrderChange(service.id, newOrder);
+                            }
+                          }}
+                          className="w-16 h-8 text-center text-sm font-mono"
+                        />
+                        <div className="flex flex-col gap-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleReorder(service.id, 'up')}
+                            title="Move up"
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleReorder(service.id, 'down')}
+                            title="Move down"
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">

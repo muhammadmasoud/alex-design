@@ -227,6 +227,7 @@ class Project(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True, validators=[validate_image])
+    original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
     # Category fields - Multiple categories allowed
     categories = models.ManyToManyField(
@@ -247,9 +248,39 @@ class Project(models.Model):
         help_text="The date when this project was completed or published",
         verbose_name="Project Date"
     )
+    
+    # Ordering field - for manual arrangement
+    order = models.PositiveIntegerField(
+        default=1,
+        help_text="Order position for manual arrangement. Lower numbers appear first. Projects are ordered by this field first, then by project_date (newest first)."
+    )
+    
+    def save(self, *args, **kwargs):
+        # Set default order to next available position if not set
+        if not self.order or self.order == 0:
+            max_order = Project.objects.aggregate(models.Max('order'))['order__max']
+            self.order = (max_order or 0) + 1
+        
+        # Handle image deletion logic
+        if self.pk:
+            try:
+                old_instance = Project.objects.get(pk=self.pk)
+                # Check if image field has changed and old image exists
+                if (old_instance.image and 
+                    hasattr(self.image, 'file') and 
+                    self.image.file and 
+                    old_instance.image.name != self.image.name):
+                    # Delete the old image file
+                    old_instance.image.delete(save=False)
+            except Project.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
+    
+    class Meta:
+        ordering = ['order', '-project_date']  # Order by manual order first, then by project_date descending
 
     def get_category_names(self):
         """Get all category names as a list"""
@@ -282,28 +313,16 @@ class Project(models.Model):
         return self.album_images.count()
     
     def get_featured_album_images(self, limit=6):
-        """Get first few album images for preview"""
+        """Get album images for preview"""
+        if limit is None:
+            return self.album_images.all()
         return self.album_images.all()[:limit]
 
-    def save(self, *args, **kwargs):
-        # Delete old image if updating and a new image is provided
-        if self.pk:
-            try:
-                old_instance = Project.objects.get(pk=self.pk)
-                # Check if image field has changed and old image exists
-                if (old_instance.image and 
-                    hasattr(self.image, 'file') and 
-                    self.image.file and 
-                    old_instance.image.name != self.image.name):
-                    # Delete the old image file
-                    old_instance.image.delete(save=False)
-            except Project.DoesNotExist:
-                pass
-        super().save(*args, **kwargs)
 class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True, validators=[validate_image])
+    original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Service price in USD")
     
     # Category fields - Multiple categories allowed
@@ -319,9 +338,39 @@ class Service(models.Model):
         related_name='services',
         help_text="Select one or more subcategories (optional)"
     )
+    
+    # Ordering field - for manual arrangement
+    order = models.PositiveIntegerField(
+        default=1,
+        help_text="Order position for manual arrangement. Lower numbers appear first. Services are ordered by this field first, then by name."
+    )
+    
+    def save(self, *args, **kwargs):
+        # Set default order to next available position if not set
+        if not self.order or self.order == 0:
+            max_order = Service.objects.aggregate(models.Max('order'))['order__max']
+            self.order = (max_order or 0) + 1
+        
+        # Handle icon deletion logic
+        if self.pk:
+            try:
+                old_instance = Service.objects.get(pk=self.pk)
+                # Check if icon field has changed and old icon exists
+                if (old_instance.icon and 
+                    hasattr(self.icon, 'file') and 
+                    self.icon.file and 
+                    old_instance.icon.name != self.icon.name):
+                    # Delete the old icon file
+                    old_instance.icon.delete(save=False)
+            except Service.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['order', 'name']  # Order by manual order first, then by name
 
     def get_category_names(self):
         """Get all category names as a list"""
@@ -354,24 +403,10 @@ class Service(models.Model):
         return self.album_images.count()
     
     def get_featured_album_images(self, limit=6):
-        """Get first few album images for preview"""
+        """Get album images for preview"""
+        if limit is None:
+            return self.album_images.all()
         return self.album_images.all()[:limit]
-
-    def save(self, *args, **kwargs):
-        # Delete old icon if updating and a new icon is provided
-        if self.pk:
-            try:
-                old_instance = Service.objects.get(pk=self.pk)
-                # Check if icon field has changed and old icon exists
-                if (old_instance.icon and 
-                    hasattr(self.icon, 'file') and 
-                    self.icon.file and 
-                    old_instance.icon.name != self.icon.name):
-                    # Delete the old icon file
-                    old_instance.icon.delete(save=False)
-            except Service.DoesNotExist:
-                pass
-        super().save(*args, **kwargs)
 
 
 class ProjectImage(models.Model):
@@ -389,6 +424,7 @@ class ProjectImage(models.Model):
         validators=[validate_image],
         help_text="Album image file"
     )
+    original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     title = models.CharField(
         max_length=200, 
         blank=True, 
@@ -453,6 +489,7 @@ class ServiceImage(models.Model):
         validators=[validate_image],
         help_text="Album image file"
     )
+    original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     title = models.CharField(
         max_length=200, 
         blank=True, 

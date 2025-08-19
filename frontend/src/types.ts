@@ -5,6 +5,7 @@ export interface AlbumImage {
   title?: string;
   description?: string;
   order: number;
+  original_filename?: string;
 }
 
 export interface Project {
@@ -21,6 +22,7 @@ export interface Project {
   subcategory_name?: string; // First subcategory name for backward compatibility
   album_images_count?: number;
   featured_album_images?: AlbumImage[];
+  original_filename?: string;
 }
 
 export interface ServiceItem {
@@ -37,6 +39,7 @@ export interface ServiceItem {
   subcategory_name?: string; // First subcategory name for backward compatibility
   album_images_count?: number;
   featured_album_images?: AlbumImage[];
+  original_filename?: string;
 }
 
 export interface ProjectAlbumResponse {

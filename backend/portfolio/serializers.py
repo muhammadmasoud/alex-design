@@ -29,7 +29,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
     
     def get_image_url(self, obj):
         """Get the full image URL"""
@@ -63,7 +63,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
     
     def get_image_url(self, obj):
         """Get the full image URL"""
@@ -142,7 +142,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'prefetched_featured_images'):
             featured_images = obj.prefetched_featured_images
         else:
-            featured_images = obj.album_images.all()[:4]
+            featured_images = obj.album_images.all()
         return ProjectImageSerializer(featured_images, many=True, context=self.context).data
     
     def to_representation(self, instance):
@@ -209,8 +209,8 @@ class ServiceSerializer(serializers.ModelSerializer):
         return obj.get_album_images_count()
     
     def get_featured_album_images(self, obj):
-        """Get first few album images for preview"""
-        featured_images = obj.get_featured_album_images(limit=4)
+        """Get all album images for preview"""
+        featured_images = obj.get_featured_album_images(limit=None)
         return ServiceImageSerializer(featured_images, many=True, context=self.context).data
     
     def to_representation(self, instance):

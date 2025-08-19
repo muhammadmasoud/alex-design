@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers, ChevronUp, ChevronDown } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
@@ -22,6 +22,7 @@ const projectSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   project_date: z.string().min(1, "Project date is required"),
+  order: z.coerce.number().min(1, "Order must be at least 1").optional(),
   categories: z.array(z.string()).optional(),
   subcategories: z.array(z.string()).optional(),
   image: z.any().optional(),
@@ -35,6 +36,7 @@ interface Project {
   title: string;
   description: string;
   project_date: string;  // The manually entered project date
+  order?: number;  // Manual ordering position
   categories?: number[];  // Array of category IDs
   subcategories?: number[];  // Array of subcategory IDs
   category_names?: string[];  // Array of category names from API
@@ -42,6 +44,7 @@ interface Project {
   category_name?: string;  // First category name for display
   subcategory_name?: string;  // First subcategory name for display
   image?: string;
+  original_filename?: string;  // Original filename when uploaded
   album_images_count?: number;
   featured_album_images?: any[];
 }
@@ -67,6 +70,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       title: "",
       description: "",
       project_date: "",
+      order: projects.length + 1,
       categories: [],
       subcategories: [],
     },
@@ -128,6 +132,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       formData.append("title", data.title);
       formData.append("description", data.description);
       formData.append("project_date", data.project_date);
+      formData.append("order", data.order?.toString() || (projects.length + 1).toString());
       
       // Send category and subcategory IDs arrays
       if (data.categories && data.categories.length > 0) {
@@ -232,6 +237,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       title: project.title,
       description: project.description,
       project_date: project.project_date,
+      order: project.order || projects.length + 1,
       categories: project.categories?.map(id => id.toString()) || [],
       subcategories: project.subcategories?.map(id => id.toString()) || [],
     });
@@ -265,10 +271,56 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       title: "",
       description: "",
       project_date: today,
+      order: projects.length + 1,
       categories: [],
       subcategories: [],
     });
     setIsDialogOpen(true);
+  };
+
+  const handleReorder = async (projectId: number, direction: 'up' | 'down') => {
+    try {
+      await api.post(`${endpoints.projects}${projectId}/reorder/`, { direction });
+      toast({ 
+        title: `Project moved ${direction} successfully!`
+      });
+      fetchProjects();
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error reordering project:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || `Failed to move project ${direction}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOrderChange = async (projectId: number, newOrder: number) => {
+    if (newOrder < 1) {
+      toast({
+        title: "Error",
+        description: "Order must be at least 1",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await api.post(`${endpoints.projects}${projectId}/reorder/`, { new_order: newOrder });
+      toast({ 
+        title: "Project order updated successfully!"
+      });
+      fetchProjects();
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error updating project order:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to update project order",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -301,7 +353,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
               Add Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[1200px] max-h-[95vh]">
             <DialogHeader>
               <DialogTitle>
                 {editingProject ? "Edit Project" : "Add New Project"}
@@ -313,20 +365,41 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 }
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Title</label>
-                <Input 
-                  {...form.register("title")} 
-                  placeholder="Enter project title"
-                />
-                {form.formState.errors.title && (
-                  <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.title.message}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Title</label>
+                  <Input 
+                    {...form.register("title")} 
+                    placeholder="Enter project title"
+                  />
+                  {form.formState.errors.title && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.title.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Project Date</label>
+                  <Input 
+                    type="date"
+                    {...form.register("project_date")} 
+                    placeholder="Select project date"
+                  />
+                  {form.formState.errors.project_date && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.project_date.message}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The date when this project was completed.
                   </p>
-                )}
+                </div>
               </div>
 
+              {/* Description - Full Width */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Description</label>
                 <Textarea 
@@ -341,33 +414,37 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 )}
               </div>
 
+              {/* Display Order - Single Column */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Project Date</label>
+                <label className="text-sm font-medium mb-2 block">Display Order</label>
                 <Input 
-                  type="date"
-                  {...form.register("project_date")} 
-                  placeholder="Select project date"
+                  type="number"
+                  min="0"
+                  {...form.register("order")} 
+                  placeholder="0"
+                  className="w-32"
                 />
-                {form.formState.errors.project_date && (
+                {form.formState.errors.order && (
                   <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.project_date.message}
+                    {form.formState.errors.order.message}
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  The date when this project was completed or should be displayed as.
+                  Projects are ordered by this field first, then by project date (newest first). Lower numbers appear first.
                 </p>
               </div>
 
-              <div className="space-y-6">
+              {/* Categories and Subcategories - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="text-sm font-medium mb-3 flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     Categories
                     <span className="text-xs text-muted-foreground font-normal">
-                      (Select one or more categories)
+                      (Select one or more)
                     </span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg bg-muted/50 max-h-40 overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50 max-h-48 overflow-y-auto">
                     {projectCategories.map((category) => (
                       <div key={category.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-background transition-colors">
                         <Checkbox
@@ -406,9 +483,9 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                       (Available for selected categories)
                     </span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg bg-muted/50 max-h-40 overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50 max-h-48 overflow-y-auto">
                     {subcategories.length === 0 ? (
-                      <div className="col-span-2 text-center py-4">
+                      <div className="text-center py-4">
                         <p className="text-sm text-muted-foreground">Loading subcategories...</p>
                       </div>
                     ) : subcategories.some(subcat => {
@@ -447,7 +524,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                         );
                       })
                     ) : (
-                      <div className="col-span-2 text-center py-4">
+                      <div className="text-center py-4">
                         <p className="text-sm text-muted-foreground">
                           {form.watch("categories")?.length > 0 
                             ? "No subcategories available for selected categories" 
@@ -460,35 +537,64 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Main Display Image</label>
-                <Input 
-                  type="file" 
-                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
-                  {...form.register("image")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This image will be shown in project listings and as the main image on the detail page.
-                </p>
+              {/* Images - 2 Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Main Display Image</label>
+                  {editingProject?.image && (
+                    <div className="mb-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">Current image:</p>
+                      <p className="text-sm font-mono break-all">
+                        {editingProject.original_filename?.replace(/\.[^/.]+$/, "") || 
+                         editingProject.image.split('/').pop()?.replace(/\.[^/.]+$/, "") || 
+                         'Unknown filename'}
+                      </p>
+                    </div>
+                  )}
+                  <Input 
+                    type="file" 
+                    accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
+                    {...form.register("image")}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This image will be shown in project listings and as the main image on the detail page.
+                    {editingProject?.image && " Leave empty to keep current image."}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Project Album Images
+                  </label>
+                  {editingProject?.featured_album_images && editingProject.featured_album_images.length > 0 && (
+                    <div className="mb-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">Current album images ({editingProject.featured_album_images.length}):</p>
+                      <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+                        {editingProject.featured_album_images.map((albumImage, index) => (
+                          <p key={albumImage.id} className="text-xs font-mono break-all">
+                            {index + 1}. {albumImage.original_filename?.replace(/\.[^/.]+$/, "") || 
+                                         albumImage.image.split('/').pop()?.replace(/\.[^/.]+$/, "") || 
+                                         'Unknown filename'}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <Input 
+                    type="file" 
+                    multiple
+                    accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
+                    {...form.register("album_images")}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select multiple images for the project album. Visitors can view all these images by clicking "View Album" on the project detail page.
+                    {editingProject?.featured_album_images && editingProject.featured_album_images.length > 0 && " Leave empty to keep current images, or select new images to add to the album."}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Project Album Images
-                </label>
-                <Input 
-                  type="file" 
-                  multiple
-                  accept="image/*,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.tiff,.tif,.heic,.heif"
-                  {...form.register("album_images")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select multiple images for the project album. Visitors can view all these images by clicking "View Album" on the project detail page.
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -519,20 +625,26 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 <TableHead>Subcategory</TableHead>
                 <TableHead>Album</TableHead>
                 <TableHead>Project Date</TableHead>
+                <TableHead>Order</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No projects found. Create your first project to get started.
                   </TableCell>
                 </TableRow>
               ) : (
                 projects.map((project) => (
-                  <TableRow key={project.id}>
-                    <TableCell className="font-medium">{project.title}</TableCell>
+                  <TableRow 
+                    key={project.id}
+                    className="hover:bg-muted/50"
+                  >
+                    <TableCell className="font-medium">
+                      {project.title}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {project.category_names && project.category_names.length > 0 ? (
@@ -579,6 +691,42 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                     </TableCell>
                     <TableCell>
                       {new Date(project.project_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={project.order || 1}
+                          onChange={(e) => {
+                            const newOrder = parseInt(e.target.value);
+                            if (!isNaN(newOrder) && newOrder !== project.order) {
+                              handleOrderChange(project.id, newOrder);
+                            }
+                          }}
+                          className="w-16 h-8 text-center text-sm font-mono"
+                        />
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReorder(project.id, 'up')}
+                            className="h-6 w-6 p-0"
+                            disabled={project.order === 1}
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReorder(project.id, 'down')}
+                            className="h-6 w-6 p-0"
+                            disabled={project.order === projects.length}
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">

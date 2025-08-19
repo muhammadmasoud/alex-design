@@ -54,17 +54,22 @@ class ServiceImageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'display_categories', 'display_subcategories', 'project_date', 'image_preview', 'album_count')
+    list_display = ('title', 'display_categories', 'display_subcategories', 'project_date', 'order', 'image_preview', 'album_count')
     list_filter = ('categories', 'subcategories', 'project_date')
     search_fields = ('title', 'description', 'categories__name', 'subcategories__name')
     readonly_fields = ('image_preview', 'album_count')
-    ordering = ('-project_date',)
+    ordering = ('order', '-project_date')
+    list_editable = ('order',)
     inlines = [ProjectImageInline]
     filter_horizontal = ('categories', 'subcategories')  # Add this for better many-to-many interface
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('title', 'description', 'project_date')
+        }),
+        ('Display Order', {
+            'fields': ('order',),
+            'description': 'Projects are ordered by this field first, then by project date (newest first). Lower numbers appear first.'
         }),
         ('Categorization', {
             'fields': ('categories', 'subcategories'),
@@ -125,17 +130,22 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'display_categories', 'display_subcategories', 'icon_preview', 'album_count')
+    list_display = ('name', 'price', 'display_categories', 'display_subcategories', 'order', 'icon_preview', 'album_count')
     list_filter = ('categories', 'subcategories')
     search_fields = ('name', 'description', 'categories__name', 'subcategories__name')
     readonly_fields = ('icon_preview', 'album_count')
-    ordering = ('name',)
+    ordering = ('order', 'name')
+    list_editable = ('order',)
     inlines = [ServiceImageInline]
     filter_horizontal = ('categories', 'subcategories')  # Add this for better many-to-many interface
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'description', 'price')
+        }),
+        ('Display Order', {
+            'fields': ('order',),
+            'description': 'Services are ordered by this field first, then by name. Lower numbers appear first.'
         }),
         ('Categorization', {
             'fields': ('categories', 'subcategories'),

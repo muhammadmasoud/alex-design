@@ -26,6 +26,7 @@ from .contact_serializers import ContactSerializer
 from django.db import transaction
 from django.middleware.csrf import get_token
 from django.conf import settings
+from django.db import models
 
 # Create your views here.
 
@@ -78,13 +79,13 @@ class ServiceFilter(FilterSet):
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all().order_by('-project_date')
+    queryset = Project.objects.all().order_by('order', '-project_date')
     serializer_class = ProjectSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProjectFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['project_date', 'title']
-    ordering = ['-project_date']
+    ordering_fields = ['project_date', 'title', 'order']
+    ordering = ['order', '-project_date']
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -101,6 +102,38 @@ class ProjectViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = []
         return [permission() for permission in permission_classes]
+
+    def perform_create(self, serializer):
+        # Capture original filename from uploaded image
+        image_file = self.request.FILES.get('image')
+        if image_file:
+            serializer.save(original_filename=image_file.name)
+        else:
+            serializer.save()
+
+    def perform_update(self, serializer):
+        # Capture original filename from uploaded image if a new one is provided
+        image_file = self.request.FILES.get('image')
+        if image_file:
+            serializer.save(original_filename=image_file.name)
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        """
+        Override perform_destroy to automatically resequence order values
+        when a project is deleted
+        """
+        deleted_order = instance.order
+        
+        with transaction.atomic():
+            # Delete the project first
+            instance.delete()
+            
+            # Resequence all projects with order higher than the deleted one
+            Project.objects.filter(order__gt=deleted_order).update(
+                order=models.F('order') - 1
+            )
 
     def create(self, request, *args, **kwargs):
         if isinstance(request.data, list):
@@ -113,15 +146,109 @@ class ProjectViewSet(viewsets.ModelViewSet):
         else:
             raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
 
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def reorder(self, request, pk=None):
+        """
+        Reorder projects. Accepts 'direction' (up/down) or 'new_order' parameter.
+        """
+        project = self.get_object()
+        direction = request.data.get('direction')
+        new_order = request.data.get('new_order')
+        
+        if new_order is not None:
+            # Direct order assignment
+            try:
+                new_order = int(new_order)
+                if new_order < 1:
+                    return Response({'error': 'Order must be >= 1'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    old_order = project.order
+                    
+                    if new_order > old_order:
+                        # Moving down: shift items up
+                        Project.objects.filter(
+                            order__gt=old_order,
+                            order__lte=new_order
+                        ).update(order=models.F('order') - 1)
+                    elif new_order < old_order:
+                        # Moving up: shift items down
+                        Project.objects.filter(
+                            order__gte=new_order,
+                            order__lt=old_order
+                        ).update(order=models.F('order') + 1)
+                    
+                    project.order = new_order
+                    project.save()
+                
+                return Response({'message': 'Project reordered successfully'})
+            except ValueError:
+                return Response({'error': 'Invalid order value'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif direction in ['up', 'down']:
+            # Up/down arrow functionality
+            with transaction.atomic():
+                if direction == 'up':
+                    # Find the project with the order just before this one
+                    previous_project = Project.objects.filter(
+                        order__lt=project.order
+                    ).order_by('-order').first()
+                    
+                    if previous_project:
+                        # Swap orders
+                        project.order, previous_project.order = previous_project.order, project.order
+                        project.save()
+                        previous_project.save()
+                        return Response({'message': 'Project moved up successfully'})
+                    else:
+                        return Response({'error': 'Project is already first'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                else:  # direction == 'down'
+                    # Find the project with the order just after this one
+                    next_project = Project.objects.filter(
+                        order__gt=project.order
+                    ).order_by('order').first()
+                    
+                    if next_project:
+                        # Swap orders
+                        project.order, next_project.order = next_project.order, project.order
+                        project.save()
+                        next_project.save()
+                        return Response({'message': 'Project moved down successfully'})
+                    else:
+                        return Response({'error': 'Project is already last'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        else:
+            return Response({'error': 'Invalid direction or new_order parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def bulk_reorder(self, request):
+        """
+        Bulk reorder projects based on array of IDs in desired order.
+        """
+        project_ids = request.data.get('project_ids', [])
+        
+        if not project_ids:
+            return Response({'error': 'project_ids array is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                for index, project_id in enumerate(project_ids, start=1):
+                    Project.objects.filter(id=project_id).update(order=index)
+            
+            return Response({'message': f'{len(project_ids)} projects reordered successfully'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by('name')
+    queryset = Service.objects.all().order_by('order', 'name')
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
     search_fields = ['name', 'description']
-    ordering_fields = ['name']
-    ordering = ['name']
+    ordering_fields = ['name', 'order']
+    ordering = ['order', 'name']
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -138,6 +265,132 @@ class ServiceViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = []
         return [permission() for permission in permission_classes]
+
+    def perform_create(self, serializer):
+        # Capture original filename from uploaded icon
+        icon_file = self.request.FILES.get('icon')
+        if icon_file:
+            serializer.save(original_filename=icon_file.name)
+        else:
+            serializer.save()
+
+    def perform_update(self, serializer):
+        # Capture original filename from uploaded icon if a new one is provided
+        icon_file = self.request.FILES.get('icon')
+        if icon_file:
+            serializer.save(original_filename=icon_file.name)
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        """
+        Override perform_destroy to automatically resequence order values
+        when a service is deleted
+        """
+        deleted_order = instance.order
+        
+        with transaction.atomic():
+            # Delete the service first
+            instance.delete()
+            
+            # Resequence all services with order higher than the deleted one
+            Service.objects.filter(order__gt=deleted_order).update(
+                order=models.F('order') - 1
+            )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def reorder(self, request, pk=None):
+        """
+        Reorder services. Accepts 'direction' (up/down) or 'new_order' parameter.
+        """
+        service = self.get_object()
+        direction = request.data.get('direction')
+        new_order = request.data.get('new_order')
+        
+        if new_order is not None:
+            # Direct order assignment
+            try:
+                new_order = int(new_order)
+                if new_order < 1:
+                    return Response({'error': 'Order must be >= 1'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    old_order = service.order
+                    
+                    if new_order > old_order:
+                        # Moving down: shift items up
+                        Service.objects.filter(
+                            order__gt=old_order,
+                            order__lte=new_order
+                        ).update(order=models.F('order') - 1)
+                    elif new_order < old_order:
+                        # Moving up: shift items down
+                        Service.objects.filter(
+                            order__gte=new_order,
+                            order__lt=old_order
+                        ).update(order=models.F('order') + 1)
+                    
+                    service.order = new_order
+                    service.save()
+                
+                return Response({'message': 'Service reordered successfully'})
+            except ValueError:
+                return Response({'error': 'Invalid order value'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif direction in ['up', 'down']:
+            # Up/down arrow functionality
+            with transaction.atomic():
+                if direction == 'up':
+                    # Find the service with the order just before this one
+                    previous_service = Service.objects.filter(
+                        order__lt=service.order
+                    ).order_by('-order').first()
+                    
+                    if previous_service:
+                        # Swap orders
+                        service.order, previous_service.order = previous_service.order, service.order
+                        service.save()
+                        previous_service.save()
+                        return Response({'message': 'Service moved up successfully'})
+                    else:
+                        return Response({'error': 'Service is already first'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                else:  # direction == 'down'
+                    # Find the service with the order just after this one
+                    next_service = Service.objects.filter(
+                        order__gt=service.order
+                    ).order_by('order').first()
+                    
+                    if next_service:
+                        # Swap orders
+                        service.order, next_service.order = next_service.order, service.order
+                        service.save()
+                        next_service.save()
+                        return Response({'message': 'Service moved down successfully'})
+                    else:
+                        return Response({'error': 'Service is already last'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        else:
+            return Response({'error': 'Invalid direction or new_order parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def bulk_reorder(self, request):
+        """
+        Bulk reorder services based on array of IDs in desired order.
+        """
+        service_ids = request.data.get('service_ids', [])
+        
+        if not service_ids:
+            return Response({'error': 'service_ids array is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                for index, service_id in enumerate(service_ids, start=1):
+                    Service.objects.filter(id=service_id).update(order=index)
+            
+            return Response({'message': f'{len(service_ids)} services reordered successfully'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RegistrationView(APIView):
@@ -348,7 +601,7 @@ class AdminDashboardView(APIView):
         # Get statistics
         projects_count = Project.objects.count()
         services_count = Service.objects.count()
-        recent_projects = Project.objects.order_by('-project_date')[:5]
+        recent_projects = Project.objects.order_by('order', '-project_date')[:5]
         
         # Get storage information
         storage_info = calculate_storage_info()
@@ -522,6 +775,7 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                 project_image = ProjectImage.objects.create(
                     project=project,
                     image=image,
+                    original_filename=image.name,
                     order=i
                 )
                 created_images.append(project_image)
@@ -590,6 +844,7 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                 service_image = ServiceImage.objects.create(
                     service=service,
                     image=image,
+                    original_filename=image.name,
                     order=i
                 )
                 created_images.append(service_image)
