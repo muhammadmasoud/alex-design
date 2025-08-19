@@ -106,10 +106,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Capture original filename from uploaded image
         image_file = self.request.FILES.get('image')
-        if image_file:
-            serializer.save(original_filename=image_file.name)
-        else:
-            serializer.save()
+        
+        # Get the order from the data
+        order = serializer.validated_data.get('order')
+        
+        with transaction.atomic():
+            # If an order is specified, shift existing projects to make room
+            if order is not None and order >= 1:
+                # Shift all projects with order >= new_order by +1
+                Project.objects.filter(order__gte=order).update(
+                    order=models.F('order') + 1
+                )
+            
+            # Save the project with the image filename if provided
+            if image_file:
+                serializer.save(original_filename=image_file.name)
+            else:
+                serializer.save()
 
     def perform_update(self, serializer):
         # Capture original filename from uploaded image if a new one is provided
@@ -269,10 +282,23 @@ class ServiceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Capture original filename from uploaded icon
         icon_file = self.request.FILES.get('icon')
-        if icon_file:
-            serializer.save(original_filename=icon_file.name)
-        else:
-            serializer.save()
+        
+        # Get the order from the data
+        order = serializer.validated_data.get('order')
+        
+        with transaction.atomic():
+            # If an order is specified, shift existing services to make room
+            if order is not None and order >= 1:
+                # Shift all services with order >= new_order by +1
+                Service.objects.filter(order__gte=order).update(
+                    order=models.F('order') + 1
+                )
+            
+            # Save the service with the icon filename if provided
+            if icon_file:
+                serializer.save(original_filename=icon_file.name)
+            else:
+                serializer.save()
 
     def perform_update(self, serializer):
         # Capture original filename from uploaded icon if a new one is provided
