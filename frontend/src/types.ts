@@ -5,7 +5,6 @@ export interface AlbumImage {
   title?: string;
   description?: string;
   order: number;
-  created_at: string;
 }
 
 export interface Project {
@@ -13,7 +12,7 @@ export interface Project {
   title: string;
   description: string;
   image: string; // This will contain the full URL from the backend
-  created_at: string;
+  project_date: string; // The manually entered project date
   category?: string;
   subcategory?: string;
   category_name?: string;

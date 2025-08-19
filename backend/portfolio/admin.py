@@ -13,7 +13,7 @@ class ProjectImageInline(admin.TabularInline):
     extra = 3  # Allow multiple empty forms for bulk upload
     fields = ('image', 'order', 'image_preview')
     readonly_fields = ('image_preview',)
-    ordering = ['order', 'created_at']
+    ordering = ['order']
     
     def image_preview(self, obj):
         if obj.image:
@@ -35,7 +35,7 @@ class ServiceImageInline(admin.TabularInline):
     extra = 3  # Allow multiple empty forms for bulk upload
     fields = ('image', 'order', 'image_preview')
     readonly_fields = ('image_preview',)
-    ordering = ['order', 'created_at']
+    ordering = ['order']
     
     def image_preview(self, obj):
         if obj.image:
@@ -54,16 +54,16 @@ class ServiceImageInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'subcategory', 'image_preview', 'album_count', 'created_at')
-    list_filter = ('category', 'subcategory', 'created_at')
+    list_display = ('title', 'category', 'subcategory', 'project_date', 'image_preview', 'album_count')
+    list_filter = ('category', 'subcategory', 'project_date')
     search_fields = ('title', 'description', 'category__name', 'subcategory__name')
-    readonly_fields = ('image_preview', 'album_count', 'created_at')
-    ordering = ('-created_at',)
+    readonly_fields = ('image_preview', 'album_count')
+    ordering = ('-project_date',)
     inlines = [ProjectImageInline]
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description')
+            'fields': ('title', 'description', 'project_date')
         }),
         ('Categorization', {
             'fields': ('category', 'subcategory'),
@@ -76,10 +76,6 @@ class ProjectAdmin(admin.ModelAdmin):
         ('Project Album', {
             'fields': ('album_count',),
             'description': 'Add multiple images to the project album using the "Album Images" section below. Visitors can view all images by clicking "View Album" on the project detail page.',
-            'classes': ('collapse',)
-        }),
-        ('Metadata', {
-            'fields': ('created_at',),
             'classes': ('collapse',)
         }),
     )
@@ -116,6 +112,7 @@ class ServiceAdmin(admin.ModelAdmin):
     list_filter = ('category', 'subcategory')
     search_fields = ('name', 'description', 'category__name', 'subcategory__name')
     readonly_fields = ('icon_preview', 'album_count')
+    ordering = ('name',)
     inlines = [ServiceImageInline]
     
     fieldsets = (
@@ -338,11 +335,11 @@ class ServiceSubcategoryAdmin(admin.ModelAdmin):
 # Register Album Image Models individually for advanced management
 @admin.register(ProjectImage)
 class ProjectImageAdmin(admin.ModelAdmin):
-    list_display = ('project', 'title', 'order', 'image_preview', 'created_at')
-    list_filter = ('project', 'created_at')
+    list_display = ('project', 'title', 'order', 'image_preview')
+    list_filter = ('project',)
     search_fields = ('project__title', 'title', 'description')
-    readonly_fields = ('image_preview', 'created_at')
-    ordering = ('project', 'order', 'created_at')
+    readonly_fields = ('image_preview',)
+    ordering = ('project', 'order')
     
     fieldsets = (
         ('Project Information', {
@@ -350,10 +347,6 @@ class ProjectImageAdmin(admin.ModelAdmin):
         }),
         ('Image Details', {
             'fields': ('image', 'image_preview', 'title', 'description', 'order')
-        }),
-        ('Metadata', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
         }),
     )
     
@@ -369,11 +362,11 @@ class ProjectImageAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceImage)
 class ServiceImageAdmin(admin.ModelAdmin):
-    list_display = ('service', 'title', 'order', 'image_preview', 'created_at')
-    list_filter = ('service', 'created_at')
+    list_display = ('service', 'title', 'order', 'image_preview')
+    list_filter = ('service',)
     search_fields = ('service__name', 'title', 'description')
-    readonly_fields = ('image_preview', 'created_at')
-    ordering = ('service', 'order', 'created_at')
+    readonly_fields = ('image_preview',)
+    ordering = ('service', 'order')
     
     fieldsets = (
         ('Service Information', {
@@ -381,10 +374,6 @@ class ServiceImageAdmin(admin.ModelAdmin):
         }),
         ('Image Details', {
             'fields': ('image', 'image_preview', 'title', 'description', 'order')
-        }),
-        ('Metadata', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
         }),
     )
     

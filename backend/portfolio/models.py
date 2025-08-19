@@ -246,7 +246,11 @@ class Project(models.Model):
         help_text="Select a subcategory (optional)"
     )
     
-    created_at = models.DateTimeField(auto_now_add=True)
+    # Date fields
+    project_date = models.DateField(
+        help_text="The date when this project was completed or published",
+        verbose_name="Project Date"
+    )
 
     def __str__(self):
         return self.title
@@ -380,10 +384,9 @@ class ProjectImage(models.Model):
         default=0,
         help_text="Order in which images should be displayed (0 = first)"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        ordering = ['order', 'created_at']
+        ordering = ['order']
         verbose_name = "Project Image"
         verbose_name_plural = "Project Images"
     
@@ -445,10 +448,9 @@ class ServiceImage(models.Model):
         default=0,
         help_text="Order in which images should be displayed (0 = first)"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        ordering = ['order', 'created_at']
+        ordering = ['order']
         verbose_name = "Service Image"
         verbose_name_plural = "Service Images"
     

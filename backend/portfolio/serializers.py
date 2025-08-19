@@ -29,7 +29,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'created_at']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order']
     
     def get_image_url(self, obj):
         """Get the full image URL"""
@@ -63,7 +63,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'created_at']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order']
     
     def get_image_url(self, obj):
         """Get the full image URL"""

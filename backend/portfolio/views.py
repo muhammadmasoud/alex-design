@@ -78,13 +78,13 @@ class ServiceFilter(FilterSet):
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all().order_by('-created_at')
+    queryset = Project.objects.all().order_by('-project_date')
     serializer_class = ProjectSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProjectFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'title']
-    ordering = ['-created_at']
+    ordering_fields = ['project_date', 'title']
+    ordering = ['-project_date']
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -115,7 +115,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all()
+    queryset = Service.objects.all().order_by('name')
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
@@ -348,7 +348,7 @@ class AdminDashboardView(APIView):
         # Get statistics
         projects_count = Project.objects.count()
         services_count = Service.objects.count()
-        recent_projects = Project.objects.order_by('-created_at')[:5]
+        recent_projects = Project.objects.order_by('-project_date')[:5]
         
         # Get storage information
         storage_info = calculate_storage_info()

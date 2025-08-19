@@ -73,7 +73,7 @@ export default function ProjectCard({ project }: Props) {
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span className="text-xs">{formatDate(project.created_at)}</span>
+                <span className="text-xs">{formatDate(project.project_date)}</span>
               </div>
               <div className="text-xs text-primary font-medium group-hover:underline">
                 View Details →

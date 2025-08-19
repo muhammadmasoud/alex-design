@@ -44,7 +44,8 @@ export default function ProjectDetail() {
   }, [id]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -130,7 +131,7 @@ export default function ProjectDetail() {
           )}
           <Badge variant="outline" className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {formatDate(project.created_at)}
+            {formatDate(project.project_date)}
           </Badge>
         </div>
 
@@ -243,8 +244,8 @@ export default function ProjectDetail() {
                 )}
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Created:</span>
-                  <span className="font-medium">{formatDate(project.created_at)}</span>
+                  <span className="text-sm font-medium text-muted-foreground">Project Date:</span>
+                  <span className="font-medium">{formatDate(project.project_date)}</span>
                 </div>
               </motion.div>
             </CardContent>

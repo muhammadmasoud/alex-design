@@ -20,6 +20,7 @@ import { useUploadProgress } from "@/hooks/useUploadProgress";
 const projectSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
+  project_date: z.string().min(1, "Project date is required"),
   category: z.string().optional(),
   subcategory: z.string().optional(),
   image: z.any().optional(),
@@ -32,6 +33,7 @@ interface Project {
   id: number;
   title: string;
   description: string;
+  project_date: string;  // The manually entered project date
   category?: number;  // Now a foreign key ID
   subcategory?: number;  // Now a foreign key ID
   category_name?: string;
@@ -41,7 +43,6 @@ interface Project {
   image?: string;
   album_images_count?: number;
   featured_album_images?: any[];
-  created_at: string;
 }
 
 interface ProjectManagementProps {
@@ -65,6 +66,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
     defaultValues: {
       title: "",
       description: "",
+      project_date: "",
       category: "",
       subcategory: "",
     },
@@ -134,6 +136,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("description", data.description);
+      formData.append("project_date", data.project_date);
       
       // Send category and subcategory IDs instead of names
       if (selectedCategoryId) {
@@ -239,6 +242,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
     form.reset({
       title: project.title,
       description: project.description,
+      project_date: project.project_date,
       category: project.category?.toString() || "",
       subcategory: project.subcategory_name || "",
     });
@@ -267,7 +271,15 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
   const handleNewProject = () => {
     setEditingProject(null);
     setSelectedCategoryId(null);
-    form.reset();
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    form.reset({
+      title: "",
+      description: "",
+      project_date: today,
+      category: "",
+      subcategory: "",
+    });
     setIsDialogOpen(true);
   };
 
@@ -339,6 +351,23 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                     {form.formState.errors.description.message}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Project Date</label>
+                <Input 
+                  type="date"
+                  {...form.register("project_date")} 
+                  placeholder="Select project date"
+                />
+                {form.formState.errors.project_date && (
+                  <p className="text-sm text-destructive mt-1">
+                    {form.formState.errors.project_date.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  The date when this project was completed or should be displayed as.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -445,7 +474,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 <TableHead>Category</TableHead>
                 <TableHead>Subcategory</TableHead>
                 <TableHead>Album</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Project Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -493,7 +522,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(project.created_at).toLocaleDateString()}
+                      {new Date(project.project_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">

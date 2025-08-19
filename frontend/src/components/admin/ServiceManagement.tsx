@@ -246,7 +246,14 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
   const handleNewService = () => {
     setEditingService(null);
     setSelectedCategory(null);
-    form.reset();
+    // Set default date to today
+    form.reset({
+      name: "",
+      description: "",
+      price: 0,
+      category: undefined,
+      subcategory: undefined,
+    });
     setIsDialogOpen(true);
   };
 
@@ -450,7 +457,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
             <TableBody>
               {services.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No services found. Create your first service to get started.
                   </TableCell>
                 </TableRow>
