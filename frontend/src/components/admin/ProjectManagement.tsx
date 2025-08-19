@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
@@ -57,10 +57,9 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectCategories, setProjectCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   
   const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [subcategories, setSubcategories] = useState<any[]>([]);
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -76,15 +75,22 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
   useEffect(() => {
     fetchProjects();
     fetchCategories();
+    fetchAllSubcategories();
   }, []);
 
-  useEffect(() => {
-    if (selectedCategoryId) {
-      fetchSubcategories(selectedCategoryId);
-    } else {
-      setSubcategories([]);
+  const fetchAllSubcategories = async () => {
+    try {
+      const response = await api.get(endpoints.admin.projectSubcategories);
+      setSubcategories(response.data.results || response.data);
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load subcategories",
+        variant: "destructive",
+      });
     }
-  }, [selectedCategoryId]);
+  };
 
   const fetchCategories = async () => {
     try {
@@ -95,22 +101,6 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       toast({
         title: "Error",
         description: "Failed to load categories",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchSubcategories = async (categoryId: number) => {
-    try {
-      const response = await api.get(endpoints.admin.projectSubcategories, {
-        params: { category: categoryId }
-      });
-      setSubcategories(response.data.results || response.data);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load subcategories",
         variant: "destructive",
       });
     }
@@ -238,8 +228,6 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
-    // Set selected categories and subcategories
-    setSelectedCategoryId(project.categories?.[0] || null); // For backward compatibility
     form.reset({
       title: project.title,
       description: project.description,
@@ -271,7 +259,6 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleNewProject = () => {
     setEditingProject(null);
-    setSelectedCategoryId(null);
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     form.reset({
@@ -371,12 +358,18 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Categories</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                  <label className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Categories
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (Select one or more categories)
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg bg-muted/50 max-h-40 overflow-y-auto">
                     {projectCategories.map((category) => (
-                      <div key={category.id} className="flex items-center space-x-2">
+                      <div key={category.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-background transition-colors">
                         <Checkbox
                           id={`category-${category.id}`}
                           checked={form.watch("categories")?.includes(category.id.toString()) || false}
@@ -389,7 +382,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                               // Clear subcategories when category is unchecked
                               const currentSubcategories = form.watch("subcategories") || [];
                               const categorySubcategories = subcategories
-                                .filter(sub => sub.category_id === category.id)
+                                .filter(sub => sub.category === category.id)
                                 .map(sub => sub.id.toString());
                               form.setValue("subcategories", 
                                 currentSubcategories.filter(id => !categorySubcategories.includes(id))
@@ -397,7 +390,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                             }
                           }}
                         />
-                        <label htmlFor={`category-${category.id}`} className="text-sm">
+                        <label htmlFor={`category-${category.id}`} className="text-sm font-medium cursor-pointer">
                           {category.name}
                         </label>
                       </div>
@@ -406,36 +399,63 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Subcategories</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                    {subcategories.map((subcat) => {
-                      // Only show subcategories for selected categories
+                  <label className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    Subcategories
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (Available for selected categories)
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg bg-muted/50 max-h-40 overflow-y-auto">
+                    {subcategories.length === 0 ? (
+                      <div className="col-span-2 text-center py-4">
+                        <p className="text-sm text-muted-foreground">Loading subcategories...</p>
+                      </div>
+                    ) : subcategories.some(subcat => {
                       const selectedCategories = form.watch("categories") || [];
-                      const shouldShow = selectedCategories.length === 0 || 
-                        selectedCategories.includes(subcat.category_id.toString());
-                      
-                      if (!shouldShow) return null;
-                      
-                      return (
-                        <div key={subcat.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`subcategory-${subcat.id}`}
-                            checked={form.watch("subcategories")?.includes(subcat.id.toString()) || false}
-                            onCheckedChange={(checked) => {
-                              const currentSubcategories = form.watch("subcategories") || [];
-                              if (checked) {
-                                form.setValue("subcategories", [...currentSubcategories, subcat.id.toString()]);
-                              } else {
-                                form.setValue("subcategories", currentSubcategories.filter(id => id !== subcat.id.toString()));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`subcategory-${subcat.id}`} className="text-sm">
-                            {subcat.name}
-                          </label>
-                        </div>
-                      );
-                    })}
+                      return selectedCategories.length === 0 || selectedCategories.includes(subcat.category.toString());
+                    }) ? (
+                      subcategories.map((subcat) => {
+                        // Only show subcategories for selected categories
+                        const selectedCategories = form.watch("categories") || [];
+                        const shouldShow = selectedCategories.length === 0 || 
+                          selectedCategories.includes(subcat.category.toString());
+                        
+                        if (!shouldShow) return null;
+                        
+                        return (
+                          <div key={subcat.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-background transition-colors">
+                            <Checkbox
+                              id={`subcategory-${subcat.id}`}
+                              checked={form.watch("subcategories")?.includes(subcat.id.toString()) || false}
+                              onCheckedChange={(checked) => {
+                                const currentSubcategories = form.watch("subcategories") || [];
+                                if (checked) {
+                                  form.setValue("subcategories", [...currentSubcategories, subcat.id.toString()]);
+                                } else {
+                                  form.setValue("subcategories", currentSubcategories.filter(id => id !== subcat.id.toString()));
+                                }
+                              }}
+                            />
+                            <label htmlFor={`subcategory-${subcat.id}`} className="text-sm font-medium cursor-pointer">
+                              {subcat.name}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                ({subcat.category_name})
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-2 text-center py-4">
+                        <p className="text-sm text-muted-foreground">
+                          {form.watch("categories")?.length > 0 
+                            ? "No subcategories available for selected categories" 
+                            : "Select categories to see available subcategories"
+                          }
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

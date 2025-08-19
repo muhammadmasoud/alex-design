@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -68,11 +69,9 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [filteredSubcategories, setFilteredSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   
   const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
 
@@ -82,22 +81,14 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       name: "",
       description: "",
       price: 0,
-      category: undefined,
-      subcategory: undefined,
+      categories: [],
+      subcategories: [],
     },
   });
 
   useEffect(() => {
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (selectedCategory) {
-      setFilteredSubcategories(subcategories.filter(sub => sub.category === selectedCategory));
-    } else {
-      setFilteredSubcategories([]);
-    }
-  }, [selectedCategory, subcategories]);
 
   const fetchData = async () => {
     try {
@@ -128,8 +119,21 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       formData.append("name", data.name);
       formData.append("description", data.description);
       if (data.price !== undefined) formData.append("price", data.price.toString());
-      if (data.category) formData.append("category", data.category.toString());
-      if (data.subcategory) formData.append("subcategory", data.subcategory.toString());
+      
+      // Append multiple categories
+      if (data.categories) {
+        data.categories.forEach(categoryId => {
+          formData.append("categories", categoryId);
+        });
+      }
+      
+      // Append multiple subcategories
+      if (data.subcategories) {
+        data.subcategories.forEach(subcategoryId => {
+          formData.append("subcategories", subcategoryId);
+        });
+      }
+      
       if (data.icon && data.icon[0]) {
         formData.append("icon", data.icon[0]);
       }
@@ -215,13 +219,12 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
   const handleEdit = (service: Service) => {
     setEditingService(service);
-    setSelectedCategory(service.category || null);
     form.reset({
       name: service.name,
       description: service.description,
       price: service.price || 0,
-      category: service.category,
-      subcategory: service.subcategory,
+      categories: service.categories?.map(id => id.toString()) || [],
+      subcategories: service.subcategories?.map(id => id.toString()) || [],
     });
     setIsDialogOpen(true);
   };
@@ -247,14 +250,13 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
   const handleNewService = () => {
     setEditingService(null);
-    setSelectedCategory(null);
     // Set default date to today
     form.reset({
       name: "",
       description: "",
       price: 0,
-      category: undefined,
-      subcategory: undefined,
+      categories: [],
+      subcategories: [],
     });
     setIsDialogOpen(true);
   };
@@ -347,50 +349,70 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Category</label>
-                  <Select 
-                    value={selectedCategory?.toString() || ""} 
-                    onValueChange={(value) => {
-                      const categoryId = value ? parseInt(value) : null;
-                      setSelectedCategory(categoryId);
-                      form.setValue("category", categoryId || undefined);
-                      form.setValue("subcategory", undefined);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
+                  <label className="text-sm font-medium mb-2 block">Categories</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    {categories.map((category) => (
+                      <div key={category.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`category-${category.id}`}
+                          checked={form.watch("categories")?.includes(category.id.toString()) || false}
+                          onCheckedChange={(checked) => {
+                            const currentCategories = form.watch("categories") || [];
+                            if (checked) {
+                              form.setValue("categories", [...currentCategories, category.id.toString()]);
+                            } else {
+                              form.setValue("categories", currentCategories.filter(id => id !== category.id.toString()));
+                              // Clear subcategories when category is unchecked
+                              const currentSubcategories = form.watch("subcategories") || [];
+                              const categorySubcategories = subcategories
+                                .filter(sub => sub.category === category.id)
+                                .map(sub => sub.id.toString());
+                              form.setValue("subcategories", 
+                                currentSubcategories.filter(id => !categorySubcategories.includes(id))
+                              );
+                            }
+                          }}
+                        />
+                        <label htmlFor={`category-${category.id}`} className="text-sm">
                           {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Subcategory</label>
-                  <Select 
-                    value={form.watch("subcategory")?.toString() || ""} 
-                    onValueChange={(value) => {
-                      const subcategoryId = value ? parseInt(value) : undefined;
-                      form.setValue("subcategory", subcategoryId);
-                    }}
-                    disabled={!selectedCategory}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subcategory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredSubcategories.map((subcat) => (
-                        <SelectItem key={subcat.id} value={subcat.id.toString()}>
-                          {subcat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium mb-2 block">Subcategories</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    {subcategories.map((subcat) => {
+                      // Only show subcategories for selected categories
+                      const selectedCategories = form.watch("categories") || [];
+                      const shouldShow = selectedCategories.length === 0 || 
+                        selectedCategories.includes(subcat.category.toString());
+                      
+                      if (!shouldShow) return null;
+                      
+                      return (
+                        <div key={subcat.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`subcategory-${subcat.id}`}
+                            checked={form.watch("subcategories")?.includes(subcat.id.toString()) || false}
+                            onCheckedChange={(checked) => {
+                              const currentSubcategories = form.watch("subcategories") || [];
+                              if (checked) {
+                                form.setValue("subcategories", [...currentSubcategories, subcat.id.toString()]);
+                              } else {
+                                form.setValue("subcategories", currentSubcategories.filter(id => id !== subcat.id.toString()));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`subcategory-${subcat.id}`} className="text-sm">
+                            {subcat.name}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -480,14 +502,26 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                       )}
                     </TableCell>
                     <TableCell>
-                      {service.category_name && (
-                        <Badge variant="secondary">{service.category_name}</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {service.category_names && service.category_names.length > 0 ? (
+                          service.category_names.map((categoryName, index) => (
+                            <Badge key={index} variant="secondary">{categoryName}</Badge>
+                          ))
+                        ) : service.category_name ? (
+                          <Badge variant="secondary">{service.category_name}</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {service.subcategory_name && (
-                        <Badge variant="outline">{service.subcategory_name}</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {service.subcategory_names && service.subcategory_names.length > 0 ? (
+                          service.subcategory_names.map((subcategoryName, index) => (
+                            <Badge key={index} variant="outline">{subcategoryName}</Badge>
+                          ))
+                        ) : service.subcategory_name ? (
+                          <Badge variant="outline">{service.subcategory_name}</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

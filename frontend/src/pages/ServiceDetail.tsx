@@ -136,18 +136,34 @@ export default function ServiceDetail() {
         </Button>
         
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {service.category_name && (
+          {service.category_names && service.category_names.length > 0 ? (
+            service.category_names.map((categoryName, index) => (
+              <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                <Tag className="h-3 w-3" />
+                {categoryName}
+              </Badge>
+            ))
+          ) : service.category_name ? (
             <Badge variant="secondary" className="flex items-center gap-1">
               <Tag className="h-3 w-3" />
               {service.category_name}
             </Badge>
-          )}
-          {service.subcategory_name && (
+          ) : null}
+          
+          {service.subcategory_names && service.subcategory_names.length > 0 ? (
+            service.subcategory_names.map((subcategoryName, index) => (
+              <Badge key={index} variant="outline" className="flex items-center gap-1">
+                <Layers className="h-3 w-3" />
+                {subcategoryName}
+              </Badge>
+            ))
+          ) : service.subcategory_name ? (
             <Badge variant="outline" className="flex items-center gap-1">
               <Layers className="h-3 w-3" />
               {service.subcategory_name}
             </Badge>
-          )}
+          ) : null}
+          
           <motion.div variants={priceVariants}>
             <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
               <DollarSign className="h-3 w-3" />
@@ -248,16 +264,42 @@ export default function ServiceDetail() {
                   <span className="font-medium">{service.name}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Category:</span>
-                  <span className="font-medium">{service.category_name || 'Not specified'}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-muted-foreground">Categories:</span>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {service.category_names && service.category_names.length > 0 ? (
+                      service.category_names.map((categoryName, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {categoryName}
+                        </Badge>
+                      ))
+                    ) : service.category_name ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {service.category_name}
+                      </Badge>
+                    ) : (
+                      <span className="font-medium">Not specified</span>
+                    )}
+                  </div>
                 </div>
-                {service.subcategory_name && (
+                {((service.subcategory_names && service.subcategory_names.length > 0) || service.subcategory_name) && (
                   <>
                     <Separator />
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-muted-foreground">Subcategory:</span>
-                      <span className="font-medium">{service.subcategory_name}</span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm font-medium text-muted-foreground">Subcategories:</span>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {service.subcategory_names && service.subcategory_names.length > 0 ? (
+                          service.subcategory_names.map((subcategoryName, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {subcategoryName}
+                            </Badge>
+                          ))
+                        ) : service.subcategory_name ? (
+                          <Badge variant="outline" className="text-xs">
+                            {service.subcategory_name}
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                   </>
                 )}

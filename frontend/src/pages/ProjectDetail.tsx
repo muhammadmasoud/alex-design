@@ -117,18 +117,34 @@ export default function ProjectDetail() {
         </Button>
         
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {project.category_name && (
+          {project.category_names && project.category_names.length > 0 ? (
+            project.category_names.map((categoryName, index) => (
+              <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                <Tag className="h-3 w-3" />
+                {categoryName}
+              </Badge>
+            ))
+          ) : project.category_name ? (
             <Badge variant="secondary" className="flex items-center gap-1">
               <Tag className="h-3 w-3" />
               {project.category_name}
             </Badge>
-          )}
-          {project.subcategory_name && (
+          ) : null}
+          
+          {project.subcategory_names && project.subcategory_names.length > 0 ? (
+            project.subcategory_names.map((subcategoryName, index) => (
+              <Badge key={index} variant="outline" className="flex items-center gap-1">
+                <Layers className="h-3 w-3" />
+                {subcategoryName}
+              </Badge>
+            ))
+          ) : project.subcategory_name ? (
             <Badge variant="outline" className="flex items-center gap-1">
               <Layers className="h-3 w-3" />
               {project.subcategory_name}
             </Badge>
-          )}
+          ) : null}
+          
           <Badge variant="outline" className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             {formatDate(project.project_date)}
@@ -229,16 +245,42 @@ export default function ProjectDetail() {
                   <span className="font-medium">{project.title}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Category:</span>
-                  <span className="font-medium">{project.category_name || 'Not specified'}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-muted-foreground">Categories:</span>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {project.category_names && project.category_names.length > 0 ? (
+                      project.category_names.map((categoryName, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {categoryName}
+                        </Badge>
+                      ))
+                    ) : project.category_name ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {project.category_name}
+                      </Badge>
+                    ) : (
+                      <span className="font-medium">Not specified</span>
+                    )}
+                  </div>
                 </div>
-                {project.subcategory_name && (
+                {((project.subcategory_names && project.subcategory_names.length > 0) || project.subcategory_name) && (
                   <>
                     <Separator />
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-muted-foreground">Subcategory:</span>
-                      <span className="font-medium">{project.subcategory_name}</span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm font-medium text-muted-foreground">Subcategories:</span>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {project.subcategory_names && project.subcategory_names.length > 0 ? (
+                          project.subcategory_names.map((subcategoryName, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {subcategoryName}
+                            </Badge>
+                          ))
+                        ) : project.subcategory_name ? (
+                          <Badge variant="outline" className="text-xs">
+                            {project.subcategory_name}
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                   </>
                 )}
