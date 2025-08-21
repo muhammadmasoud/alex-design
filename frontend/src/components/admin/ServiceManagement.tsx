@@ -97,7 +97,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
   const fetchData = async () => {
     try {
       const [servicesRes, categoriesRes, subcategoriesRes] = await Promise.all([
-        api.get(endpoints.services),
+        api.get(endpoints.admin.services),
         api.get(endpoints.admin.serviceCategories),
         api.get(endpoints.admin.serviceSubcategories),
       ]);
@@ -149,12 +149,12 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       const hasAlbumImages = data.album_images && data.album_images.length > 0;
       
       if (editingService) {
-        await api.patch(`${endpoints.services}${editingService.id}/`, formData);
+        await api.patch(`${endpoints.admin.services}${editingService.id}/`, formData);
         if (!hasAlbumImages) {
           toast({ title: "Service updated successfully!" });
         }
       } else {
-        const response = await api.post(endpoints.services, formData);
+        const response = await api.post(endpoints.admin.services, formData);
         serviceId = response.data.id;
         if (!hasAlbumImages) {
           toast({ title: "Service created successfully!" });
@@ -239,7 +239,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
     if (!confirm("Are you sure you want to delete this service?")) return;
 
     try {
-      await api.delete(`${endpoints.services}${id}/`);
+      await api.delete(`${endpoints.admin.services}${id}/`);
       toast({ title: "Service deleted successfully!" });
       fetchData();
       onUpdate();
@@ -270,7 +270,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
   const handleReorder = async (serviceId: number, direction: 'up' | 'down') => {
     try {
-      await api.post(`${endpoints.services}${serviceId}/reorder/`, { direction });
+      await api.post(`${endpoints.admin.services}${serviceId}/reorder/`, { direction });
       toast({ 
         title: `Service moved ${direction} successfully!`
       });
@@ -288,7 +288,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
   const handleOrderChange = async (serviceId: number, newOrder: number) => {
     try {
-      await api.post(`${endpoints.services}${serviceId}/reorder/`, { new_order: newOrder });
+      await api.post(`${endpoints.admin.services}${serviceId}/reorder/`, { new_order: newOrder });
       toast({ 
         title: "Service order updated successfully!"
       });

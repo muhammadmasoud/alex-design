@@ -6,7 +6,7 @@ from portfolio.views import (
     ProjectViewSet, ServiceViewSet, RegistrationView, LoginView, 
     CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView,
     ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView,
-    CSRFTokenView, AdminStorageStatsView
+    CSRFTokenView, AdminStorageStatsView, AdminProjectViewSet, AdminServiceViewSet
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
@@ -22,6 +22,8 @@ router.register(r'projects', ProjectViewSet)
 router.register(r'services', ServiceViewSet)
 router.register(r'project-images', ProjectImageViewSet, basename='projectimage')
 router.register(r'service-images', ServiceImageViewSet, basename='serviceimage')
+router.register(r'admin/projects', AdminProjectViewSet, basename='admin-projects')
+router.register(r'admin/services', AdminServiceViewSet, basename='admin-services')
 router.register(r'admin/project-categories', ProjectCategoryViewSet)
 router.register(r'admin/project-subcategories', ProjectSubcategoryViewSet)
 router.register(r'admin/service-categories', ServiceCategoryViewSet)

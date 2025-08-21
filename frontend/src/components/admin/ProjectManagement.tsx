@@ -112,7 +112,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const fetchProjects = async () => {
     try {
-      const response = await api.get(endpoints.projects);
+      const response = await api.get(endpoints.admin.projects);
       setProjects(response.data.results || response.data);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -158,12 +158,12 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       const hasAlbumImages = data.album_images && data.album_images.length > 0;
       
       if (editingProject) {
-        await api.patch(`${endpoints.projects}${editingProject.id}/`, formData);
+        await api.patch(`${endpoints.admin.projects}${editingProject.id}/`, formData);
         if (!hasAlbumImages) {
           toast({ title: "Project updated successfully!" });
         }
       } else {
-        const response = await api.post(endpoints.projects, formData);
+        const response = await api.post(endpoints.admin.projects, formData);
         projectId = response.data.id;
         if (!hasAlbumImages) {
           toast({ title: "Project created successfully!" });
@@ -248,7 +248,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
     if (!confirm("Are you sure you want to delete this project?")) return;
 
     try {
-      await api.delete(`${endpoints.projects}${id}/`);
+      await api.delete(`${endpoints.admin.projects}${id}/`);
       toast({ title: "Project deleted successfully!" });
       fetchProjects();
       onUpdate();
@@ -280,7 +280,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleReorder = async (projectId: number, direction: 'up' | 'down') => {
     try {
-      await api.post(`${endpoints.projects}${projectId}/reorder/`, { direction });
+      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { direction });
       toast({ 
         title: `Project moved ${direction} successfully!`
       });
@@ -307,7 +307,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
     }
 
     try {
-      await api.post(`${endpoints.projects}${projectId}/reorder/`, { new_order: newOrder });
+      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { new_order: newOrder });
       toast({ 
         title: "Project order updated successfully!"
       });

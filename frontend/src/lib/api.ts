@@ -22,7 +22,7 @@ const getCSRFToken = () => {
 // Function to initialize CSRF token
 const initializeCSRFToken = async () => {
   try {
-    const response = await axios.get('/api/csrf-token/', { baseURL: API_BASE_URL, withCredentials: true });
+    const response = await axios.get('/api/csrf-token/', { withCredentials: true });
     // Token will be set in cookie automatically by Django
     return response.data.csrfToken;
   } catch (error) {
@@ -88,6 +88,8 @@ export const endpoints = {
     dashboard: "/admin/dashboard/",
     storageStats: "/admin/storage-stats/",
     check: "/admin/check/",
+    projects: "/admin/projects/",
+    services: "/admin/services/",
     projectCategories: "/admin/project-categories/",
     projectSubcategories: "/admin/project-subcategories/",
     serviceCategories: "/admin/service-categories/",
