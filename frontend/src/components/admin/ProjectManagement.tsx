@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
@@ -56,6 +56,8 @@ interface ProjectManagementProps {
 
 export default function ProjectManagement({ onUpdate, onStorageUpdate }: ProjectManagementProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -81,6 +83,21 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
     fetchCategories();
     fetchAllSubcategories();
   }, []);
+
+  // Filter projects based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredProjects(projects);
+    } else {
+      const filtered = projects.filter(project => 
+        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.category_names?.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        project.subcategory_names?.some(subcat => subcat.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredProjects(filtered);
+    }
+  }, [projects, searchQuery]);
 
   const fetchAllSubcategories = async () => {
     try {
@@ -113,7 +130,9 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
   const fetchProjects = async () => {
     try {
       const response = await api.get(endpoints.admin.projects);
-      setProjects(response.data.results || response.data);
+      const projectsData = response.data.results || response.data;
+      setProjects(projectsData);
+      setFilteredProjects(projectsData);
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast({
@@ -646,28 +665,46 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
         </Dialog>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredProjects.length} of {projects.length} projects
+            </p>
+          )}
+        </div>
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Subcategory</TableHead>
-                <TableHead>Album</TableHead>
-                <TableHead>Project Date</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projects.length === 0 ? (
+          <div className="max-h-[800px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Subcategory</TableHead>
+                  <TableHead>Album</TableHead>
+                  <TableHead>Project Date</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+              {filteredProjects.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No projects found. Create your first project to get started.
+                    {searchQuery ? `No projects found matching "${searchQuery}"` : "No projects found. Create your first project to get started."}
                   </TableCell>
                 </TableRow>
               ) : (
-                projects.map((project) => (
+                filteredProjects.map((project) => (
                   <TableRow 
                     key={project.id}
                     className="hover:bg-muted/50"
@@ -790,6 +827,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </CardContent>
     </Card>

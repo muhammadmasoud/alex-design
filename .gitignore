@@ -27,6 +27,7 @@ bundlesize.json
 .env.*
 !.env.example
 env_template.txt
+production.env
 
 # Project-specific sensitive files
 backend/.env

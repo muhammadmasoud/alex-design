@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, ChevronUp, ChevronDown, Tag, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, ChevronUp, ChevronDown, Tag, Layers, Search } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
@@ -70,6 +70,8 @@ interface ServiceManagementProps {
 
 export default function ServiceManagement({ onUpdate, onStorageUpdate }: ServiceManagementProps) {
   const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +96,21 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
     fetchData();
   }, []);
 
+  // Filter services based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredServices(services);
+    } else {
+      const filtered = services.filter(service => 
+        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.category_names?.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        service.subcategory_names?.some(subcat => subcat.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredServices(filtered);
+    }
+  }, [services, searchQuery]);
+
   const fetchData = async () => {
     try {
       const [servicesRes, categoriesRes, subcategoriesRes] = await Promise.all([
@@ -102,7 +119,9 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
         api.get(endpoints.admin.serviceSubcategories),
       ]);
 
-      setServices(servicesRes.data.results || servicesRes.data);
+      const servicesData = servicesRes.data.results || servicesRes.data;
+      setServices(servicesData);
+      setFilteredServices(servicesData);
       setCategories(categoriesRes.data.results || categoriesRes.data);
       setSubcategories(subcategoriesRes.data.results || subcategoriesRes.data);
     } catch (error) {
@@ -627,28 +646,46 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
         </Dialog>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredServices.length} of {services.length} services
+            </p>
+          )}
+        </div>
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Subcategory</TableHead>
-                <TableHead>Album</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.length === 0 ? (
+          <div className="max-h-[800px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Subcategory</TableHead>
+                  <TableHead>Album</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+              {filteredServices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    No services found. Create your first service to get started.
+                    {searchQuery ? `No services found matching "${searchQuery}"` : "No services found. Create your first service to get started."}
                   </TableCell>
                 </TableRow>
               ) : (
-                services.map((service) => (
+                filteredServices.map((service) => (
                   <TableRow key={service.id}>
                     <TableCell className="font-medium">{service.name}</TableCell>
                     <TableCell>
@@ -775,6 +812,7 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </CardContent>
     </Card>
