@@ -1,0 +1,6 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#f1f5f9"/>
+  <circle cx="256" cy="200" r="80" fill="#cbd5e1"/>
+  <path d="M256 300C200 300 150 340 150 390V450H362V390C362 340 312 300 256 300Z" fill="#cbd5e1"/>
+  <text x="256" y="480" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Team Member</text>
+</svg>
