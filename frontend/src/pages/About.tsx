@@ -93,7 +93,6 @@ const teamMembers: TeamMember[] = [
       "Precision ensures projects are buildable and efficient",
       "Aligned with client expectations"
     ],
-    imageUrl: "/team/aya.jpeg",
     fallbackInitials: "AM"
   },
   {
@@ -131,7 +130,7 @@ const teamMembers: TeamMember[] = [
       "Ensures coordination between design documents and on-site realities",
       "Technical documentation specialist"
     ],
-    imageUrl: "/team/mostafa.jpeg",
+    imageUrl: "/team/mostafa.jpg",
     fallbackInitials: "MM"
   },
   {
@@ -150,7 +149,6 @@ const teamMembers: TeamMember[] = [
       "Manages client timelines",
       "Keeps projects well-organized and clients updated"
     ],
-    imageUrl: "/team/ruan.jpeg",
     fallbackInitials: "RM"
   },
   {
@@ -169,7 +167,6 @@ const teamMembers: TeamMember[] = [
       "Focuses on international expansion",
       "Strategic business development"
     ],
-    imageUrl: "/team/freddie.jpeg",
     fallbackInitials: "FS"
   }
 ];
