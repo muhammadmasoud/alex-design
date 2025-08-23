@@ -40,6 +40,25 @@ const teamMembers: TeamMember[] = [
     fallbackInitials: "MA"
   },
   {
+    id: "abdelrahman",
+    name: "Abdelrahman Ibrahim",
+    title: "Shop Drawings & Manufacturing Leader",
+    description: "Abdelrahman heads shop drawings, manufacturing details, and MEP integration. His technical knowledge enables smooth workflows between design, fabrication, and on-site execution, especially for furniture production and green wall systems.",
+    qualifications: [
+      "Shop Drawings Specialist",
+      "Manufacturing Details Expert",
+      "MEP Integration Coordinator"
+    ],
+    experience: [
+      "Heads shop drawings and manufacturing details",
+      "Expert in MEP integration",
+      "Enables smooth workflows between design, fabrication, and execution",
+      "Specializes in furniture production and green wall systems"
+    ],
+    imageUrl: "/team/ozil.jpeg",
+    fallbackInitials: "AI"
+  },
+  {
     id: "islam",
     name: "Islam Marghany",
     title: "Interior Design Leader",
@@ -94,25 +113,6 @@ const teamMembers: TeamMember[] = [
       "Aligned with client expectations"
     ],
     fallbackInitials: "AM"
-  },
-  {
-    id: "abdelrahman",
-    name: "Abdelrahman Ibrahim",
-    title: "Shop Drawings & Manufacturing Leader",
-    description: "Abdelrahman heads shop drawings, manufacturing details, and MEP integration. His technical knowledge enables smooth workflows between design, fabrication, and on-site execution, especially for furniture production and green wall systems.",
-    qualifications: [
-      "Shop Drawings Specialist",
-      "Manufacturing Details Expert",
-      "MEP Integration Coordinator"
-    ],
-    experience: [
-      "Heads shop drawings and manufacturing details",
-      "Expert in MEP integration",
-      "Enables smooth workflows between design, fabrication, and execution",
-      "Specializes in furniture production and green wall systems"
-    ],
-    imageUrl: "/team/ozil.jpeg",
-    fallbackInitials: "AI"
   },
   {
     id: "mostafa",
@@ -325,9 +325,6 @@ export default function About() {
                           {currentMember.fallbackInitials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute -bottom-2 -right-2 sm:-bottom-3 sm:-right-3 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg">
-                        {currentMemberIndex + 1}
-                      </div>
                     </div>
                   </div>
                   
