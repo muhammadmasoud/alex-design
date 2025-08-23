@@ -36,7 +36,7 @@ const teamMembers: TeamMember[] = [
       "Worked with Foster + Partners, Hellinikon S.M.S.A., maceJacobs, and BBI-INTRAKAT on the Riviera Towers (Greece)",
       "Academic background: M.Arch (Altınbaş University, Turkey) and B.Arch (Alexandria University)"
     ],
-    imageUrl: "../assets/team/aboelhamd.jpeg",
+    imageUrl: "/team/aboelhamd.jpg",
     fallbackInitials: "MA"
   },
   {
@@ -55,7 +55,7 @@ const teamMembers: TeamMember[] = [
       "Contributed to large-scale consultancy work",
       "Ensures interior design concepts are both innovative and practical"
     ],
-    imageUrl: "../assets/team/eslam.jpeg",
+    imageUrl: "/team/eslam.jpg",
     fallbackInitials: "IM"
   },
   {
@@ -74,7 +74,7 @@ const teamMembers: TeamMember[] = [
       "Attention to detail guarantees flawless finishes",
       "Expert in site coordination"
     ],
-    imageUrl: "../assets/team/abdullah.jpeg",
+    imageUrl: "/team/abdullah.jpg",
     fallbackInitials: "AA"
   },
   {
@@ -93,7 +93,7 @@ const teamMembers: TeamMember[] = [
       "Precision ensures projects are buildable and efficient",
       "Aligned with client expectations"
     ],
-    imageUrl: "../assets/team/aya.jpg",
+    imageUrl: "/team/aya.jpg",
     fallbackInitials: "AM"
   },
   {
@@ -112,7 +112,7 @@ const teamMembers: TeamMember[] = [
       "Enables smooth workflows between design, fabrication, and execution",
       "Specializes in furniture production and green wall systems"
     ],
-    imageUrl: "../assets/team/ozil.jpeg",
+    imageUrl: "/team/ozil.jpg",
     fallbackInitials: "AI"
   },
   {
@@ -131,7 +131,7 @@ const teamMembers: TeamMember[] = [
       "Ensures coordination between design documents and on-site realities",
       "Technical documentation specialist"
     ],
-    imageUrl: "../assets/team/mostafa.jpg",
+    imageUrl: "/team/mostafa.jpg",
     fallbackInitials: "MM"
   },
   {
@@ -150,7 +150,7 @@ const teamMembers: TeamMember[] = [
       "Manages client timelines",
       "Keeps projects well-organized and clients updated"
     ],
-    imageUrl: "../assets/team/ruan.jpg",
+    imageUrl: "/team/ruan.jpg",
     fallbackInitials: "RM"
   },
   {
@@ -169,7 +169,7 @@ const teamMembers: TeamMember[] = [
       "Focuses on international expansion",
       "Strategic business development"
     ],
-    imageUrl: "../assets/team/freddie.jpg",
+    imageUrl: "/team/freddie.jpg",
     fallbackInitials: "FS"
   }
 ];
