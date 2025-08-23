@@ -291,29 +291,29 @@ export default function About() {
       </motion.section>
 
       {/* Our Team - ENLARGED AND PROMINENT */}
-      <motion.section className="mb-16 sm:mb-20 bg-gradient-to-b from-background to-primary/5 py-12 sm:py-16 -mx-4 sm:-mx-6 px-4 sm:px-6" variants={itemVariants}>
+      <motion.section className="mb-16 sm:mb-20 bg-gradient-to-b from-background to-primary/5 py-8 sm:py-12 md:py-16 -mx-4 sm:-mx-6 px-4 sm:px-6" variants={itemVariants}>
         <div className="container mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="font-heading text-4xl sm:text-5xl md:text-6xl mb-6 text-primary">Our Team</h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4 leading-relaxed">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16">
+            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-4 sm:mb-6 text-primary">Our Team</h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-2 sm:px-4 leading-relaxed">
               Meet the talented professionals who bring our architectural visions to life. Each team member contributes unique expertise to ensure exceptional project delivery.
             </p>
           </div>
 
           <Card className="max-w-6xl mx-auto shadow-2xl border-2 border-primary/20">
-            <CardContent className="p-8 sm:p-12">
-              <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center justify-center min-h-[600px]">
-                {/* Team Member Avatar - LARGER */}
+            <CardContent className="p-4 sm:p-6 md:p-8 lg:p-12">
+              <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center justify-center min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
+                {/* Team Member Avatar - MOBILE RESPONSIVE */}
                 <motion.div 
-                  className="text-center lg:text-left h-full flex flex-col justify-center"
+                  className="text-center w-full lg:text-left h-full flex flex-col justify-center order-1 lg:order-1"
                   key={currentMember.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="flex justify-center lg:justify-start mb-6">
+                  <div className="flex justify-center lg:justify-start mb-4 sm:mb-6">
                     <div className="relative">
-                      <Avatar className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 border-4 border-primary/20 shadow-xl">
+                      <Avatar className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 xl:w-64 xl:h-64 border-4 border-primary/20 shadow-xl">
                         {currentMember.imageUrl && (
                           <AvatarImage 
                             src={currentMember.imageUrl} 
@@ -321,43 +321,46 @@ export default function About() {
                             className="object-cover"
                           />
                         )}
-                        <AvatarFallback className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-primary/20 to-primary/30">
+                        <AvatarFallback className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-br from-primary/20 to-primary/30">
                           {currentMember.fallbackInitials}
                         </AvatarFallback>
                       </Avatar>
+                      <div className="absolute -bottom-2 -right-2 sm:-bottom-3 sm:-right-3 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg">
+                        {currentMemberIndex + 1}
+                      </div>
                     </div>
                   </div>
                   
-                  <Badge variant="outline" className="mb-4 text-base px-4 py-2 border-primary/30 mx-auto lg:mx-0 w-fit">
+                  <Badge variant="outline" className="mb-3 sm:mb-4 text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-2 border-primary/30 mx-auto lg:mx-0 w-fit">
                     {currentMember.title}
                   </Badge>
-                  <h3 className="font-heading text-2xl sm:text-3xl font-bold mb-4 text-primary">
+                  <h3 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 lg:mb-4 text-primary px-2 sm:px-0">
                     {currentMember.name}
                   </h3>
                 </motion.div>
 
-                {/* Team Member Details - ENHANCED WITH FIXED HEIGHT */}
+                {/* Team Member Details - MOBILE RESPONSIVE */}
                 <motion.div
                   key={`${currentMember.id}-details`}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full flex flex-col justify-center min-h-[500px]"
+                  className="w-full h-full flex flex-col justify-center order-2 lg:order-2"
                 >
-                  <div className="space-y-6">
-                    <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+                  <div className="space-y-4 sm:space-y-6">
+                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-2 sm:px-0">
                       {currentMember.description}
                     </p>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
-                        <h4 className="font-bold text-lg mb-3 text-primary flex items-center gap-2">
-                          <Award className="h-5 w-5" />
+                        <h4 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-primary flex items-center gap-2 px-2 sm:px-0">
+                          <Award className="h-4 w-4 sm:h-5 sm:w-5" />
                           Qualifications:
                         </h4>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 px-2 sm:px-0">
                           {currentMember.qualifications.map((qual, index) => (
-                            <Badge key={index} variant="secondary" className="text-sm px-3 py-1">
+                            <Badge key={index} variant="secondary" className="text-xs sm:text-sm px-2 sm:px-3 py-1">
                               {qual}
                             </Badge>
                           ))}
@@ -365,14 +368,14 @@ export default function About() {
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-lg mb-3 text-primary flex items-center gap-2">
-                          <Users className="h-5 w-5" />
+                        <h4 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-primary flex items-center gap-2 px-2 sm:px-0">
+                          <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                           Experience:
                         </h4>
-                        <ul className="space-y-2">
+                        <ul className="space-y-1.5 sm:space-y-2 px-2 sm:px-0">
                           {currentMember.experience.map((exp, index) => (
-                            <li key={index} className="text-sm sm:text-base text-muted-foreground flex items-start gap-3">
-                              <span className="text-primary mt-1.5 text-lg">•</span>
+                            <li key={index} className="text-xs sm:text-sm md:text-base text-muted-foreground flex items-start gap-2 sm:gap-3">
+                              <span className="text-primary mt-1 sm:mt-1.5 text-sm sm:text-lg">•</span>
                               <span>{exp}</span>
                             </li>
                           ))}
@@ -383,29 +386,29 @@ export default function About() {
                 </motion.div>
               </div>
 
-              {/* Enhanced Navigation Controls */}
-              <div className="flex items-center justify-between mt-8 pt-8 border-t-2 border-primary/20">
+              {/* Enhanced Navigation Controls - MOBILE RESPONSIVE */}
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 pt-6 sm:pt-8 border-t-2 border-primary/20 gap-4 sm:gap-0">
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="default"
                   onClick={prevMember}
                   disabled={teamMembers.length <= 1}
-                  className="border-primary/30 hover:bg-primary/10"
+                  className="border-primary/30 hover:bg-primary/10 w-full sm:w-auto order-2 sm:order-1"
                 >
-                  <ChevronLeft className="h-5 w-5 mr-2" />
+                  <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   Previous
                 </Button>
 
-                <div className="flex items-center gap-4">
-                  <span className="text-base text-muted-foreground font-medium">
+                <div className="flex items-center gap-3 sm:gap-4 order-1 sm:order-2">
+                  <span className="text-sm sm:text-base text-muted-foreground font-medium">
                     {currentMemberIndex + 1} of {teamMembers.length}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     {teamMembers.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentMemberIndex(index)}
-                        className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                        className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${
                           index === currentMemberIndex 
                             ? 'bg-primary scale-125' 
                             : 'bg-muted-foreground/30 hover:bg-muted-foreground/50 hover:scale-110'
@@ -417,34 +420,34 @@ export default function About() {
 
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="default"
                   onClick={nextMember}
                   disabled={teamMembers.length <= 1}
-                  className="border-primary/30 hover:bg-primary/10"
+                  className="border-primary/30 hover:bg-primary/10 w-full sm:w-auto order-3"
                 >
                   Next
-                  <ChevronRight className="h-5 w-5 ml-2" />
+                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
                 </Button>
               </div>
 
-              {/* Team Overview Stats */}
-              <div className="mt-8 pt-8 border-t border-primary/20">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              {/* Team Overview Stats - MOBILE RESPONSIVE */}
+              <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-primary/20">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-primary">{teamMembers.length}</div>
-                    <div className="text-sm text-muted-foreground">Team Members</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">{teamMembers.length}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Team Members</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-primary">50+</div>
-                    <div className="text-sm text-muted-foreground">Projects Completed</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">50+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Projects Completed</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-primary">10+</div>
-                    <div className="text-sm text-muted-foreground">Years Combined Experience</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">10+</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Years Combined Experience</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-primary">100%</div>
-                    <div className="text-sm text-muted-foreground">Client Satisfaction</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">100%</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Client Satisfaction</div>
                   </div>
                 </div>
               </div>
