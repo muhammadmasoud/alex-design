@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Play, Pause, Eye, Calendar } from "lucide-react";
 import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
@@ -13,6 +13,8 @@ import LazyImage from "@/components/LazyImage";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   // Architecture Design state
   const [architectureProjects, setArchitectureProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,15 @@ const Index = () => {
       year: 'numeric',
       month: 'short'
     });
+  };
+
+  // Handle navigation to About page with scroll to top
+  const handleLearnMoreClick = () => {
+    navigate('/about');
+    // Ensure scroll to top after navigation
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   // Fetch architecture design projects
@@ -715,6 +726,153 @@ const Index = () => {
             <Button variant="outline" asChild size="lg" className="w-full sm:w-auto">
               <Link to="/contact">
                 Start Your Project
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Decorative Divider */}
+      <motion.section className="py-8 sm:py-12 md:py-16" variants={itemVariants}>
+        <div className="container px-3 sm:px-6">
+          <motion.div 
+            className="relative flex items-center justify-center"
+            variants={itemVariants}
+            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {/* Outer glow effect */}
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent blur-sm"></div>
+            </div>
+            
+            {/* Main decorative line */}
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            </div>
+            
+            {/* Secondary accent line */}
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-accent/15 to-transparent" style={{ transform: 'translateY(1px)' }}></div>
+            </div>
+            
+            {/* Center ornamental design */}
+            <div className="relative bg-background px-8 py-2">
+              <div className="flex items-center justify-center gap-4">
+                {/* Left ornamental pattern */}
+                <motion.div 
+                  className="flex items-center gap-1.5"
+                  initial={{ x: -20, opacity: 0 }}
+                  whileInView={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                >
+                  <div className="w-1 h-1 rounded-full bg-primary/60 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </motion.div>
+                
+                {/* Central diamond ornament */}
+                <motion.div 
+                  className="relative"
+                  initial={{ rotate: 45, scale: 0 }}
+                  whileInView={{ rotate: 0, scale: 1 }}
+                  transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 flex items-center justify-center shadow-lg">
+                    <div className="w-4 h-4 rounded-md bg-gradient-to-br from-primary/30 to-accent/30 relative">
+                      <div className="absolute inset-0.5 rounded-sm bg-gradient-to-br from-primary/60 to-accent/60 animate-pulse"></div>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Right ornamental pattern */}
+                <motion.div 
+                  className="flex items-center gap-1.5"
+                  initial={{ x: 20, opacity: 0 }}
+                  whileInView={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent/50 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                  <div className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+                  <div className="w-1 h-1 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: '1s' }}></div>
+                </motion.div>
+              </div>
+              
+              {/* Subtle text decoration */}
+              <motion.div 
+                className="text-center mt-2"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.5 }}
+              >
+                <span className="text-xs text-muted-foreground/60 font-light tracking-wider">
+                  ◦ ◦ ◦
+                </span>
+              </motion.div>
+            </div>
+            
+            {/* Animated sparkle effects */}
+            <motion.div 
+              className="absolute left-1/4 top-1/2 w-1 h-1 bg-accent/60 rounded-full"
+              animate={{ 
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                delay: 0.5
+              }}
+            />
+            <motion.div 
+              className="absolute right-1/4 top-1/2 w-1 h-1 bg-primary/60 rounded-full"
+              animate={{ 
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                delay: 1.5
+              }}
+            />
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* About Us Section */}
+      <motion.section className="py-12 sm:py-16 md:py-20 bg-gradient-to-b from-background to-primary/5" variants={itemVariants}>
+        <div className="container px-3 sm:px-6">
+          <motion.header className="mb-8 sm:mb-12 text-center" variants={itemVariants}>
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl mb-4 text-primary">
+              About Us — Alexandria Design
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Creating sustainable, functional, and inspiring environments that enhance lives through innovative architectural design.
+            </p>
+          </motion.header>
+
+          {/* Our Vision Card */}
+          <motion.div className="mb-12 sm:mb-16" variants={itemVariants}>
+            <Card className="max-w-4xl mx-auto p-6 sm:p-8 md:p-10 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <CardContent className="text-center p-0">
+                <h3 className="font-heading text-xl sm:text-2xl md:text-3xl mb-4 sm:mb-6 text-primary">Our Vision</h3>
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
+                  At Alexandria Design, we believe architecture is more than just buildings—it's about creating sustainable, functional, and inspiring environments that enhance lives. From design concepts to execution, we integrate creativity with precision, ensuring every project reflects innovation, sustainability, and client needs.
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div className="flex flex-col sm:flex-row items-center justify-center gap-4" variants={itemVariants}>
+            <Button onClick={handleLearnMoreClick} size="lg" className="w-full sm:w-auto">
+              Learn More About Us
+            </Button>
+            <Button variant="outline" asChild size="lg" className="w-full sm:w-auto">
+              <Link to="/contact">
+                Work With Us
               </Link>
             </Button>
           </motion.div>
