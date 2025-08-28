@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RootLayout from "@/layouts/RootLayout";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "./components/theme-provider";
+import ResourcePreloader from "./components/ResourcePreloader";
+import PageTransition, { LoadingPageTransition } from "./components/PageTransition";
+import heroImage from "@/assets/hero-architecture.jpg";
 
 const Index = lazy(() => import("./pages/Index"));
 const ProjectsPage = lazy(() => import("./pages/Projects"));
@@ -20,11 +24,6 @@ const ContactPage = lazy(() => import("./pages/Contact"));
 const AboutPage = lazy(() => import("./pages/About"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-
-import { ThemeProvider } from "./components/theme-provider";
-import ResourcePreloader from "./components/ResourcePreloader";
-import PageTransition, { LoadingPageTransition } from "./components/PageTransition";
-import heroImage from "@/assets/hero-architecture.jpg";
 
 const queryClient = new QueryClient();
 

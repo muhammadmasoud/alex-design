@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
@@ -16,6 +17,7 @@ const EmptyState = lazy(() => import("@/components/EmptyState"));
 const PAGE_SIZE = 12;
 
 export default function ProjectsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,34 @@ export default function ProjectsPage() {
   const [category, setCategory] = useState<string | undefined>();
   const [subcategory, setSubcategory] = useState<string | undefined>();
   const [categories, setCategories] = useState<string[]>([]);
+  const [initializedFromURL, setInitializedFromURL] = useState(false);
+
+  // Initialize state from URL parameters FIRST
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    const subcategoryParam = searchParams.get('subcategory');
+    const searchParam = searchParams.get('search');
+    const pageParam = searchParams.get('page');
+
+    if (categoryParam) setCategory(categoryParam);
+    if (subcategoryParam) setSubcategory(subcategoryParam);
+    if (searchParam) setSearch(searchParam);
+    if (pageParam) setPage(parseInt(pageParam) || 1);
+    
+    setInitializedFromURL(true);
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const updateURL = (newCategory?: string, newSubcategory?: string, newSearch?: string, newPage?: number) => {
+    const params = new URLSearchParams();
+    
+    if (newCategory) params.set('category', newCategory);
+    if (newSubcategory) params.set('subcategory', newSubcategory);
+    if (newSearch) params.set('search', newSearch);
+    if (newPage && newPage > 1) params.set('page', newPage.toString());
+    
+    setSearchParams(params);
+  };
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -33,7 +63,7 @@ export default function ProjectsPage() {
         const { data } = await api.get(endpoints.categories.subcategories, {
           params: { type: 'project' }
         });
-        setCategories(data.category_list?.map((cat: any) => cat.value) || []);
+        setCategories(data.category_list?.map((cat: { value: string }) => cat.value) || []);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
         // Fallback to default categories
@@ -45,11 +75,15 @@ export default function ProjectsPage() {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(count / PAGE_SIZE)), [count]);
 
+  // Only fetch projects after URL initialization is complete
   useEffect(() => {
+    if (!initializedFromURL) return; // Wait for URL initialization
+    
     const fetchProjects = async () => {
       setLoading(true);
       setError(null);
       try {
+        console.log("Fetching projects with params:", { search, category, subcategory, page });
         const { data } = await api.get<PaginatedResponse<Project>>(endpoints.projects, {
           params: {
             search: search || undefined,
@@ -59,18 +93,19 @@ export default function ProjectsPage() {
             page_size: PAGE_SIZE,
           },
         });
-        console.log("Full API Response:", data); // Log full response
-        const results = Array.isArray(data) ? data : data?.results || []; // Handle plain array or paginated response
+        console.log("API Response:", data);
+        const results = Array.isArray(data) ? data : data?.results || [];
         setItems(results);
         setCount(Array.isArray(data) ? results.length : data?.count || 0);
-      } catch (e: any) {
-        setError(e?.message || "Failed to load projects");
+      } catch (e: unknown) {
+        console.error("Error fetching projects:", e);
+        setError(e instanceof Error ? e.message : "Failed to load projects");
       } finally {
         setLoading(false);
       }
     };
     fetchProjects();
-  }, [page, search, category, subcategory]);
+  }, [initializedFromURL, page, search, category, subcategory]);
 
      return (
      <motion.div 
@@ -89,7 +124,12 @@ export default function ProjectsPage() {
            <div className="flex-1">
              <Input 
                value={search} 
-               onChange={(e) => { setPage(1); setSearch(e.target.value); }} 
+               onChange={(e) => { 
+                 const newSearch = e.target.value;
+                 setPage(1); 
+                 setSearch(newSearch);
+                 updateURL(category, subcategory, newSearch || undefined, 1);
+               }} 
                placeholder="Search projects"
                className="w-full" 
              />
@@ -99,8 +139,17 @@ export default function ProjectsPage() {
                categories={categories}
                category={category}
                subcategory={subcategory}
-               onCategoryChange={(v) => { setPage(1); setCategory(v); }}
-               onSubcategoryChange={(v) => { setPage(1); setSubcategory(v); }}
+               onCategoryChange={(v) => { 
+                 setPage(1); 
+                 setCategory(v);
+                 setSubcategory(undefined); // Reset subcategory when category changes
+                 updateURL(v, undefined, search || undefined, 1);
+               }}
+               onSubcategoryChange={(v) => { 
+                 setPage(1); 
+                 setSubcategory(v);
+                 updateURL(category, v, search || undefined, 1);
+               }}
                type="project"
              />
            </div>
@@ -133,7 +182,14 @@ export default function ProjectsPage() {
                ))}
              </motion.section>
              <motion.div className="mt-8 flex justify-center" variants={itemVariants}>
-               <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+               <PaginationControls 
+                 page={page} 
+                 totalPages={totalPages} 
+                 onPageChange={(newPage) => {
+                   setPage(newPage);
+                   updateURL(category, subcategory, search || undefined, newPage);
+                 }} 
+               />
              </motion.div>
           </>
         )}
