@@ -36,12 +36,12 @@ class ProjectFilter(FilterSet):
     search = CharFilter(method='filter_search')
     
     def filter_category(self, queryset, name, value):
-        # Filter by category name
-        return queryset.filter(category__name__iexact=value)
+        # Filter by category name (updated for many-to-many relationship)
+        return queryset.filter(categories__name__iexact=value)
     
     def filter_subcategory(self, queryset, name, value):
-        # Filter by subcategory name
-        return queryset.filter(subcategory__name__iexact=value)
+        # Filter by subcategory name (updated for many-to-many relationship)
+        return queryset.filter(subcategories__name__iexact=value)
     
     def filter_search(self, queryset, name, value):
         return queryset.filter(
@@ -60,12 +60,12 @@ class ServiceFilter(FilterSet):
     search = CharFilter(method='filter_search')
     
     def filter_category(self, queryset, name, value):
-        # Filter by category name
-        return queryset.filter(category__name__iexact=value)
+        # Filter by category name (updated for many-to-many relationship)
+        return queryset.filter(categories__name__iexact=value)
     
     def filter_subcategory(self, queryset, name, value):
-        # Filter by subcategory name
-        return queryset.filter(subcategory__name__iexact=value)
+        # Filter by subcategory name (updated for many-to-many relationship)
+        return queryset.filter(subcategories__name__iexact=value)
     
     def filter_search(self, queryset, name, value):
         return queryset.filter(
