@@ -167,6 +167,7 @@ const teamMembers: TeamMember[] = [
       "Focuses on international expansion",
       "Strategic business development"
     ],
+    imageUrl: "/team/freddie.jpg",
     fallbackInitials: "FS"
   }
 ];
