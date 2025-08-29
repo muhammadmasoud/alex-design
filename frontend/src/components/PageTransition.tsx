@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 interface PageTransitionProps {
@@ -7,21 +7,31 @@ interface PageTransitionProps {
   className?: string;
 }
 
-// Very simple page variants to prevent blank pages
+// Reuse the same animation variants from ProjectDetail and ServiceDetail
 const pageVariants = {
   initial: { 
-    opacity: 0
+    opacity: 0,
+    y: 20,
+    scale: 0.98
   },
   in: { 
     opacity: 1,
+    y: 0,
+    scale: 1,
     transition: {
-      duration: 0.2
+      duration: 0.6,
+      ease: [0.4, 0.0, 0.2, 1] as const,
+      when: "beforeChildren" as const,
+      staggerChildren: 0.1,
     }
   },
   out: { 
     opacity: 0,
+    y: -20,
+    scale: 0.98,
     transition: {
-      duration: 0.1
+      duration: 0.4,
+      ease: [0.4, 0.0, 0.6, 1] as const
     }
   }
 };
@@ -32,7 +42,7 @@ export const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      duration: 0.4,
+      duration: 0.6,
       when: "beforeChildren" as const,
       staggerChildren: 0.1,
     },
@@ -45,43 +55,28 @@ export const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4 },
+    transition: { duration: 0.5 },
   },
 };
 
 // Image variants for consistent image animations
 export const imageVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.8 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.5 },
+    transition: { duration: 0.7 },
   },
 };
 
 export default function PageTransition({ children, className }: PageTransitionProps) {
   const location = useLocation();
-  const [isVisible, setIsVisible] = useState(true);
 
   // Scroll to top on route change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }
-  }, [location.pathname]);
-
-  // Ensure content is always visible
-  useEffect(() => {
-    setIsVisible(true);
-  }, [location.pathname]);
-
-  // Fallback if animation fails
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   return (
@@ -93,10 +88,9 @@ export default function PageTransition({ children, className }: PageTransitionPr
         exit="out"
         variants={pageVariants}
         className={className}
-        onAnimationComplete={() => setIsVisible(true)}
+        // Optimize performance for production
         style={{
-          opacity: isVisible ? 1 : 0,
-          minHeight: '100vh'
+          willChange: 'opacity, transform',
         }}
       >
         {children}
@@ -118,16 +112,36 @@ export function withPageTransition<T extends object>(
   };
 }
 
-// Simple loading transition component
+// Specialized loading transition component for production
 export function LoadingPageTransition() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <div className="text-sm text-muted-foreground">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen flex items-center justify-center"
+      style={{ willChange: 'opacity' }}
+    >
+      <motion.div 
+        className="text-center space-y-4"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        <motion.div 
+          className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div 
+          className="text-sm text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           Loading...
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
