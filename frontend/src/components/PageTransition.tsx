@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 interface PageTransitionProps {
@@ -7,31 +7,21 @@ interface PageTransitionProps {
   className?: string;
 }
 
-// Reuse the same animation variants from ProjectDetail and ServiceDetail
+// Very simple page variants to prevent blank pages
 const pageVariants = {
   initial: { 
-    opacity: 0,
-    y: 20,
-    scale: 0.98
+    opacity: 0
   },
   in: { 
     opacity: 1,
-    y: 0,
-    scale: 1,
     transition: {
-      duration: 0.6,
-      ease: [0.4, 0.0, 0.2, 1] as const,
-      when: "beforeChildren" as const,
-      staggerChildren: 0.1,
+      duration: 0.2
     }
   },
   out: { 
     opacity: 0,
-    y: -20,
-    scale: 0.98,
     transition: {
-      duration: 0.4,
-      ease: [0.4, 0.0, 0.6, 1] as const
+      duration: 0.1
     }
   }
 };
@@ -42,7 +32,7 @@ export const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      duration: 0.6,
+      duration: 0.4,
       when: "beforeChildren" as const,
       staggerChildren: 0.1,
     },
@@ -55,28 +45,43 @@ export const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5 },
+    transition: { duration: 0.4 },
   },
 };
 
 // Image variants for consistent image animations
 export const imageVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
+  hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.7 },
+    transition: { duration: 0.5 },
   },
 };
 
 export default function PageTransition({ children, className }: PageTransitionProps) {
   const location = useLocation();
+  const [isVisible, setIsVisible] = useState(true);
 
   // Scroll to top on route change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }
+  }, [location.pathname]);
+
+  // Ensure content is always visible
+  useEffect(() => {
+    setIsVisible(true);
+  }, [location.pathname]);
+
+  // Fallback if animation fails
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   return (
@@ -88,9 +93,10 @@ export default function PageTransition({ children, className }: PageTransitionPr
         exit="out"
         variants={pageVariants}
         className={className}
-        // Optimize performance for production
+        onAnimationComplete={() => setIsVisible(true)}
         style={{
-          willChange: 'opacity, transform',
+          opacity: isVisible ? 1 : 0,
+          minHeight: '100vh'
         }}
       >
         {children}
@@ -112,36 +118,16 @@ export function withPageTransition<T extends object>(
   };
 }
 
-// Specialized loading transition component for production
+// Simple loading transition component
 export function LoadingPageTransition() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center"
-      style={{ willChange: 'opacity' }}
-    >
-      <motion.div 
-        className="text-center space-y-4"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
-        <motion.div 
-          className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div 
-          className="text-sm text-muted-foreground"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <div className="text-sm text-muted-foreground">
           Loading...
-        </motion.div>
-      </motion.div>
-    </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }
