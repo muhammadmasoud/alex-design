@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import ImageLightbox from "@/components/ImageLightbox";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -33,6 +34,23 @@ const Index = () => {
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
+
+  // Use the intelligent image preload hook
+  const { markAsUsed } = useImagePreload({ 
+    src: hero, 
+    priority: 'high',
+    timeout: 3000 // Shorter timeout for hero image
+  });
+
+  // Mark hero image as used immediately when component mounts
+  useEffect(() => {
+    // Small delay to ensure the preload hook has run
+    const timer = setTimeout(() => {
+      markAsUsed();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [markAsUsed]);
 
   // Auto-slide functionality for Architecture Design
   useEffect(() => {
@@ -193,6 +211,19 @@ const Index = () => {
             src={hero} 
             alt="Modern architecture facade hero" 
             loading="eager"
+            fetchPriority="high"
+            onLoadStart={() => {
+              // Mark as used as soon as loading starts
+              markAsUsed();
+            }}
+            onLoad={() => {
+              // Ensure it's marked as used when fully loaded
+              markAsUsed();
+            }}
+            onError={() => {
+              // Handle any loading errors gracefully
+              markAsUsed(); // Still mark as used to avoid preload warnings
+            }}
             className="h-full w-full object-cover animate-hero-ken-burns" 
           />
           

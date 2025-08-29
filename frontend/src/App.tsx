@@ -32,8 +32,11 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
+          {/* Only preload critical resources that are immediately needed */}
           <ResourcePreloader 
-            images={[heroImage]} 
+            images={[]} // Remove hero image preload to avoid warnings
+            fonts={[]}  // Add fonts here if needed
+            scripts={[]} // Add scripts here if needed
           />
           <Toaster />
           <Sonner />
