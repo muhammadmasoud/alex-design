@@ -1,12 +1,11 @@
 """
-Django signals for automatic image optimization and cleanup
+Django signals for automatic file cleanup
 """
 from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django.core.files.storage import default_storage
 from rest_framework.authtoken.models import Token
 from .models import Project, Service, User, ProjectImage, ServiceImage
-from .image_utils import optimize_image, should_optimize_image
 import os
 
 
@@ -17,9 +16,9 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 
 @receiver(pre_save, sender=Project)
-def optimize_and_cleanup_project_image(sender, instance, **kwargs):
+def cleanup_project_image(sender, instance, **kwargs):
     """
-    Optimize new project images and delete old ones
+    Clean up old project images when updating
     """
     # Delete old image if updating
     if instance.pk:
@@ -33,33 +32,12 @@ def optimize_and_cleanup_project_image(sender, instance, **kwargs):
                     pass
         except Project.DoesNotExist:
             pass
-    
-    # Optimize new image
-    if instance.image and hasattr(instance.image, 'file'):
-        is_new_image = True
-        if instance.pk:
-            try:
-                old_instance = Project.objects.get(pk=instance.pk)
-                if old_instance.image and old_instance.image.name == instance.image.name:
-                    is_new_image = False
-            except Project.DoesNotExist:
-                pass
-        
-        if is_new_image and should_optimize_image(instance.image):
-            optimized = optimize_image(
-                instance.image,
-                max_width=1920,
-                max_height=1080,
-                quality=85
-            )
-            if optimized:
-                instance.image = optimized
 
 
 @receiver(pre_save, sender=Service)
-def optimize_and_cleanup_service_icon(sender, instance, **kwargs):
+def cleanup_service_icon(sender, instance, **kwargs):
     """
-    Optimize new service icons and delete old ones
+    Clean up old service icons when updating
     """
     # Delete old icon if updating
     if instance.pk:
@@ -73,33 +51,12 @@ def optimize_and_cleanup_service_icon(sender, instance, **kwargs):
                     pass
         except Service.DoesNotExist:
             pass
-    
-    # Optimize new icon
-    if instance.icon and hasattr(instance.icon, 'file'):
-        is_new_icon = True
-        if instance.pk:
-            try:
-                old_instance = Service.objects.get(pk=instance.pk)
-                if old_instance.icon and old_instance.icon.name == instance.icon.name:
-                    is_new_icon = False
-            except Service.DoesNotExist:
-                pass
-        
-        if is_new_icon and should_optimize_image(instance.icon):
-            optimized = optimize_image(
-                instance.icon,
-                max_width=512,
-                max_height=512,
-                quality=90
-            )
-            if optimized:
-                instance.icon = optimized
 
 
 @receiver(pre_save, sender=ProjectImage)
-def optimize_and_cleanup_project_album_image(sender, instance, **kwargs):
+def cleanup_project_album_image(sender, instance, **kwargs):
     """
-    Optimize new project album images and delete old ones
+    Clean up old project album images when updating
     """
     # Delete old image if updating
     if instance.pk:
@@ -113,33 +70,12 @@ def optimize_and_cleanup_project_album_image(sender, instance, **kwargs):
                     pass
         except ProjectImage.DoesNotExist:
             pass
-    
-    # Optimize new image
-    if instance.image and hasattr(instance.image, 'file'):
-        is_new_image = True
-        if instance.pk:
-            try:
-                old_instance = ProjectImage.objects.get(pk=instance.pk)
-                if old_instance.image and old_instance.image.name == instance.image.name:
-                    is_new_image = False
-            except ProjectImage.DoesNotExist:
-                pass
-        
-        if is_new_image and should_optimize_image(instance.image):
-            optimized = optimize_image(
-                instance.image,
-                max_width=1920,
-                max_height=1080,
-                quality=80
-            )
-            if optimized:
-                instance.image = optimized
 
 
 @receiver(pre_save, sender=ServiceImage)
-def optimize_and_cleanup_service_album_image(sender, instance, **kwargs):
+def cleanup_service_album_image(sender, instance, **kwargs):
     """
-    Optimize new service album images and delete old ones
+    Clean up old service album images when updating
     """
     # Delete old image if updating
     if instance.pk:
@@ -153,27 +89,6 @@ def optimize_and_cleanup_service_album_image(sender, instance, **kwargs):
                     pass
         except ServiceImage.DoesNotExist:
             pass
-    
-    # Optimize new image
-    if instance.image and hasattr(instance.image, 'file'):
-        is_new_image = True
-        if instance.pk:
-            try:
-                old_instance = ServiceImage.objects.get(pk=instance.pk)
-                if old_instance.image and old_instance.image.name == instance.image.name:
-                    is_new_image = False
-            except ServiceImage.DoesNotExist:
-                pass
-        
-        if is_new_image and should_optimize_image(instance.image):
-            optimized = optimize_image(
-                instance.image,
-                max_width=1920,
-                max_height=1080,
-                quality=80
-            )
-            if optimized:
-                instance.image = optimized
 
 
 @receiver(post_delete, sender=Project)
