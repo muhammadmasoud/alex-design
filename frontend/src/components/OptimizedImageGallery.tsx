@@ -1,6 +1,7 @@
 
 // Optimized Image Component for React
 import React, { useState } from 'react';
+import { isApiImage } from '@/lib/imageUtils';
 
 interface OptimizedImageProps {
   src: string;
@@ -11,20 +12,21 @@ interface OptimizedImageProps {
   lazy?: boolean;
 }
 
-export const OptimizedImage: React.FC<OptimizedImageProps> = ({
-  src,
-  alt,
-  className = '',
-  width,
-  height,
-  lazy = true
+export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
+  src, 
+  alt, 
+  className = '', 
+  width, 
+  height, 
+  lazy = true 
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  // Generate WebP version URL
+  // For API images, use the URL as-is since it's already optimized
+  // For non-API images, generate WebP version if needed
   const getOptimizedSrc = (originalSrc: string) => {
-    if (originalSrc.includes('.webp')) return originalSrc;
+    if (isApiImage(originalSrc) || originalSrc.includes('.webp')) return originalSrc;
     
     const lastDot = originalSrc.lastIndexOf('.');
     if (lastDot === -1) return originalSrc;
@@ -36,8 +38,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   
   return (
     <picture className={className}>
-      {/* WebP version for better compression */}
-      <source srcSet={webpSrc} type="image/webp" />
+      {/* WebP version for better compression (only for non-API images) */}
+      {!isApiImage(src) && (
+        <source srcSet={webpSrc} type="image/webp" />
+      )}
       
       {/* Fallback to original format */}
       <img

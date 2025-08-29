@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import { cn } from '@/lib/utils';
+import { isApiImage } from '@/lib/imageUtils';
 
 interface OptimizedImageProps {
   src: string;
@@ -30,12 +31,13 @@ export default function OptimizedImage({
   enableWebP = true,
   quality = 'high',
 }: OptimizedImageProps) {
-  const [imageError, setImageError] = useState(false);
+  
   const [fallbackUsed, setFallbackUsed] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  // Generate WebP version URL
+  // Generate WebP version URL only for non-API images
   const getWebPSrc = (originalSrc: string) => {
-    if (!enableWebP || originalSrc.includes('.webp')) return originalSrc;
+    if (!enableWebP || originalSrc.includes('.webp') || isApiImage(originalSrc)) return originalSrc;
     
     const lastDot = originalSrc.lastIndexOf('.');
     if (lastDot === -1) return originalSrc;
@@ -43,9 +45,10 @@ export default function OptimizedImage({
     return originalSrc.substring(0, lastDot) + '.webp';
   };
 
-  // Generate quality-based URL (if your backend supports it)
+  // For API images, use the URL as-is since it's already optimized
+  // For non-API images, generate quality-based URL if needed
   const getQualitySrc = (originalSrc: string) => {
-    if (quality === 'high') return originalSrc;
+    if (isApiImage(originalSrc) || quality === 'high') return originalSrc;
     
     const qualityParams = {
       low: '_q50',
@@ -60,8 +63,8 @@ export default function OptimizedImage({
   };
 
   const handleError = (e: any) => {
-    if (!fallbackUsed && enableWebP) {
-      // Try fallback to original format
+    if (!fallbackUsed && enableWebP && !isApiImage(src)) {
+      // Try fallback to original format only for non-API images
       setFallbackUsed(true);
       const target = e.target as HTMLImageElement;
       target.src = src;
@@ -81,8 +84,8 @@ export default function OptimizedImage({
   // Determine the best source to use
   const optimizedSrc = fallbackUsed ? src : getQualitySrc(getWebPSrc(src));
 
-  // If we're using WebP, create a picture element for better fallback support
-  if (enableWebP && !fallbackUsed && !imageError) {
+  // If we're using WebP and it's not an API image, create a picture element for better fallback support
+  if (enableWebP && !fallbackUsed && !imageError && !isApiImage(src)) {
     return (
       <picture className={cn("block", className)}>
         <source srcSet={getWebPSrc(src)} type="image/webp" />
@@ -154,43 +157,23 @@ interface OptimizedImageGalleryProps {
     alt: string;
     title?: string;
   }>;
-  columns?: 1 | 2 | 3 | 4;
   className?: string;
-  quality?: 'low' | 'medium' | 'high';
 }
 
-export function OptimizedImageGallery({
+export const OptimizedImageGallery: React.FC<OptimizedImageGalleryProps> = ({
   images,
-  columns = 3,
-  className = '',
-  quality = 'medium', // Use medium quality for galleries
-}: OptimizedImageGalleryProps) {
-  const gridCols = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-  };
-
+  className = ''
+}) => {
   return (
-    <div className={cn(`grid gap-4 ${gridCols[columns]}`, className)}>
+    <div className={cn("grid gap-4", className)}>
       {images.map((image, index) => (
-        <div key={index} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-          <OptimizedImage
-            src={image.src}
-            alt={image.alt}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            quality={quality}
-            enableWebP={true}
-            placeholder="/placeholder.svg"
-          />
-          {image.title && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2">
-              <div className="text-sm font-medium truncate">{image.title}</div>
-            </div>
-          )}
-        </div>
+        <OptimizedImage
+          key={index}
+          src={image.src}
+          alt={image.alt}
+          className="w-full h-auto"
+        />
       ))}
     </div>
   );
-}
+};
