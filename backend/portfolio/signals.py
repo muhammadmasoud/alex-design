@@ -145,42 +145,73 @@ def handle_service_name_change(sender, instance, **kwargs):
 @receiver(post_delete, sender=Project)
 def cleanup_project_images_on_delete(sender, instance, **kwargs):
     """
-    Clean up optimized images when a project is deleted
+    Clean up entire project folder when a project is deleted
     """
     try:
-        if instance.image:
-            # Get project folder path
-            from django.utils.text import slugify
-            project_folder_name = slugify(instance.title)[:50]
-            project_folder_path = os.path.join('media', 'projects', project_folder_name)
+        # Get project folder path
+        from django.utils.text import slugify
+        project_folder_name = slugify(instance.title)[:50]
+        project_folder_path = os.path.join(settings.MEDIA_ROOT, 'projects', project_folder_name)
+        
+        # Delete entire project folder if it exists
+        if os.path.exists(project_folder_path):
+            import shutil
+            shutil.rmtree(project_folder_path)
+            logger.info(f"Completely deleted project folder: {project_folder_path}")
             
-            # Clean up optimized images
-            if os.path.exists(project_folder_path):
-                ImageOptimizer.cleanup_old_optimized_images(project_folder_path)
-                logger.info(f"Cleaned up optimized images for deleted project: {instance.title}")
-                
     except Exception as e:
-        logger.error(f"Error cleaning up project images on delete: {str(e)}")
+        logger.error(f"Error deleting project folder for {instance.title}: {str(e)}")
 
 @receiver(post_delete, sender=Service)
 def cleanup_service_images_on_delete(sender, instance, **kwargs):
     """
-    Clean up optimized images when a service is deleted
+    Clean up entire service folder when a service is deleted
     """
     try:
-        if instance.icon:
-            # Get service folder path
-            from django.utils.text import slugify
-            service_folder_name = slugify(instance.name)[:50]
-            service_folder_path = os.path.join('media', 'services', service_folder_name)
+        # Get service folder path
+        from django.utils.text import slugify
+        service_folder_name = slugify(instance.name)[:50]
+        service_folder_path = os.path.join(settings.MEDIA_ROOT, 'services', service_folder_name)
+        
+        # Delete entire service folder if it exists
+        if os.path.exists(service_folder_path):
+            import shutil
+            shutil.rmtree(service_folder_path)
+            logger.info(f"Completely deleted service folder: {service_folder_path}")
             
-            # Clean up optimized images
-            if os.path.exists(service_folder_path):
-                ImageOptimizer.cleanup_old_optimized_images(service_folder_path)
-                logger.info(f"Cleaned up optimized images for deleted service: {instance.name}")
+    except Exception as e:
+        logger.error(f"Error deleting service folder for {instance.name}: {str(e)}")
+
+# Individual image deletion signals
+@receiver(post_delete, sender=ProjectImage)
+def cleanup_project_album_image_on_delete(sender, instance, **kwargs):
+    """
+    Clean up individual project album image file when deleted
+    """
+    try:
+        if instance.image:
+            # Delete the actual image file
+            if os.path.exists(instance.image.path):
+                os.remove(instance.image.path)
+                logger.info(f"Deleted project album image file: {instance.image.path}")
                 
     except Exception as e:
-        logger.error(f"Error cleaning up service images on delete: {str(e)}")
+        logger.error(f"Error deleting project album image file: {str(e)}")
+
+@receiver(post_delete, sender=ServiceImage)
+def cleanup_service_album_image_on_delete(sender, instance, **kwargs):
+    """
+    Clean up individual service album image file when deleted
+    """
+    try:
+        if instance.image:
+            # Delete the actual image file
+            if os.path.exists(instance.image.path):
+                os.remove(instance.image.path)
+                logger.info(f"Deleted service album image file: {instance.image.path}")
+                
+    except Exception as e:
+        logger.error(f"Error deleting service album image file: {str(e)}")
 
 # Cache management signals
 @receiver(post_save, sender=Project)

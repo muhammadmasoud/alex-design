@@ -163,10 +163,17 @@ MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB limit
 - Optimized versions are stored separately
 - You can always access the original quality
 
+### **Complete Deletion Cleanup**
+- **Project Deletion**: When you delete a project, the entire `media/projects/project-name/` folder is completely removed
+- **Service Deletion**: When you delete a service, the entire `media/services/service-name/` folder is completely removed
+- **Individual Image Deletion**: When you delete album images, the actual image files are deleted from disk
+- **No Orphaned Files**: The system ensures complete cleanup with no leftover files or empty folders
+
 ### **Automatic Cleanup**
 - When you rename projects/services, old optimized images are cleaned up
-- When you delete projects/services, optimized images are removed
-- No orphaned files left behind
+- When you delete projects/services, **entire media folders are completely removed**
+- When you delete individual album images, the image files are deleted
+- **No orphaned files or folders left behind**
 
 ### **Error Handling**
 - If optimization fails, the original image remains
@@ -175,10 +182,14 @@ MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB limit
 
 ## 🧪 Testing
 
-### **Test Script**
+### **Test Scripts**
 ```bash
+# Test image optimization
 cd backend
 python test_optimization.py
+
+# Test folder deletion cleanup
+python test_deletion.py
 ```
 
 ### **Manual Testing**
