@@ -73,7 +73,7 @@ export default function PageTransition({ children, className }: PageTransitionPr
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="sync" initial={true}>
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location.pathname}
         initial="initial"
