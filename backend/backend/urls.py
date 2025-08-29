@@ -18,8 +18,8 @@ from django.views.static import serve
 from django.urls import re_path
 
 router = DefaultRouter()
-router.register(r'projects', ProjectViewSet)
-router.register(r'services', ServiceViewSet)
+router.register(r'projects', ProjectViewSet, basename='project')
+router.register(r'services', ServiceViewSet, basename='service')
 router.register(r'project-images', ProjectImageViewSet, basename='projectimage')
 router.register(r'service-images', ServiceImageViewSet, basename='serviceimage')
 router.register(r'admin/projects', AdminProjectViewSet, basename='admin-projects')

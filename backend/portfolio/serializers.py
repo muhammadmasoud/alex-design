@@ -138,11 +138,11 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_featured_album_images(self, obj):
         """Get first few album images for preview - optimized"""
-        # Use prefetched data if available
-        if hasattr(obj, 'prefetched_featured_images'):
-            featured_images = obj.prefetched_featured_images
+        # Use prefetched data if available to avoid N+1 queries
+        if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
+            featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
         else:
-            featured_images = obj.album_images.all()
+            featured_images = obj.album_images.all()[:6]
         return ProjectImageSerializer(featured_images, many=True, context=self.context).data
     
     def to_representation(self, instance):
@@ -205,12 +205,16 @@ class ServiceSerializer(serializers.ModelSerializer):
         return obj.get_subcategory_name()
     
     def get_album_images_count(self, obj):
-        """Get the count of album images"""
-        return obj.get_album_images_count()
+        """Get the count of album images - optimized to avoid extra queries"""
+        return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
     
     def get_featured_album_images(self, obj):
-        """Get all album images for preview"""
-        featured_images = obj.get_featured_album_images(limit=None)
+        """Get all album images for preview - optimized"""
+        # Use prefetched data if available to avoid N+1 queries
+        if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
+            featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
+        else:
+            featured_images = obj.album_images.all()[:6]
         return ServiceImageSerializer(featured_images, many=True, context=self.context).data
     
     def to_representation(self, instance):

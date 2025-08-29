@@ -79,13 +79,22 @@ class ServiceFilter(FilterSet):
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all().order_by('order', '-project_date')
     serializer_class = ProjectSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProjectFilter
     search_fields = ['title', 'description']
     ordering_fields = ['project_date', 'title', 'order']
     ordering = ['order', '-project_date']
+
+    def get_queryset(self):
+        """Optimized queryset with prefetching to avoid N+1 queries"""
+        return Project.objects.select_related().prefetch_related(
+            'categories',
+            'subcategories', 
+            'album_images'
+        ).annotate(
+            album_images_count_annotated=models.Count('album_images')
+        ).order_by('order', '-project_date')
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -255,13 +264,22 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by('order', 'name')
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'order']
     ordering = ['order', 'name']
+
+    def get_queryset(self):
+        """Optimized queryset with prefetching to avoid N+1 queries"""
+        return Service.objects.select_related().prefetch_related(
+            'categories',
+            'subcategories',
+            'album_images'
+        ).annotate(
+            album_images_count_annotated=models.Count('album_images')
+        ).order_by('order', 'name')
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -471,11 +489,11 @@ class CategorySubcategoriesView(APIView):
         from .models import ProjectCategory, ProjectSubcategory, ServiceCategory, ServiceSubcategory
         
         if model_type == 'service':
-            # Get service categories from database
+            # Get service categories from database with optimized queries
             if category:
                 # Find the category and return its subcategories
                 try:
-                    cat_obj = ServiceCategory.objects.get(name=category)
+                    cat_obj = ServiceCategory.objects.prefetch_related('subcategories').get(name=category)
                     subcategories = [
                         {'value': sub.name, 'label': sub.name} 
                         for sub in cat_obj.subcategories.all()
@@ -490,7 +508,7 @@ class CategorySubcategoriesView(APIView):
                         'subcategories': []
                     })
             else:
-                # Return all service categories and their subcategories
+                # Return all service categories and their subcategories with optimized query
                 categories = ServiceCategory.objects.prefetch_related('subcategories').all()
                 formatted_categories = {}
                 category_list = []
@@ -509,11 +527,11 @@ class CategorySubcategoriesView(APIView):
                     'category_list': category_list
                 })
         else:
-            # Get project categories from database
+            # Get project categories from database with optimized queries
             if category:
                 # Find the category and return its subcategories
                 try:
-                    cat_obj = ProjectCategory.objects.get(name=category)
+                    cat_obj = ProjectCategory.objects.prefetch_related('subcategories').get(name=category)
                     subcategories = [
                         {'value': sub.name, 'label': sub.name} 
                         for sub in cat_obj.subcategories.all()
@@ -528,7 +546,7 @@ class CategorySubcategoriesView(APIView):
                         'subcategories': []
                     })
             else:
-                # Return all project categories and their subcategories
+                # Return all project categories and their subcategories with optimized query
                 categories = ProjectCategory.objects.prefetch_related('subcategories').all()
                 formatted_categories = {}
                 category_list = []
@@ -945,7 +963,6 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
     Admin-only ViewSet for projects without pagination.
     Used by the admin dashboard to display all projects.
     """
-    queryset = Project.objects.all().order_by('order', '-project_date')
     serializer_class = ProjectSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProjectFilter
@@ -954,6 +971,16 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
     ordering = ['order', '-project_date']
     permission_classes = [IsAdminUser]
     pagination_class = None  # Disable pagination
+
+    def get_queryset(self):
+        """Optimized queryset with prefetching to avoid N+1 queries"""
+        return Project.objects.select_related().prefetch_related(
+            'categories',
+            'subcategories', 
+            'album_images'
+        ).annotate(
+            album_images_count_annotated=models.Count('album_images')
+        ).order_by('order', '-project_date')
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
@@ -1087,7 +1114,6 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
     Admin-only ViewSet for services without pagination.
     Used by the admin dashboard to display all services.
     """
-    queryset = Service.objects.all().order_by('order', 'name')
     serializer_class = ServiceSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
@@ -1096,6 +1122,16 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
     ordering = ['order', 'name']
     permission_classes = [IsAdminUser]
     pagination_class = None  # Disable pagination
+
+    def get_queryset(self):
+        """Optimized queryset with prefetching to avoid N+1 queries"""
+        return Service.objects.select_related().prefetch_related(
+            'categories',
+            'subcategories',
+            'album_images'
+        ).annotate(
+            album_images_count_annotated=models.Count('album_images')
+        ).order_by('order', 'name')
 
     def get_serializer_context(self):
         """Add request to serializer context so it can build absolute URLs"""
