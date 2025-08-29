@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
-import ProgressiveImage from "@/components/ProgressiveImage";
+
 import ImageLightbox from "@/components/ImageLightbox";
 
 // Animation variants now imported from PageTransition component
@@ -175,12 +175,10 @@ export default function ProjectDetail() {
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
           <Card className="overflow-hidden shadow-2xl group">
-            <ProgressiveImage
+            <img
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
-              priority={true}
               className="w-full h-auto object-cover cursor-pointer"
-              enableLightbox={true}
               onClick={() => {
                 openLightbox(
                   project.image || '/placeholder.svg',

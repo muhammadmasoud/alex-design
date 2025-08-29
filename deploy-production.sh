@@ -64,24 +64,13 @@ pip install -r requirements.txt
 print_status "Running database migrations..."
 python manage.py migrate
 
-# Step 4: Optimize existing images (if needed)
-print_status "Checking for images that need optimization..."
-python manage.py optimize_images --dry-run
+# Step 4: Collect static files
 
-read -p "Do you want to optimize existing images? This may take some time. (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Optimizing images for production..."
-    python manage.py optimize_images --batch-size=5
-else
-    print_status "Skipping image optimization"
-fi
-
-# Step 5: Collect static files
+# Step 5: Build frontend (if needed)
 print_status "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Step 6: Build frontend (if needed)
+# Step 5: Build frontend (if needed)
 if [ -d "$FRONTEND_DIR" ]; then
     print_status "Building frontend..."
     cd "$FRONTEND_DIR"
@@ -109,7 +98,7 @@ if [ -d "$FRONTEND_DIR" ]; then
     fi
 fi
 
-# Step 7: Set correct permissions
+# Step 6: Set correct permissions
 print_status "Setting correct file permissions..."
 cd "$BACKEND_DIR"
 sudo chown -R ubuntu:ubuntu media/
@@ -123,7 +112,7 @@ mkdir -p media/services
 mkdir -p media/projects/albums
 mkdir -p media/services/albums
 
-# Step 8: Update Gunicorn configuration if needed
+# Step 7: Update Gunicorn configuration if needed
 print_status "Checking Gunicorn configuration..."
 if [ ! -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
     print_status "Creating Gunicorn service file..."
@@ -156,7 +145,7 @@ EOF
     sudo systemctl enable "$SERVICE_NAME"
 fi
 
-# Step 9: Update NGINX configuration if needed
+# Step 8: Update NGINX configuration if needed
 print_status "Checking NGINX configuration..."
 NGINX_CONFIG="/etc/nginx/sites-available/$SERVICE_NAME"
 if [ ! -f "$NGINX_CONFIG" ]; then

@@ -9,10 +9,10 @@ import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import ProgressiveImage from "@/components/ProgressiveImage";
+
 import ImageLightbox from "@/components/ImageLightbox";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
-import { useImagePreload } from "@/hooks/useImagePreload";
+
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,22 +35,7 @@ const Index = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
 
-  // Use the intelligent image preload hook
-  const { markAsUsed } = useImagePreload({ 
-    src: hero, 
-    priority: 'high',
-    timeout: 3000 // Shorter timeout for hero image
-  });
 
-  // Mark hero image as used immediately when component mounts
-  useEffect(() => {
-    // Small delay to ensure the preload hook has run
-    const timer = setTimeout(() => {
-      markAsUsed();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [markAsUsed]);
 
   // Auto-slide functionality for Architecture Design
   useEffect(() => {
@@ -309,20 +294,18 @@ const Index = () => {
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                       className="absolute inset-0"
                     >
-                                             <ProgressiveImage
-                         src={architectureProjects[currentSlide].image || "/placeholder.svg"}
-                         alt={architectureProjects[currentSlide].title}
-                         className="h-full w-full object-cover cursor-pointer"
-                         priority={true}
-                         enableLightbox={true}
-                                                   onClick={() => {
-                            openLightbox(
-                              architectureProjects[currentSlide].image || "/placeholder.svg",
-                              architectureProjects[currentSlide].title,
-                              architectureProjects[currentSlide].title
-                            );
-                          }}
-                       />
+                      <img
+                        src={architectureProjects[currentSlide].image || "/placeholder.svg"}
+                        alt={architectureProjects[currentSlide].title}
+                        className="h-full w-full object-cover cursor-pointer"
+                        onClick={() => {
+                          openLightbox(
+                            architectureProjects[currentSlide].image || "/placeholder.svg",
+                            architectureProjects[currentSlide].title,
+                            architectureProjects[currentSlide].title
+                          );
+                        }}
+                      />
                       
                       {/* Subtle overlay for text readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -411,11 +394,10 @@ const Index = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <ProgressiveImage
+                      <img
                         src={project.image || "/placeholder.svg"}
                         alt={project.title}
                         className="h-full w-full object-cover"
-                        priority={false}
                       />
                       
                       {/* Active indicator */}
@@ -633,20 +615,18 @@ const Index = () => {
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                       className="absolute inset-0"
                     >
-                                             <ProgressiveImage
-                         src={interiorProjects[currentInteriorSlide].image || "/placeholder.svg"}
-                         alt={interiorProjects[currentInteriorSlide].title}
-                         className="h-full w-full object-cover cursor-pointer"
-                         priority={true}
-                         enableLightbox={true}
-                                                   onClick={() => {
-                            openLightbox(
-                              interiorProjects[currentInteriorSlide].image || "/placeholder.svg",
-                              interiorProjects[currentInteriorSlide].title,
-                              interiorProjects[currentInteriorSlide].title
-                            );
-                          }}
-                       />
+                      <img
+                        src={interiorProjects[currentInteriorSlide].image || "/placeholder.svg"}
+                        alt={interiorProjects[currentInteriorSlide].title}
+                        className="h-full w-full object-cover cursor-pointer"
+                        onClick={() => {
+                          openLightbox(
+                            interiorProjects[currentInteriorSlide].image || "/placeholder.svg",
+                            interiorProjects[currentInteriorSlide].title,
+                            interiorProjects[currentInteriorSlide].title
+                          );
+                        }}
+                      />
                       
                       {/* Subtle overlay for text readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -735,11 +715,10 @@ const Index = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <ProgressiveImage
+                      <img
                         src={project.image || "/placeholder.svg"}
                         alt={project.title}
                         className="h-full w-full object-cover"
-                        priority={false}
                       />
                       
                       {/* Active indicator */}

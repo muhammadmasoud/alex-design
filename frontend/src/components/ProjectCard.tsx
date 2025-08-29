@@ -4,7 +4,7 @@ import { Project } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Tag, Eye } from "lucide-react";
 import { motion } from "framer-motion";
-import ProgressiveImage from "@/components/ProgressiveImage";
+
 
 interface Props {
   project: Project;
@@ -36,14 +36,10 @@ export default function ProjectCard({ project }: Props) {
       >
         <CardHeader className="p-0 relative">
           <div className="relative overflow-hidden h-48">
-            <ProgressiveImage
+            <img
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              priority={false}
-              onError={() => {
-                // Error handling is built into ProgressiveImage
-              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
