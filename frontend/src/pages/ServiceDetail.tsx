@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
-
+import ProgressiveImage from "@/components/ProgressiveImage";
 import ImageLightbox from "@/components/ImageLightbox";
 
 // Animation variants now imported from PageTransition component
@@ -196,10 +196,12 @@ export default function ServiceDetail() {
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
                      <Card className="overflow-hidden shadow-2xl group">
-            <img
+            <ProgressiveImage
               src={service.icon || '/placeholder.svg'}
               alt={`${service.name} architectural service`}
               className="w-full h-96 object-cover cursor-pointer rounded-lg shadow-lg"
+              priority={true}
+              enableLightbox={true}
               onClick={() => {
                 openLightbox(
                   service.icon || '/placeholder.svg',

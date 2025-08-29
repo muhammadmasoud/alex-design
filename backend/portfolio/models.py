@@ -4,7 +4,15 @@ from django.utils.text import slugify
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-
+from PIL import Image
+import io
+from .enhanced_image_optimizer import optimize_uploaded_image, get_responsive_image_urls
+# Register HEIF opener for iPhone photos
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass  # If pillow-heif is not installed, HEIC support won't work
 
 # Dynamic Category Models
 class ProjectCategory(models.Model):
@@ -61,23 +69,50 @@ class ServiceSubcategory(models.Model):
 
 def validate_image(image):
     """
-    Validate uploaded image file
+    Validate uploaded image file - handles iPhone HEIC and other formats
     """
     try:
         # Check file size (25MB max)
         if image.size > 25 * 1024 * 1024:
             raise ValidationError("Image file too large. Maximum size is 25MB.")
         
-        # Check file extension
-        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.tif']
-        file_extension = os.path.splitext(image.name.lower())[1]
-        
-        if file_extension not in valid_extensions:
-            raise ValidationError(f"Unsupported image format: {file_extension}. Supported formats: JPG, PNG, GIF, BMP, WebP, TIFF")
-        
         # Reset file pointer
         image.seek(0)
         
+        # Try to open and validate the image
+        try:
+            img = Image.open(image)
+            
+            # Handle iPhone HEIC files and convert them
+            if img.format == 'HEIF' or image.name.lower().endswith(('.heic', '.heif')):
+                # Convert HEIC to JPEG
+                rgb_img = img.convert('RGB')
+                # Save converted image back to the same file object
+                image.seek(0)
+                rgb_img.save(image, format='JPEG', quality=85)
+                image.seek(0)
+                img = Image.open(image)
+            
+            # Check for supported formats (more inclusive)
+            valid_formats = ['JPEG', 'JPG', 'PNG', 'GIF', 'BMP', 'WEBP', 'TIFF', 'HEIF']
+            if img.format and img.format not in valid_formats:
+                raise ValidationError(f"Unsupported image format: {img.format}. Supported formats: JPEG, PNG, GIF, BMP, WebP, TIFF")
+            
+            # Verify the image can be processed
+            img.verify()
+            
+        except Exception as img_error:
+            # If PIL fails, try to give a more specific error
+            error_msg = str(img_error).lower()
+            if 'heif' in error_msg or 'heic' in error_msg:
+                raise ValidationError("HEIC/HEIF format detected. Please convert to JPEG or PNG, or use a different photo.")
+            elif 'truncated' in error_msg:
+                raise ValidationError("Image file appears to be corrupted or incomplete.")
+            elif 'decode' in error_msg:
+                raise ValidationError("Unable to decode image. Please try a different image format.")
+            else:
+                raise ValidationError(f"Invalid image file: {str(img_error)}")
+            
     except ValidationError:
         raise
     except Exception as e:
@@ -241,7 +276,10 @@ class Project(models.Model):
             except Project.DoesNotExist:
                 pass
         
+        # Auto-optimize image on save
         super().save(*args, **kwargs)
+        if self.image:
+            optimize_uploaded_image(self.image, self)
 
     def __str__(self):
         return self.title
@@ -285,7 +323,11 @@ class Project(models.Model):
             return self.album_images.all()
         return self.album_images.all()[:limit]
     
-
+    def get_optimized_image_url(self, size='md', format='webp', quality='high'):
+        """Get optimized image URL for different sizes and formats"""
+        if not self.image:
+            return None
+        return get_responsive_image_urls(self.image.name, [size])[size]
 
 class Service(models.Model):
     name = models.CharField(max_length=100)
@@ -334,7 +376,10 @@ class Service(models.Model):
             except Service.DoesNotExist:
                 pass
         
+        # Auto-optimize icon on save
         super().save(*args, **kwargs)
+        if self.icon:
+            optimize_uploaded_image(self.icon, self)
 
     def __str__(self):
         return self.name
@@ -378,7 +423,11 @@ class Service(models.Model):
             return self.album_images.all()
         return self.album_images.all()[:limit]
     
-
+    def get_optimized_image_url(self, size='md', format='webp', quality='high'):
+        """Get optimized image URL for different sizes and formats"""
+        if not self.icon:
+            return None
+        return get_responsive_image_urls(self.icon.name, [size])[size]
 
 
 class ProjectImage(models.Model):

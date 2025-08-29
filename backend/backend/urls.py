@@ -10,7 +10,7 @@ from portfolio.views import (
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
-    ServiceCategoryViewSet, ServiceSubcategoryViewSet
+    ServiceCategoryViewSet, ServiceSubcategoryViewSet, PublicCategoryView
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/auth/register/', csrf_exempt(RegistrationView.as_view()), name='register'),
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='login'),
     path('api/categories/subcategories/', CategorySubcategoriesView.as_view(), name='category-subcategories'),
+    path('api/categories/public/', PublicCategoryView.as_view(), name='public-categories'),
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/admin/storage-stats/', AdminStorageStatsView.as_view(), name='admin-storage-stats'),
     path('api/admin/check/', csrf_exempt(AdminCheckView.as_view()), name='admin-check'),

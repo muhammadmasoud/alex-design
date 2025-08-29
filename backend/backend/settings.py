@@ -91,12 +91,14 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
+    'imagekit',
     'portfolio',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'portfolio.middleware.ImageServingMiddleware',
+    'portfolio.middleware.ImageCacheMiddleware',
+    'portfolio.middleware.ImageErrorHandlerMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -226,12 +228,41 @@ else:
         'django.core.files.uploadhandler.MemoryFileUploadHandler',
     ]
 
-# Image validation settings
+# Image validation and optimization settings
 ALLOWED_IMAGE_TYPES = [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
     'image/bmp', 'image/webp', 'image/tiff'
 ]
 MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
+
+# Image optimization settings for production
+IMAGE_OPTIMIZATION = {
+    'ENABLE_OPTIMIZATION': True,  # Always optimize images
+    'MAX_WIDTH': 2560,  # Maximum width for large images
+    'MAX_HEIGHT': 1440, # Maximum height for large images
+    'QUALITY': 98,      # Very high quality (near-lossless for web)
+    'FORMAT': 'WEBP',   # Convert all images to WebP for better compression
+    'WEBP_QUALITY': 98, # WebP quality setting (98% for high quality)
+    'DELETE_ORIGINAL': True,  # Delete original files after optimization
+    'GENERATE_THUMBNAILS': True,  # Generate multiple sizes
+    'THUMBNAIL_SIZES': {
+        'xs': (150, 150),      # Grid thumbnails
+        'sm': (300, 300),      # Small previews
+        'md': (600, 600),      # Medium previews
+        'lg': (800, 800),      # Large previews
+        'xl': (1200, 1200),    # High-res previews
+        'full': (1920, 1080),  # Full HD for lightbox
+    },
+    'PROGRESSIVE_JPEG': True,  # Progressive JPEG loading (fallback)
+    'OPTIMIZE_ON_UPLOAD': True,  # Optimize immediately when uploaded
+    'CACHE_OPTIMIZED': True,   # Cache optimized versions
+    'COMPRESSION_METHOD': 6,   # WebP compression method (0-6, 6 is best)
+    'LOSSLESS_THRESHOLD': 0.95,  # Use lossless compression above 95% quality
+}
+
+# Media file caching settings for better performance
+MEDIA_CACHE_MAX_AGE = 86400 * 30  # 30 days for images
+STATIC_CACHE_MAX_AGE = 86400 * 365  # 1 year for static files
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

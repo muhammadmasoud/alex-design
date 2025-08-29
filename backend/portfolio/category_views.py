@@ -2,11 +2,47 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from .models import ProjectCategory, ProjectSubcategory, ServiceCategory, ServiceSubcategory
 from .category_serializers import (
     ProjectCategorySerializer, ProjectSubcategorySerializer,
     ServiceCategorySerializer, ServiceSubcategorySerializer
 )
+
+class PublicCategoryView(APIView):
+    """
+    Public endpoint for getting categories and subcategories without authentication
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get categories and subcategories based on type parameter"""
+        category_type = request.query_params.get('type', 'project')
+        
+        if category_type == 'project':
+            categories = ProjectCategory.objects.all()
+            subcategories = ProjectSubcategory.objects.all()
+            category_serializer = ProjectCategorySerializer
+            subcategory_serializer = ProjectSubcategorySerializer
+        elif category_type == 'service':
+            categories = ServiceCategory.objects.all()
+            subcategories = ServiceSubcategory.objects.all()
+            category_serializer = ServiceCategorySerializer
+            subcategory_serializer = ServiceSubcategorySerializer
+        else:
+            return Response({'error': 'Invalid type parameter. Use "project" or "service"'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Filter by category if specified
+        category_id = request.query_params.get('category', None)
+        if category_id is not None:
+            subcategories = subcategories.filter(category_id=category_id)
+        
+        return Response({
+            'categories': category_serializer(categories, many=True).data,
+            'subcategories': subcategory_serializer(subcategories, many=True).data
+        })
 
 class ProjectCategoryViewSet(viewsets.ModelViewSet):
     queryset = ProjectCategory.objects.all()

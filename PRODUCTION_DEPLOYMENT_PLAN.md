@@ -51,7 +51,12 @@ curl -I http://your-server-ip/media/projects/some-image.png
 # Should return 200 OK
 ```
 
-
+### Step 4: Run Optimization (OPTIONAL)
+```bash
+# ONLY run this if you want to optimize existing images
+cd backend
+python optimize_images_comprehensive.py
+```
 
 ## ⚠️ What to AVOID in Production
 
@@ -97,17 +102,23 @@ Your current nginx.conf is EXCELLENT and needs NO changes. It already has:
 2. Test all existing functionality
 3. Verify no broken images
 
+### Phase 2: Optimization (OPTIONAL)
+1. Run image analysis: `python analyze_images.py`
+2. If satisfied, run: `python optimize_images_comprehensive.py`
+3. Monitor performance improvements
 
-
-
+### Phase 3: Frontend Enhancement (SAFE)
+1. Deploy enhanced React components
+2. Test WebP support
+3. Verify fallbacks work
 
 ## 💡 Key Benefits Already Achieved
 
-Your current setup provides:
-- ✅ Simple image serving
-- ✅ Basic error handling
-- ✅ Standard frontend components
-- ✅ Clean development workflow
+Even without running the optimization script:
+- ✅ Better image serving middleware
+- ✅ Enhanced error handling
+- ✅ Improved frontend component
+- ✅ Better development workflow
 
 ## 🚨 Emergency Rollback Plan
 

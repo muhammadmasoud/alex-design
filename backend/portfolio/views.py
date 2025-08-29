@@ -698,16 +698,25 @@ class AdminCheckView(APIView):
     """
     Check if current user is admin
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
     
     def get(self, request):
-        user = request.user
-        return Response({
-            'is_admin': user.is_superuser or user.is_staff,
-            'is_superuser': user.is_superuser,
-            'username': user.username,
-            'email': user.email
-        })
+        if request.user.is_authenticated:
+            return Response({
+                'is_admin': request.user.is_superuser or request.user.is_staff,
+                'is_superuser': request.user.is_superuser,
+                'username': request.user.username,
+                'email': request.user.email,
+                'authenticated': True
+            })
+        else:
+            return Response({
+                'is_admin': False,
+                'is_superuser': False,
+                'username': None,
+                'email': None,
+                'authenticated': False
+            })
 
 
 class CSRFTokenView(APIView):
