@@ -5,7 +5,6 @@ from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django.core.files.storage import default_storage
 from rest_framework.authtoken.models import Token
-from django.utils.text import slugify
 from .models import Project, Service, User, ProjectImage, ServiceImage
 from .image_utils import optimize_image, should_optimize_image
 import os
@@ -15,25 +14,6 @@ import os
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
-
-
-@receiver(post_save, sender=Project)
-def create_project_folders(sender, instance, created, **kwargs):
-    """
-    Create project folders after project is successfully saved
-    """
-    if created and instance.title:
-        try:
-            instance._create_project_folders()
-        except Exception as e:
-            print(f"Error creating project folders: {e}")
-    
-    # Handle title changes for existing projects
-    if not created and instance.title:
-        try:
-            instance.update_image_path_if_needed()
-        except Exception as e:
-            print(f"Error updating image paths: {e}")
 
 
 @receiver(pre_save, sender=Project)
@@ -121,10 +101,6 @@ def optimize_and_cleanup_project_album_image(sender, instance, **kwargs):
     """
     Optimize new project album images and delete old ones
     """
-    # Ensure album folder exists before saving
-    if instance.project and instance.project.title:
-        instance._ensure_album_folder_exists()
-    
     # Delete old image if updating
     if instance.pk:
         try:
@@ -203,9 +179,6 @@ def optimize_and_cleanup_service_album_image(sender, instance, **kwargs):
 @receiver(post_delete, sender=Project)
 def delete_project_files(sender, instance, **kwargs):
     """Delete project image file and all related album images when project is deleted"""
-    import shutil
-    from django.conf import settings
-    
     # Delete main project image
     if instance.image:
         try:
@@ -222,16 +195,6 @@ def delete_project_files(sender, instance, **kwargs):
                     os.remove(album_image.image.path)
             except (ValueError, OSError):
                 pass
-    
-    # Delete entire project folder if it exists
-    if instance.title:
-        try:
-            project_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(instance.title))
-            if os.path.exists(project_folder):
-                shutil.rmtree(project_folder)
-                print(f"Deleted project folder: {project_folder}")
-        except Exception as e:
-            print(f"Error deleting project folder: {e}")
 
 
 @receiver(post_delete, sender=Service)

@@ -133,17 +133,14 @@ def project_image_upload_path(instance, filename):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     unique_id = str(uuid.uuid4())[:8]
     
-    # Use title if available, otherwise use a generic name
-    if hasattr(instance, 'title') and instance.title:
+    if instance.title:
         base_name = slugify(instance.title)[:50]  # Limit length
         filename = f"{base_name}_{timestamp}_{unique_id}.{ext}"
-        project_folder = f"projects/{base_name}"
     else:
         filename = f"project_{timestamp}_{unique_id}.{ext}"
-        project_folder = "projects/project"
     
-    # Full path - main image goes directly in project folder
-    upload_path = f"{project_folder}/{filename}"
+    # Full path
+    upload_path = f"projects/{filename}"
     
     return upload_path
 
@@ -188,19 +185,14 @@ def project_album_image_upload_path(instance, filename):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     unique_id = str(uuid.uuid4())[:8]
     
-    # Use project title if available, otherwise use a generic name
-    if hasattr(instance, 'project') and instance.project and hasattr(instance.project, 'title') and instance.project.title:
+    if instance.project.title:
         base_name = slugify(instance.project.title)[:50]  # Limit length
         filename = f"{base_name}_album_{timestamp}_{unique_id}.{ext}"
-        project_folder = f"projects/{base_name}"
     else:
         filename = f"project_album_{timestamp}_{unique_id}.{ext}"
-        project_folder = "projects/project"
     
-    album_folder = f"{project_folder}/album"
-    
-    # Full path - album images go in album subfolder
-    upload_path = f"{album_folder}/{filename}"
+    # Full path
+    upload_path = f"projects/albums/{filename}"
     
     return upload_path
 
@@ -288,85 +280,6 @@ class Project(models.Model):
         super().save(*args, **kwargs)
         if self.image:
             optimize_uploaded_image(self.image, self)
-    
-    def update_image_path_if_needed(self):
-        """Update image path if title has changed and image exists"""
-        if self.pk and self.image and self.title:
-            try:
-                old_instance = Project.objects.get(pk=self.pk)
-                if old_instance.title != self.title:
-                    # Title has changed, we need to move the image to the new folder
-                    self._move_image_to_new_folder(old_instance.title)
-            except Project.DoesNotExist:
-                pass
-    
-    def _move_image_to_new_folder(self, old_title):
-        """Move image from old folder to new folder when title changes"""
-        import os
-        import shutil
-        from django.conf import settings
-        
-        if not self.image or not self.title:
-            return
-        
-        try:
-            old_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(old_title))
-            new_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(self.title))
-            
-            if os.path.exists(old_folder) and old_folder != new_folder:
-                # Create new folder structure
-                os.makedirs(new_folder, exist_ok=True)
-                album_folder = os.path.join(new_folder, 'album')
-                os.makedirs(album_folder, exist_ok=True)
-                
-                # Move image files
-                if os.path.exists(self.image.path):
-                    new_image_path = os.path.join(new_folder, os.path.basename(self.image.name))
-                    shutil.move(self.image.path, new_image_path)
-                    
-                    # Update the image field
-                    self.image.name = os.path.relpath(new_image_path, settings.MEDIA_ROOT)
-                
-                # Move album images if they exist
-                for album_image in self.album_images.all():
-                    if album_image.image and os.path.exists(album_image.image.path):
-                        new_album_path = os.path.join(album_folder, os.path.basename(album_image.image.name))
-                        shutil.move(album_image.image.path, new_album_path)
-                        album_image.image.name = os.path.relpath(new_album_path, settings.MEDIA_ROOT)
-                        album_image.save(update_fields=['image'])
-                
-                # Remove old folder
-                if os.path.exists(old_folder):
-                    shutil.rmtree(old_folder)
-                    
-        except Exception as e:
-            print(f"Error moving image to new folder: {e}")
-    
-    def _create_project_folders(self):
-        """Create the project folder structure automatically"""
-        import os
-        from django.conf import settings
-        
-        if not self.title:
-            return
-        
-        # Create base project folder
-        project_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(self.title))
-        album_folder = os.path.join(project_folder, 'album')
-        
-        try:
-            # Create project folder
-            if not os.path.exists(project_folder):
-                os.makedirs(project_folder, exist_ok=True)
-                print(f"Created project folder: {project_folder}")
-            
-            # Create album subfolder
-            if not os.path.exists(album_folder):
-                os.makedirs(album_folder, exist_ok=True)
-                print(f"Created album folder: {album_folder}")
-                
-        except Exception as e:
-            print(f"Error creating project folders: {e}")
 
     def __str__(self):
         return self.title
@@ -560,10 +473,6 @@ class ProjectImage(models.Model):
         return f"{self.project.title} - Image {self.pk}"
     
     def save(self, *args, **kwargs):
-        # Ensure project album folder exists before saving
-        if self.project and self.project.title:
-            self._ensure_album_folder_exists()
-        
         # Delete old image if updating and a new image is provided
         if self.pk:
             try:
@@ -578,32 +487,6 @@ class ProjectImage(models.Model):
             except ProjectImage.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
-    
-    def _ensure_album_folder_exists(self):
-        """Ensure the album folder exists for this project"""
-        import os
-        from django.conf import settings
-        
-        if not self.project or not self.project.title:
-            return
-        
-        # Create project album folder
-        project_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(self.project.title))
-        album_folder = os.path.join(project_folder, 'album')
-        
-        try:
-            # Create project folder if it doesn't exist
-            if not os.path.exists(project_folder):
-                os.makedirs(project_folder, exist_ok=True)
-                print(f"Created project folder: {project_folder}")
-            
-            # Create album subfolder if it doesn't exist
-            if not os.path.exists(album_folder):
-                os.makedirs(album_folder, exist_ok=True)
-                print(f"Created album folder: {album_folder}")
-                
-        except Exception as e:
-            print(f"Error creating album folder: {e}")
 
     def delete(self, *args, **kwargs):
         # Delete the image file when deleting the model instance
