@@ -32,7 +32,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
     
     def get_image_url(self, obj):
-        """Get the optimized image URL"""
+        """Get the fast optimized image URL"""
         if obj.image:
             try:
                 # Import the function here to avoid circular imports
@@ -41,8 +41,10 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                 if optimized_url:
                     request = self.context.get('request')
                     if request:
-                        return request.build_absolute_uri(optimized_url)
-                    return optimized_url
+                        # Use fast image serving
+                        fast_url = f"/fast-image/{optimized_url}"
+                        return request.build_absolute_uri(fast_url)
+                    return f"/fast-image/{optimized_url}"
                 else:
                     # Fallback to original if optimization fails
                     request = self.context.get('request')
@@ -70,11 +72,15 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                 if optimized_url:
                     request = self.context.get('request')
                     if request:
-                        representation['image'] = request.build_absolute_uri(optimized_url)
-                        representation['image_url'] = request.build_absolute_uri(optimized_url)
+                        # Use fast image serving
+                        fast_url = f"/fast-image/{optimized_url}"
+                        representation['image'] = request.build_absolute_uri(fast_url)
+                        representation['image_url'] = request.build_absolute_uri(fast_url)
                     else:
-                        representation['image'] = optimized_url
-                        representation['image_url'] = optimized_url
+                        # Use fast image serving
+                        fast_url = f"/fast-image/{optimized_url}"
+                        representation['image'] = fast_url
+                        representation['image_url'] = fast_url
                 else:
                     # Fallback to original if optimization fails
                     request = self.context.get('request')
