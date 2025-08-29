@@ -5,7 +5,7 @@ import os
 from django.core.management.base import BaseCommand, CommandError
 from django.core.files import File
 from portfolio.models import Project, ServiceItem, ProjectImage, ServiceImage
-from portfolio.image_utils import optimize_image
+from portfolio.consolidated_image_optimizer import optimize_image
 from django.conf import settings
 
 

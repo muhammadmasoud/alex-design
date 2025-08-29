@@ -241,9 +241,11 @@ IMAGE_OPTIMIZATION = {
     'MAX_WIDTH': 2560,  # Maximum width for large images
     'MAX_HEIGHT': 1440, # Maximum height for large images
     'QUALITY': 98,      # Very high quality (near-lossless for web)
-    'FORMAT': 'WEBP',   # Convert all images to WebP for better compression
+    'FORMAT': 'AUTO',   # Auto-choose best format based on content
     'WEBP_QUALITY': 98, # WebP quality setting (98% for high quality)
-    'DELETE_ORIGINAL': True,  # Delete original files after optimization
+    'JPEG_QUALITY': 95, # JPEG quality setting (95% for high quality)
+    'PNG_QUALITY': 9,   # PNG compression level (0-9, 9 is best)
+    'DELETE_ORIGINAL': False,  # Keep original files for safety
     'GENERATE_THUMBNAILS': True,  # Generate multiple sizes
     'THUMBNAIL_SIZES': {
         'xs': (150, 150),      # Grid thumbnails
@@ -258,6 +260,7 @@ IMAGE_OPTIMIZATION = {
     'CACHE_OPTIMIZED': True,   # Cache optimized versions
     'COMPRESSION_METHOD': 6,   # WebP compression method (0-6, 6 is best)
     'LOSSLESS_THRESHOLD': 0.95,  # Use lossless compression above 95% quality
+    'ENABLE_AVIF': False,      # Enable AVIF format (future enhancement)
 }
 
 # Media file caching settings for better performance

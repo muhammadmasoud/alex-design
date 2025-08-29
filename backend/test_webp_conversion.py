@@ -10,7 +10,7 @@ from django.conf import settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
-from portfolio.enhanced_image_optimizer import EnhancedImageOptimizer
+from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
 
 def test_webp_conversion():
     """Test the WebP conversion system"""
@@ -19,7 +19,7 @@ def test_webp_conversion():
     
     # Test optimizer initialization
     try:
-        optimizer = EnhancedImageOptimizer()
+        optimizer = ConsolidatedImageOptimizer()
         print("✅ EnhancedImageOptimizer initialized successfully")
         
         # Show settings

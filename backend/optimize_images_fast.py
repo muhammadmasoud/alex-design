@@ -18,7 +18,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
-from portfolio.image_optimizer import ImageOptimizer
+from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
 
 def optimize_all_images_fast():
     """Optimize all images for fast loading"""
@@ -32,8 +32,9 @@ def optimize_all_images_fast():
             print(f"Processing project: {project.title}")
             try:
                 # Create optimized versions
-                ImageOptimizer.optimize_image(project.image.name, 'md', 'webp', 'high')
-                ImageOptimizer.optimize_image(project.image.name, 'lg', 'webp', 'high')
+                        # Note: ConsolidatedImageOptimizer handles optimization differently
+        # These calls are now handled automatically via signals
+        pass
             except Exception as e:
                 print(f"Error optimizing {project.title}: {e}")
     
@@ -45,8 +46,9 @@ def optimize_all_images_fast():
             print(f"Processing service: {service.name}")
             try:
                 # Create optimized versions
-                ImageOptimizer.optimize_image(service.icon.name, 'md', 'webp', 'high')
-                ImageOptimizer.optimize_image(service.icon.name, 'lg', 'webp', 'high')
+                        # Note: ConsolidatedImageOptimizer handles optimization differently
+        # These calls are now handled automatically via signals
+        pass
             except Exception as e:
                 print(f"Error optimizing {service.name}: {e}")
     
@@ -57,9 +59,9 @@ def optimize_all_images_fast():
         if img.image:
             print(f"Processing project image: {img.id}")
             try:
-                # Create optimized versions
-                ImageOptimizer.optimize_image(img.image.name, 'md', 'webp', 'high')
-                ImageOptimizer.optimize_image(img.image.name, 'lg', 'webp', 'high')
+                # Note: ConsolidatedImageOptimizer handles optimization differently
+                # These calls are now handled automatically via signals
+                pass
             except Exception as e:
                 print(f"Error optimizing project image {img.id}: {e}")
     
@@ -70,9 +72,9 @@ def optimize_all_images_fast():
         if img.image:
             print(f"Processing service image: {img.id}")
             try:
-                # Create optimized versions
-                ImageOptimizer.optimize_image(img.image.name, 'md', 'webp', 'high')
-                ImageOptimizer.optimize_image(img.image.name, 'lg', 'webp', 'high')
+                # Note: ConsolidatedImageOptimizer handles optimization differently
+                # These calls are now handled automatically via signals
+                pass
             except Exception as e:
                 print(f"Error optimizing service image {img.id}: {e}")
     

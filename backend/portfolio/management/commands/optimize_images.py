@@ -9,7 +9,7 @@ This command will:
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
-from portfolio.image_utils import optimize_image, should_optimize_image
+from portfolio.consolidated_image_optimizer import optimize_image, should_optimize_image
 import os
 import time
 

@@ -4,7 +4,7 @@ Management command to optimize all existing images to WebP format
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from portfolio.models import Project, ProjectImage, Service, ServiceImage
-from portfolio.enhanced_image_optimizer import EnhancedImageOptimizer
+from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
 import os
 
 class Command(BaseCommand):
@@ -35,7 +35,7 @@ class Command(BaseCommand):
                 self.style.WARNING('⚠️  DRY RUN MODE - No changes will be made')
             )
         
-        optimizer = EnhancedImageOptimizer()
+        optimizer = ConsolidatedImageOptimizer()
         
         # Optimize project main images
         self.stdout.write('\n📸 Optimizing Project Main Images...')

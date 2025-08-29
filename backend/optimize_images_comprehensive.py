@@ -20,7 +20,7 @@ from PIL import Image, ImageOps
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
-from portfolio.image_utils import optimize_image
+from portfolio.consolidated_image_optimizer import optimize_image
 import io
 import uuid
 from datetime import datetime
