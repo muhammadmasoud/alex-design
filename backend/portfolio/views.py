@@ -27,13 +27,7 @@ from django.db import transaction
 from django.middleware.csrf import get_token
 from django.conf import settings
 from django.db import models
-from django.http import HttpResponse, Http404
-from django.conf import settings
-from django.core.files.storage import default_storage
-from django.views.decorators.cache import cache_page
-from django.utils.decorators import method_decorator
-import os
-import mimetypes
+
 
 # Create your views here.
 
@@ -1237,48 +1231,4 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid direction or new_order parameter'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@cache_page(60 * 60 * 24 * 7)  # Cache for 7 days
-def fast_image_serve(request, image_path):
-    """
-    Fast image serving - serves pre-optimized images without on-the-fly processing
-    """
-    try:
-        # Clean the image path
-        image_path = image_path.strip('/')
-        
-        # Check if it's a media file
-        if not image_path.startswith('media/'):
-            image_path = f'media/{image_path}'
-        
-        # Full path to the image
-        full_path = os.path.join(settings.MEDIA_ROOT, image_path.replace('media/', ''))
-        
-        # Check if file exists
-        if not os.path.exists(full_path):
-            raise Http404("Image not found")
-        
-        # Get file info
-        file_size = os.path.getsize(full_path)
-        file_modified = os.path.getmtime(full_path)
-        
-        # Determine content type
-        content_type, _ = mimetypes.guess_type(full_path)
-        if not content_type:
-            content_type = 'application/octet-stream'
-        
-        # Create response with proper headers
-        response = HttpResponse()
-        response['Content-Type'] = content_type
-        response['Content-Length'] = file_size
-        response['Last-Modified'] = file_modified
-        response['Cache-Control'] = 'public, max-age=31536000'  # 1 year
-        response['ETag'] = f'"{file_modified}"'
-        
-        # Read and serve the file
-        with open(full_path, 'rb') as f:
-            response.write(f.read())
-        
-        return response
-        
-    except Exception as e:
-        raise Http404(f"Error serving image: {e}")
+

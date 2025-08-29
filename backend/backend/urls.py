@@ -6,8 +6,7 @@ from portfolio.views import (
     ProjectViewSet, ServiceViewSet, RegistrationView, LoginView, 
     CategorySubcategoriesView, AdminDashboardView, AdminCheckView, ContactView,
     ProjectImageViewSet, ServiceImageViewSet, ProjectAlbumView, ServiceAlbumView,
-    CSRFTokenView, AdminStorageStatsView, AdminProjectViewSet, AdminServiceViewSet,
-    fast_image_serve
+    CSRFTokenView, AdminStorageStatsView, AdminProjectViewSet, AdminServiceViewSet
 )
 from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
@@ -58,7 +57,4 @@ else:
         }),
     ]
 
-# Fast image serving for optimized images
-urlpatterns += [
-    path('fast-image/<path:image_path>', fast_image_serve, name='fast-image-serve'),
-]
+
