@@ -482,7 +482,30 @@ class Project(models.Model):
                 optimized_urls.append(optimized_url)
         
         return optimized_urls
-    
+
+    def get_display_image_url(self, size='medium', format='webp'):
+        """Get the optimized image URL for display - automatically uses optimized version"""
+        if not self.image:
+            return None
+        from .image_optimizer import ImageOptimizer
+        optimized_url = ImageOptimizer.get_optimized_image_url(self.image.path, size, format)
+        if optimized_url:
+            return optimized_url
+        return self.image.url  # Fallback to original if optimization failed
+
+    def get_display_album_urls(self, size='medium', format='webp'):
+        """Get optimized album image URLs for display - automatically uses optimized versions"""
+        from .image_optimizer import ImageOptimizer
+        optimized_urls = []
+        for album_image in self.album_images.all():
+            if album_image.image:
+                optimized_url = ImageOptimizer.get_optimized_image_url(album_image.image.path, size, format)
+                if optimized_url:
+                    optimized_urls.append(optimized_url)
+                else:
+                    optimized_urls.append(album_image.image.url)  # Fallback to original
+        return optimized_urls
+
     def optimize_images_manually(self):
         """
         Manually trigger image optimization for this project
@@ -695,7 +718,30 @@ class Service(models.Model):
                 optimized_urls.append(optimized_url)
         
         return optimized_urls
-    
+
+    def get_display_icon_url(self, size='medium', format='webp'):
+        """Get the optimized icon URL for display - automatically uses optimized version"""
+        if not self.icon:
+            return None
+        from .image_optimizer import ImageOptimizer
+        optimized_url = ImageOptimizer.get_optimized_image_url(self.icon.path, size, format)
+        if optimized_url:
+            return optimized_url
+        return self.icon.url  # Fallback to original if optimization failed
+
+    def get_display_album_urls(self, size='medium', format='webp'):
+        """Get optimized album image URLs for display - automatically uses optimized versions"""
+        from .image_optimizer import ImageOptimizer
+        optimized_urls = []
+        for album_image in self.album_images.all():
+            if album_image.image:
+                optimized_url = ImageOptimizer.get_optimized_image_url(album_image.image.path, size, format)
+                if optimized_url:
+                    optimized_urls.append(optimized_url)
+                else:
+                    optimized_urls.append(album_image.image.url)  # Fallback to original
+        return optimized_urls
+
     def optimize_images_manually(self):
         """
         Manually trigger image optimization for this service
