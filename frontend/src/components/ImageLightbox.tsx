@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ZoomOut, Download, RotateCw } from "lucide-react";
@@ -19,6 +19,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset state when lightbox opens/closes and handle body scroll
   useEffect(() => {
@@ -31,17 +32,20 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
       
       // Prevent body scroll when lightbox is open
       document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     } else {
       // Restore body scroll when lightbox is closed
       document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     }
 
     // Cleanup on unmount
     return () => {
       document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     };
   }, [isOpen]);
 
@@ -79,12 +83,10 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyboard);
-      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyboard);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose, scale]);
 
@@ -117,7 +119,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragging && scale > 1) {
-        e.preventDefault();
+        // Remove preventDefault to avoid potential passive event listener issues
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
         setPosition({ x: newX, y: newY });
@@ -145,7 +147,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (scale > 1) {
-      e.preventDefault();
+      // Remove preventDefault to avoid potential passive event listener issues
       e.stopPropagation();
       setIsDragging(true);
       setDragStart({
@@ -200,24 +202,37 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
     };
   }, [isDragging, dragStart, scale]);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Handle wheel events manually to avoid passive listener issues
+  useEffect(() => {
+    const container = imageContainerRef.current;
+    if (!container || !isOpen) return;
+
+    const handleWheelEvent = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // More responsive zoom based on deltaY magnitude
+      const zoomIntensity = 0.1;
+      const wheel = e.deltaY < 0 ? 1 : -1;
+      const zoom = Math.exp(wheel * zoomIntensity);
+      const newScale = Math.min(Math.max(scale * zoom, 0.5), 4);
+      
+      setScale(newScale);
+      
+      // Reset position if zooming out to 1x or below
+      if (newScale <= 1) {
+        setPosition({ x: 0, y: 0 });
+        setIsDragging(false);
+      }
+    };
+
+    // Add wheel event listener with non-passive option
+    container.addEventListener('wheel', handleWheelEvent, { passive: false });
     
-    // More responsive zoom based on deltaY magnitude
-    const zoomIntensity = 0.1;
-    const wheel = e.deltaY < 0 ? 1 : -1;
-    const zoom = Math.exp(wheel * zoomIntensity);
-    const newScale = Math.min(Math.max(scale * zoom, 0.5), 4);
-    
-    setScale(newScale);
-    
-    // Reset position if zooming out to 1x or below
-    if (newScale <= 1) {
-      setPosition({ x: 0, y: 0 });
-      setIsDragging(false);
-    }
-  };
+    return () => {
+      container.removeEventListener('wheel', handleWheelEvent);
+    };
+  }, [isOpen, scale]);
 
   if (!isOpen) return null;
 
@@ -307,10 +322,12 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
           style={{
             width: '100vw',
             height: '100vh',
-            position: 'relative'
+            position: 'relative',
+            touchAction: 'none', // Prevent default touch actions
+            userSelect: 'none'   // Prevent text selection
           }}
           onClick={onClose}
-          onWheel={handleWheel}
+          ref={imageContainerRef}
         >
           <motion.img
             src={src}
@@ -323,7 +340,9 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
             } ${isDragging ? 'cursor-grabbing' : ''}`}
             style={{
               transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px) rotate(${rotation}deg)`,
-              transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+              transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+              touchAction: 'none', // Prevent default touch actions
+              userSelect: 'none'   // Prevent text selection
             }}
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
