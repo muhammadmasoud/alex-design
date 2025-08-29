@@ -139,16 +139,8 @@ def project_image_upload_path(instance, filename):
     else:
         filename = f"project_{timestamp}_{unique_id}.{ext}"
     
-    # Create project-specific folder structure
-    if instance.pk:
-        # For existing projects, use the project ID to create a folder
-        project_folder = f"project_{instance.pk}"
-    else:
-        # For new projects, use a temporary name that will be updated after save
-        project_folder = f"project_temp_{timestamp}_{unique_id}"
-    
-    # Full path: media/projects/project_X/filename
-    upload_path = f"projects/{project_folder}/{filename}"
+    # Full path
+    upload_path = f"projects/{filename}"
     
     return upload_path
 
@@ -199,16 +191,8 @@ def project_album_image_upload_path(instance, filename):
     else:
         filename = f"project_album_{timestamp}_{unique_id}.{ext}"
     
-    # Create project-specific folder structure with album subfolder
-    if instance.project.pk:
-        # For existing projects, use the project ID to create a folder
-        project_folder = f"project_{instance.project.pk}"
-    else:
-        # For new projects, use a temporary name that will be updated after save
-        project_folder = f"project_temp_{timestamp}_{unique_id}"
-    
-    # Full path: media/projects/project_X/album/filename
-    upload_path = f"projects/{project_folder}/album/{filename}"
+    # Full path
+    upload_path = f"projects/albums/{filename}"
     
     return upload_path
 
@@ -292,96 +276,10 @@ class Project(models.Model):
             except Project.DoesNotExist:
                 pass
         
-        # Save first to get the ID
-        super().save(*args, **kwargs)
-        
-        # Create project folder structure after saving
-        self.create_project_folders()
-        
-        # Update image paths if they contain temporary folder names
-        self.update_image_paths()
-        
         # Auto-optimize image on save
+        super().save(*args, **kwargs)
         if self.image:
             optimize_uploaded_image(self.image, self)
-
-    def create_project_folders(self):
-        """
-        Create the project-specific folder structure
-        """
-        import os
-        from django.conf import settings
-        
-        if not self.pk:
-            return
-        
-        # Create project folder path
-        project_folder = f"project_{self.pk}"
-        project_path = os.path.join(settings.MEDIA_ROOT, 'projects', project_folder)
-        album_path = os.path.join(project_path, 'album')
-        
-        # Create directories if they don't exist
-        try:
-            os.makedirs(project_path, exist_ok=True)
-            os.makedirs(album_path, exist_ok=True)
-        except OSError as e:
-            print(f"Error creating project folders: {e}")
-    
-    def update_image_paths(self):
-        """
-        Update image paths to use the correct project folder structure
-        """
-        if not self.pk or not self.image:
-            return
-        
-        # Check if image path contains temporary folder name
-        if 'project_temp_' in self.image.name:
-            # Extract filename from current path
-            filename = os.path.basename(self.image.name)
-            
-            # Create new path with correct project folder
-            new_path = f"projects/project_{self.pk}/{filename}"
-            
-            # Move the file to the new location
-            try:
-                from django.core.files.storage import default_storage
-                if default_storage.exists(self.image.name):
-                    # Read the file content
-                    with default_storage.open(self.image.name, 'rb') as old_file:
-                        content = old_file.read()
-                    
-                    # Save to new location
-                    from django.core.files.base import ContentFile
-                    new_file = ContentFile(content)
-                    default_storage.save(new_path, new_file)
-                    
-                    # Delete old file
-                    default_storage.delete(self.image.name)
-                    
-                    # Update the image field
-                    self.image.name = new_path
-                    
-                    # Save without triggering signals again
-                    super().save(update_fields=['image'])
-                    
-            except Exception as e:
-                print(f"Error updating image path: {e}")
-    
-    def get_project_folder_name(self):
-        """
-        Get the project folder name for this project
-        """
-        if self.pk:
-            return f"project_{self.pk}"
-        return None
-    
-    def get_album_folder_path(self):
-        """
-        Get the album folder path for this project
-        """
-        if self.pk:
-            return f"projects/project_{self.pk}/album"
-        return None
 
     def __str__(self):
         return self.title
@@ -588,52 +486,7 @@ class ProjectImage(models.Model):
                     old_instance.image.delete(save=False)
             except ProjectImage.DoesNotExist:
                 pass
-        
-        # Save first to get the ID
         super().save(*args, **kwargs)
-        
-        # Update image paths if they contain temporary folder names
-        self.update_album_image_paths()
-    
-    def update_album_image_paths(self):
-        """
-        Update album image paths to use the correct project folder structure
-        """
-        if not self.pk or not self.image or not self.project:
-            return
-        
-        # Check if image path contains temporary folder name
-        if 'project_temp_' in self.image.name:
-            # Extract filename from current path
-            filename = os.path.basename(self.image.name)
-            
-            # Create new path with correct project folder
-            new_path = f"projects/project_{self.project.pk}/album/{filename}"
-            
-            # Move the file to the new location
-            try:
-                from django.core.files.storage import default_storage
-                if default_storage.exists(self.image.name):
-                    # Read the file content
-                    with default_storage.open(self.image.name, 'rb') as old_file:
-                        content = old_file.read()
-                    
-                    # Save to new location
-                    from django.core.files.base import ContentFile
-                    new_file = ContentFile(content)
-                    default_storage.save(new_path, new_file)
-                    
-                    # Delete old file
-                    default_storage.delete(self.image.name)
-                    
-                    # Update the image field
-                    self.image.name = new_path
-                    
-                    # Save without triggering signals again
-                    super().save(update_fields=['image'])
-                    
-            except Exception as e:
-                print(f"Error updating album image path: {e}")
 
     def delete(self, *args, **kwargs):
         # Delete the image file when deleting the model instance

@@ -56,19 +56,6 @@ def optimize_and_cleanup_project_image(sender, instance, **kwargs):
                 instance.image = optimized
 
 
-@receiver(post_save, sender=Project)
-def create_project_folders_signal(sender, instance, created, **kwargs):
-    """
-    Create project folders after project is saved
-    """
-    if created:
-        # Create project folder structure
-        instance.create_project_folders()
-        
-        # Update image paths if they contain temporary folder names
-        instance.update_image_paths()
-
-
 @receiver(pre_save, sender=Service)
 def optimize_and_cleanup_service_icon(sender, instance, **kwargs):
     """
@@ -147,19 +134,6 @@ def optimize_and_cleanup_project_album_image(sender, instance, **kwargs):
             )
             if optimized:
                 instance.image = optimized
-
-
-@receiver(post_save, sender=ProjectImage)
-def create_album_folders_signal(sender, instance, created, **kwargs):
-    """
-    Create album folders and update image paths after project image is saved
-    """
-    if created and instance.project:
-        # Ensure project folders exist
-        instance.project.create_project_folders()
-        
-        # Update album image paths if they contain temporary folder names
-        instance.update_album_image_paths()
 
 
 @receiver(pre_save, sender=ServiceImage)
