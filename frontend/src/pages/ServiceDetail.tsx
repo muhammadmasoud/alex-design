@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
-import OptimizedImage from "@/components/OptimizedImage";
+import ProgressiveImage from "@/components/ProgressiveImage";
+import ImageLightbox from "@/components/ImageLightbox";
 
 // Animation variants now imported from PageTransition component
 
@@ -31,6 +32,10 @@ export default function ServiceDetail() {
   const [service, setService] = useState<ServiceItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
 
   useEffect(() => {
     const fetchService = async () => {
@@ -69,6 +74,17 @@ export default function ServiceDetail() {
         prefilledMessage: `Hi, I'm interested in the ${service.name} service (${formatPrice(service.price)}). Please provide more details about the process, timeline, and next steps.`
       }
     });
+  };
+
+  // Lightbox handlers
+  const openLightbox = (src: string, alt: string, title: string) => {
+    setLightboxImage({ src, alt, title });
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxImage(null);
   };
 
   if (loading) {
@@ -179,13 +195,20 @@ export default function ServiceDetail() {
 
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
-          <Card className="overflow-hidden shadow-2xl group">
-            <OptimizedImage
+                     <Card className="overflow-hidden shadow-2xl group">
+            <ProgressiveImage
               src={service.icon || '/placeholder.svg'}
               alt={`${service.name} architectural service`}
-              className="w-full h-auto object-cover aspect-square"
-              effect="blur"
-              placeholder="/placeholder.svg"
+              className="w-full h-96 object-cover cursor-pointer rounded-lg shadow-lg"
+              priority={true}
+              enableLightbox={true}
+              onClick={() => {
+                openLightbox(
+                  service.icon || '/placeholder.svg',
+                  `${service.name} architectural service`,
+                  service.name
+                );
+              }}
             />
           </Card>
           
@@ -394,6 +417,17 @@ export default function ServiceDetail() {
           </Link>
         </Card>
       </motion.div>
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <ImageLightbox
+          isOpen={lightboxOpen}
+          onClose={closeLightbox}
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          title={lightboxImage.title}
+        />
+      )}
     </motion.div>
   );
 }

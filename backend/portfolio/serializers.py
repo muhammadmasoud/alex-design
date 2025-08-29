@@ -180,8 +180,16 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_icon_url(self, obj):
-        """Get the full icon URL"""
+        """Get the optimized icon URL"""
         if obj.icon:
+            # Use the optimized image URL from the model
+            optimized_url = obj.get_optimized_image_url(size='lg', format='webp', quality='high')
+            if optimized_url:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(optimized_url)
+                return optimized_url
+            # Fallback to original if optimization fails
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.icon.url)
@@ -220,15 +228,27 @@ class ServiceSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Custom representation to include both icon field and icon_url"""
         representation = super().to_representation(instance)
-        # Keep the original icon field for the frontend, but also provide icon_url
+        # Use optimized icon URLs for better quality
         if instance.icon:
-            request = self.context.get('request')
-            if request:
-                representation['icon'] = request.build_absolute_uri(instance.icon.url)
-                representation['icon_url'] = request.build_absolute_uri(instance.icon.url)
+            # Try to get optimized URL first
+            optimized_url = instance.get_optimized_image_url(size='lg', format='webp', quality='high')
+            if optimized_url:
+                request = self.context.get('request')
+                if request:
+                    representation['icon'] = request.build_absolute_uri(optimized_url)
+                    representation['icon_url'] = request.build_absolute_uri(optimized_url)
+                else:
+                    representation['icon'] = optimized_url
+                    representation['icon_url'] = optimized_url
             else:
-                representation['icon'] = instance.icon.url
-                representation['icon_url'] = instance.icon.url
+                # Fallback to original if optimization fails
+                request = self.context.get('request')
+                if request:
+                    representation['icon'] = request.build_absolute_uri(instance.icon.url)
+                    representation['icon_url'] = request.build_absolute_uri(instance.icon.url)
+                else:
+                    representation['icon'] = instance.icon.url
+                    representation['icon_url'] = instance.icon.url
         else:
             representation['icon'] = None
             representation['icon_url'] = None

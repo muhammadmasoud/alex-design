@@ -6,6 +6,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from PIL import Image
 import io
+from .image_optimizer import optimize_uploaded_image, get_responsive_image_urls
 # Register HEIF opener for iPhone photos
 try:
     from pillow_heif import register_heif_opener
@@ -274,7 +275,11 @@ class Project(models.Model):
                     old_instance.image.delete(save=False)
             except Project.DoesNotExist:
                 pass
+        
+        # Auto-optimize image on save
         super().save(*args, **kwargs)
+        if self.image:
+            optimize_uploaded_image(self.image, self)
 
     def __str__(self):
         return self.title
@@ -317,6 +322,12 @@ class Project(models.Model):
         if limit is None:
             return self.album_images.all()
         return self.album_images.all()[:limit]
+    
+    def get_optimized_image_url(self, size='md', format='webp', quality='high'):
+        """Get optimized image URL for different sizes and formats"""
+        if not self.image:
+            return None
+        return get_responsive_image_urls(self.image.name, [size])[size]
 
 class Service(models.Model):
     name = models.CharField(max_length=100)
@@ -364,7 +375,11 @@ class Service(models.Model):
                     old_instance.icon.delete(save=False)
             except Service.DoesNotExist:
                 pass
+        
+        # Auto-optimize icon on save
         super().save(*args, **kwargs)
+        if self.icon:
+            optimize_uploaded_image(self.icon, self)
 
     def __str__(self):
         return self.name
@@ -407,6 +422,12 @@ class Service(models.Model):
         if limit is None:
             return self.album_images.all()
         return self.album_images.all()[:limit]
+    
+    def get_optimized_image_url(self, size='md', format='webp', quality='high'):
+        """Get optimized image URL for different sizes and formats"""
+        if not self.icon:
+            return None
+        return get_responsive_image_urls(self.icon.name, [size])[size]
 
 
 class ProjectImage(models.Model):

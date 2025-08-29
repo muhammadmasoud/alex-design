@@ -51,7 +51,7 @@ class ImageOptimizationMiddleware:
         try:
             # Extract quality parameter from URL
             quality_match = re.search(r'_q(\d+)', request.path)
-            quality = int(quality_match.group(1)) if quality_match else 85
+            quality = int(quality_match.group(1)) if quality_match else 95
             
             # Get original image path
             original_path = re.sub(r'_q\d+', '', request.path)

@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
-import LazyImage from "@/components/LazyImage";
+import ProgressiveImage from "@/components/ProgressiveImage";
+import ImageLightbox from "@/components/ImageLightbox";
 
 // Animation variants now imported from PageTransition component
 
@@ -22,6 +23,10 @@ export default function ProjectDetail() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -50,6 +55,17 @@ export default function ProjectDetail() {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  // Lightbox handlers
+  const openLightbox = (src: string, alt: string, title: string) => {
+    setLightboxImage({ src, alt, title });
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxImage(null);
   };
 
   if (loading) {
@@ -159,14 +175,19 @@ export default function ProjectDetail() {
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div variants={imageVariants} className="space-y-6">
           <Card className="overflow-hidden shadow-2xl group">
-            <LazyImage
+            <ProgressiveImage
               src={project.image || '/placeholder.svg'}
               alt={`${project.title} architecture project`}
-              loading="eager"
-              className="w-full h-auto object-cover"
+              priority={true}
+              className="w-full h-auto object-cover cursor-pointer"
               enableLightbox={true}
-              lightboxTitle={project.title}
-              showZoomIcon={true}
+              onClick={() => {
+                openLightbox(
+                  project.image || '/placeholder.svg',
+                  `${project.title} architecture project`,
+                  project.title
+                );
+              }}
             />
           </Card>
           
@@ -344,6 +365,17 @@ export default function ProjectDetail() {
           </Button>
         </Link>
       </motion.div>
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <ImageLightbox
+          isOpen={lightboxOpen}
+          onClose={closeLightbox}
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          title={lightboxImage.title}
+        />
+      )}
     </motion.div>
   );
 }
