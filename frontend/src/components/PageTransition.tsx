@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 interface PageTransitionProps {
@@ -71,6 +71,13 @@ export const imageVariants = {
 
 export default function PageTransition({ children, className }: PageTransitionProps) {
   const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait" initial={false}>
