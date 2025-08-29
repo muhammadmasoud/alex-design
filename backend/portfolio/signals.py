@@ -17,15 +17,30 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
         Token.objects.create(user=instance)
 
 
+@receiver(post_save, sender=Project)
+def create_project_folders(sender, instance, created, **kwargs):
+    """
+    Create project folders after project is successfully saved
+    """
+    if created and instance.title:
+        try:
+            instance._create_project_folders()
+        except Exception as e:
+            print(f"Error creating project folders: {e}")
+    
+    # Handle title changes for existing projects
+    if not created and instance.title:
+        try:
+            instance.update_image_path_if_needed()
+        except Exception as e:
+            print(f"Error updating image paths: {e}")
+
+
 @receiver(pre_save, sender=Project)
 def optimize_and_cleanup_project_image(sender, instance, **kwargs):
     """
     Optimize new project images and delete old ones
     """
-    # Create project folders on first save
-    if not instance.pk and instance.title:
-        instance._create_project_folders()
-    
     # Delete old image if updating
     if instance.pk:
         try:

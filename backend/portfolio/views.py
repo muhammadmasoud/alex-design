@@ -159,15 +159,25 @@ class ProjectViewSet(viewsets.ModelViewSet):
             )
 
     def create(self, request, *args, **kwargs):
-        if isinstance(request.data, list):
-            serializer = self.get_serializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif isinstance(request.data, dict):
-            return super().create(request, *args, **kwargs)
-        else:
-            raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
+        try:
+            print("=== PROJECT CREATION ATTEMPT ===")
+            print(f"Data received: {request.data}")
+            print(f"Files received: {request.FILES}")
+            
+            if isinstance(request.data, list):
+                serializer = self.get_serializer(data=request.data, many=True)
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            elif isinstance(request.data, dict):
+                return super().create(request, *args, **kwargs)
+            else:
+                raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
+        except Exception as e:
+            print(f"❌ Error in project creation: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reorder(self, request, pk=None):
@@ -262,6 +272,45 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return Response({'message': f'{len(project_ids)} projects reordered successfully'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def debug_create(self, request):
+        """
+        Debug endpoint to see what data is being sent
+        """
+        print("=== DEBUG PROJECT CREATION ===")
+        print(f"Request method: {request.method}")
+        print(f"Content type: {request.content_type}")
+        print(f"Data: {request.data}")
+        print(f"Files: {request.FILES}")
+        print(f"Query params: {request.query_params}")
+        print("==============================")
+        
+        # Try to create the project and see what happens
+        try:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                print("✅ Serializer is valid")
+                print(f"Validated data: {serializer.validated_data}")
+                return Response({
+                    'message': 'Data is valid',
+                    'validated_data': serializer.validated_data
+                })
+            else:
+                print("❌ Serializer validation failed")
+                print(f"Errors: {serializer.errors}")
+                return Response({
+                    'message': 'Validation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"❌ Exception occurred: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'message': 'Exception occurred',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
