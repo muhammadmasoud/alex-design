@@ -6,7 +6,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from PIL import Image
 import io
-from .image_optimizer import optimize_uploaded_image, get_responsive_image_urls
+from .enhanced_image_optimizer import optimize_uploaded_image, get_responsive_image_urls
 # Register HEIF opener for iPhone photos
 try:
     from pillow_heif import register_heif_opener
