@@ -4,7 +4,7 @@ Management command to re-optimize all images with high quality settings
 import os
 from django.core.management.base import BaseCommand, CommandError
 from django.core.files import File
-from portfolio.models import Project, ServiceItem, ProjectImage, ServiceImage
+from portfolio.models import Project, Service, ProjectImage, ServiceImage
 from portfolio.consolidated_image_optimizer import optimize_image
 from django.conf import settings
 
@@ -62,7 +62,7 @@ class Command(BaseCommand):
         
         # Re-optimize service icons
         self.stdout.write('Processing service icons...')
-        for service in ServiceItem.objects.all():
+        for service in Service.objects.all():
             if service.icon:
                 result = self.optimize_single_image(service, 'icon', dry_run, force)
                 if result:
