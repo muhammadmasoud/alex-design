@@ -109,8 +109,7 @@ sudo chmod -R 755 staticfiles/
 # Make sure uploads directory exists
 mkdir -p media/projects
 mkdir -p media/services
-mkdir -p media/projects/albums
-mkdir -p media/services/albums
+# Note: Album directories are now created dynamically per project/service
 
 # Step 7: Update Gunicorn configuration if needed
 print_status "Checking Gunicorn configuration..."

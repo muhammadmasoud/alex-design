@@ -85,107 +85,195 @@ def validate_image(image):
 
 def project_image_upload_path(instance, filename):
     """
-    Custom upload path for project images.
-    Creates a unique filename to avoid conflicts when updating.
+    Custom upload path for project main images.
+    Creates a project-specific folder structure: media/projects/(project_name)/main_image
+    PRODUCTION-SAFE: Handles edge cases and server compatibility
     """
     import uuid
     from datetime import datetime
+    import logging
     
-    # Get file extension
-    ext = filename.split('.')[-1].lower()
+    logger = logging.getLogger(__name__)
     
-    # Create unique filename with timestamp and UUID
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = str(uuid.uuid4())[:8]
-    
-    if instance.title:
-        base_name = slugify(instance.title)[:50]  # Limit length
-        filename = f"{base_name}_{timestamp}_{unique_id}.{ext}"
-    else:
-        filename = f"project_{timestamp}_{unique_id}.{ext}"
-    
-    # Full path
-    upload_path = f"projects/{filename}"
-    
-    return upload_path
+    try:
+        # Get file extension
+        ext = filename.split('.')[-1].lower()
+        
+        # Create unique filename with timestamp and UUID
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        
+        if instance.title:
+            # Create safe folder name from project title
+            project_folder = slugify(instance.title)[:50]  # Limit length
+            
+            # Ensure folder name is valid for server filesystem
+            if not project_folder or project_folder.startswith('.'):
+                project_folder = f"project_{timestamp}"
+                logger.warning(f"Invalid project title '{instance.title}', using fallback folder name")
+        else:
+            project_folder = f"project_{timestamp}"
+            logger.warning("Project title is empty, using fallback folder name")
+        
+        filename = f"main_{timestamp}_{unique_id}.{ext}"
+        
+        # Full path: projects/(project_name)/main_image
+        upload_path = f"projects/{project_folder}/{filename}"
+        
+        return upload_path
+        
+    except Exception as e:
+        logger.error(f"Error generating project upload path: {e}")
+        # Fallback to safe path
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"main_{timestamp}_{unique_id}.{ext}"
+        fallback_path = f"projects/project_{timestamp}_{unique_id}/{filename}"
+        return fallback_path
 
 def service_icon_upload_path(instance, filename):
     """
     Custom upload path for service icons.
-    Creates a unique filename to avoid conflicts when updating.
+    Creates a service-specific folder structure: media/services/(service_name)/icon
+    PRODUCTION-SAFE: Handles edge cases and server compatibility
     """
     import uuid
     from datetime import datetime
+    import logging
     
-    # Get file extension
-    ext = filename.split('.')[-1].lower()
+    logger = logging.getLogger(__name__)
     
-    # Create unique filename with timestamp and UUID
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = str(uuid.uuid4())[:8]
-    
-    if instance.name:
-        base_name = slugify(instance.name)[:50]  # Limit length
-        filename = f"{base_name}_{timestamp}_{unique_id}.{ext}"
-    else:
-        filename = f"service_{timestamp}_{unique_id}.{ext}"
-    
-    # Full path
-    upload_path = f"services/{filename}"
-    
-    return upload_path
+    try:
+        # Get file extension
+        ext = filename.split('.')[-1].lower()
+        
+        # Create unique filename with timestamp and UUID
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        
+        if instance.name:
+            # Create safe folder name from service name
+            service_folder = slugify(instance.name)[:50]  # Limit length
+            
+            # Ensure folder name is valid for server filesystem
+            if not service_folder or service_folder.startswith('.'):
+                service_folder = f"service_{timestamp}"
+                logger.warning(f"Invalid service name '{instance.name}', using fallback folder name")
+        else:
+            service_folder = f"service_{timestamp}"
+            logger.warning("Service name is empty, using fallback folder name")
+        
+        filename = f"icon_{timestamp}_{unique_id}.{ext}"
+        
+        # Full path: services/(service_name)/icon
+        upload_path = f"services/{service_folder}/{filename}"
+        
+        return upload_path
+        
+    except Exception as e:
+        logger.error(f"Error generating service upload path: {e}")
+        # Fallback to safe path
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"icon_{timestamp}_{unique_id}.{ext}"
+        fallback_path = f"services/service_{timestamp}_{unique_id}/{filename}"
+        return fallback_path
 
 def project_album_image_upload_path(instance, filename):
     """
     Custom upload path for project album images.
-    Creates a unique filename to avoid conflicts when updating.
+    Creates a project-specific folder structure: media/projects/(project_name)/album/
+    PRODUCTION-SAFE: Handles edge cases and server compatibility
     """
     import uuid
     from datetime import datetime
+    import logging
     
-    # Get file extension
-    ext = filename.split('.')[-1].lower()
+    logger = logging.getLogger(__name__)
     
-    # Create unique filename with timestamp and UUID
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = str(uuid.uuid4())[:8]
-    
-    if instance.project.title:
-        base_name = slugify(instance.project.title)[:50]  # Limit length
-        filename = f"{base_name}_album_{timestamp}_{unique_id}.{ext}"
-    else:
-        filename = f"project_album_{timestamp}_{unique_id}.{ext}"
-    
-    # Full path
-    upload_path = f"projects/albums/{filename}"
-    
-    return upload_path
+    try:
+        # Get file extension
+        ext = filename.split('.')[-1].lower()
+        
+        # Create unique filename with timestamp and UUID
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        
+        if instance.project and instance.project.title:
+            # Create safe folder name from project title
+            project_folder = slugify(instance.project.title)[:50]  # Limit length
+            
+            # Ensure folder name is valid for server filesystem
+            if not project_folder or project_folder.startswith('.'):
+                project_folder = f"project_{timestamp}"
+                logger.warning(f"Invalid project title '{instance.project.title}', using fallback folder name")
+        else:
+            project_folder = f"project_{timestamp}"
+            logger.warning("Project or project title is missing, using fallback folder name")
+        
+        filename = f"album_{timestamp}_{unique_id}.{ext}"
+        
+        # Full path: projects/(project_name)/album/album_image
+        upload_path = f"projects/{project_folder}/album/{filename}"
+        
+        return upload_path
+        
+    except Exception as e:
+        logger.error(f"Error generating project album upload path: {e}")
+        # Fallback to safe path
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"album_{timestamp}_{unique_id}.{ext}"
+        fallback_path = f"projects/project_{timestamp}_{unique_id}/album/{filename}"
+        return fallback_path
 
 def service_album_image_upload_path(instance, filename):
     """
     Custom upload path for service album images.
-    Creates a unique filename to avoid conflicts when updating.
+    Creates a service-specific folder structure: media/services/(service_name)/album/
+    PRODUCTION-SAFE: Handles edge cases and server compatibility
     """
     import uuid
     from datetime import datetime
+    import logging
     
-    # Get file extension
-    ext = filename.split('.')[-1].lower()
+    logger = logging.getLogger(__name__)
     
-    # Create unique filename with timestamp and UUID
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    unique_id = str(uuid.uuid4())[:8]
-    
-    if instance.service.name:
-        base_name = slugify(instance.service.name)[:50]  # Limit length
-        filename = f"{base_name}_album_{timestamp}_{unique_id}.{ext}"
-    else:
-        filename = f"service_album_{timestamp}_{unique_id}.{ext}"
-    
-    # Full path
-    upload_path = f"services/albums/{filename}"
-    
-    return upload_path
+    try:
+        # Get file extension
+        ext = filename.split('.')[-1].lower()
+        
+        # Create unique filename with timestamp and UUID
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        
+        if instance.service and instance.service.name:
+            # Create safe folder name from service name
+            service_folder = slugify(instance.service.name)[:50]  # Limit length
+            
+            # Ensure folder name is valid for server filesystem
+            if not service_folder or service_folder.startswith('.'):
+                service_folder = f"service_{timestamp}"
+                logger.warning(f"Invalid service name '{instance.service.name}', using fallback folder name")
+        else:
+            service_folder = f"service_{timestamp}"
+            logger.warning("Service or service name is missing, using fallback folder name")
+        
+        filename = f"album_{timestamp}_{unique_id}.{ext}"
+        
+        # Full path: services/(service_name)/album/album_image
+        upload_path = f"services/{service_folder}/album/{filename}"
+        
+        return upload_path
+        
+    except Exception as e:
+        logger.error(f"Error generating service album upload path: {e}")
+        # Fallback to safe path
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"album_{timestamp}_{unique_id}.{ext}"
+        fallback_path = f"services/service_{timestamp}_{unique_id}/album/{filename}"
+        return fallback_path
 
 # Create your models here.
 
@@ -227,11 +315,17 @@ class Project(models.Model):
             max_order = Project.objects.aggregate(models.Max('order'))['order__max']
             self.order = (max_order or 0) + 1
         
-        # Handle image deletion logic
+        # Handle title change and file reorganization
         if self.pk:
             try:
                 old_instance = Project.objects.get(pk=self.pk)
-                # Check if image field has changed and old image exists
+                
+                # Check if title has changed
+                if old_instance.title != self.title:
+                    # Move files to new folder structure
+                    self._move_files_to_new_folder(old_instance.title, self.title)
+                
+                # Handle image deletion logic
                 if (old_instance.image and 
                     hasattr(self.image, 'file') and 
                     self.image.file and 
@@ -242,6 +336,83 @@ class Project(models.Model):
                 pass
         
         super().save(*args, **kwargs)
+
+    def _move_files_to_new_folder(self, old_title, new_title):
+        """
+        Move project files from old folder to new folder when title changes
+        PRODUCTION-SAFE: Uses atomic operations and proper error handling
+        """
+        import os
+        import shutil
+        import logging
+        from django.conf import settings
+        from django.core.exceptions import ValidationError
+        
+        # Set up logging
+        logger = logging.getLogger(__name__)
+        
+        old_folder = slugify(old_title)[:50]
+        new_folder = slugify(new_title)[:50]
+        
+        # Validate folder names for server compatibility
+        if not old_folder or not new_folder:
+            logger.warning(f"Invalid folder names: old='{old_folder}', new='{new_folder}'")
+            return
+        
+        old_path = os.path.join(settings.MEDIA_ROOT, 'projects', old_folder)
+        new_path = os.path.join(settings.MEDIA_ROOT, 'projects', new_folder)
+        
+        # Only move if old folder exists and is different from new folder
+        if os.path.exists(old_path) and old_folder != new_folder:
+            try:
+                # Create new folder with proper permissions
+                os.makedirs(new_path, mode=0o755, exist_ok=True)
+                
+                # Use atomic move operation for better safety
+                temp_path = f"{new_path}_temp_{os.getpid()}"
+                
+                # First move to temporary location
+                if os.path.exists(temp_path):
+                    shutil.rmtree(temp_path)
+                
+                shutil.move(old_path, temp_path)
+                
+                # Then move to final location (atomic)
+                shutil.move(temp_path, new_path)
+                
+                logger.info(f"Successfully moved project files from '{old_folder}' to '{new_folder}'")
+                
+            except OSError as e:
+                # Handle OS-level errors (permissions, disk space, etc.)
+                logger.error(f"OS Error moving files from {old_path} to {new_path}: {e}")
+                
+                # Try to restore old folder if move failed
+                try:
+                    if os.path.exists(temp_path) and not os.path.exists(old_path):
+                        shutil.move(temp_path, old_path)
+                        logger.info(f"Restored old folder '{old_path}' after failed move")
+                except Exception as restore_error:
+                    logger.error(f"Failed to restore old folder: {restore_error}")
+                    
+            except Exception as e:
+                # Handle other unexpected errors
+                logger.error(f"Unexpected error moving files from {old_path} to {new_path}: {e}")
+                
+                # Try to restore old folder
+                try:
+                    if os.path.exists(temp_path) and not os.path.exists(old_path):
+                        shutil.move(temp_path, old_path)
+                        logger.info(f"Restored old folder '{old_path}' after unexpected error")
+                except Exception as restore_error:
+                    logger.error(f"Failed to restore old folder: {restore_error}")
+                    
+            finally:
+                # Clean up any temporary paths
+                try:
+                    if os.path.exists(temp_path):
+                        shutil.rmtree(temp_path)
+                except Exception:
+                    pass
 
     def __str__(self):
         return self.title
@@ -320,11 +491,17 @@ class Service(models.Model):
             max_order = Service.objects.aggregate(models.Max('order'))['order__max']
             self.order = (max_order or 0) + 1
         
-        # Handle icon deletion logic
+        # Handle name change and file reorganization
         if self.pk:
             try:
                 old_instance = Service.objects.get(pk=self.pk)
-                # Check if icon field has changed and old icon exists
+                
+                # Check if name has changed
+                if old_instance.name != self.name:
+                    # Move files to new folder structure
+                    self._move_files_to_new_folder(old_instance.name, self.name)
+                
+                # Handle icon deletion logic
                 if (old_instance.icon and 
                     hasattr(self.icon, 'file') and 
                     self.icon.file and 
@@ -335,6 +512,83 @@ class Service(models.Model):
                 pass
         
         super().save(*args, **kwargs)
+
+    def _move_files_to_new_folder(self, old_name, new_name):
+        """
+        Move service files from old folder to new folder when name changes
+        PRODUCTION-SAFE: Uses atomic operations and proper error handling
+        """
+        import os
+        import shutil
+        import logging
+        from django.conf import settings
+        from django.core.exceptions import ValidationError
+        
+        # Set up logging
+        logger = logging.getLogger(__name__)
+        
+        old_folder = slugify(old_name)[:50]
+        new_folder = slugify(new_name)[:50]
+        
+        # Validate folder names for server compatibility
+        if not old_folder or not new_folder:
+            logger.warning(f"Invalid folder names: old='{old_folder}', new='{new_folder}'")
+            return
+        
+        old_path = os.path.join(settings.MEDIA_ROOT, 'services', old_folder)
+        new_path = os.path.join(settings.MEDIA_ROOT, 'services', new_folder)
+        
+        # Only move if old folder exists and is different from new folder
+        if os.path.exists(old_path) and old_folder != new_folder:
+            try:
+                # Create new folder with proper permissions
+                os.makedirs(new_path, mode=0o755, exist_ok=True)
+                
+                # Use atomic move operation for better safety
+                temp_path = f"{new_path}_temp_{os.getpid()}"
+                
+                # First move to temporary location
+                if os.path.exists(temp_path):
+                    shutil.rmtree(temp_path)
+                
+                shutil.move(old_path, temp_path)
+                
+                # Then move to final location (atomic)
+                shutil.move(temp_path, new_path)
+                
+                logger.info(f"Successfully moved service files from '{old_folder}' to '{new_folder}'")
+                
+            except OSError as e:
+                # Handle OS-level errors (permissions, disk space, etc.)
+                logger.error(f"OS Error moving files from {old_path} to {new_path}: {e}")
+                
+                # Try to restore old folder if move failed
+                try:
+                    if os.path.exists(temp_path) and not os.path.exists(old_path):
+                        shutil.move(temp_path, old_path)
+                        logger.info(f"Restored old folder '{old_path}' after failed move")
+                except Exception as restore_error:
+                    logger.error(f"Failed to restore old folder: {restore_error}")
+                    
+            except Exception as e:
+                # Handle other unexpected errors
+                logger.error(f"Unexpected error moving files from {old_path} to {new_path}: {e}")
+                
+                # Try to restore old folder
+                try:
+                    if os.path.exists(temp_path) and not os.path.exists(old_path):
+                        shutil.move(temp_path, old_path)
+                        logger.info(f"Restored old folder '{old_path}' after unexpected error")
+                except Exception as restore_error:
+                    logger.error(f"Failed to restore old folder: {restore_error}")
+                    
+            finally:
+                # Clean up any temporary paths
+                try:
+                    if os.path.exists(temp_path):
+                        shutil.rmtree(temp_path)
+                except Exception:
+                    pass
 
     def __str__(self):
         return self.name
