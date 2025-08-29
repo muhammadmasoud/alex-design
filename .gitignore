@@ -14,6 +14,12 @@ backend/projects/originals/
 backend/media/optimized/
 backend/media/webp/
 
+# Media upload folders (exclude from deployment)
+backend/projects/
+backend/services/
+backend/media/
+backend/staticfiles/
+
 # Performance monitoring
 bundlesize.json
 .bundlewatch.json
@@ -113,6 +119,13 @@ db.sqlite3-journal
 media/
 staticfiles/
 static/
+
+# Django specific exclusions
+backend/staticfiles/
+backend/static/
+backend/media/
+backend/projects/
+backend/services/
 
 # If using celery
 celerybeat-schedule
@@ -362,6 +375,11 @@ nginx.conf
 *.backup
 *.old
 
+# Database backups
+*.sql
+*.dump
+*.db
+
 # Compressed files
 *.7z
 *.dmg
@@ -404,6 +422,12 @@ cypress/screenshots/
 # Temporary files
 *.tmp
 *.temp
+
+# Cache and temporary directories
+.cache/
+tmp/
+temp/
+*.cache
 
 # Editor backup files
 *~
