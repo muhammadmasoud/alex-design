@@ -32,27 +32,67 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
     
     def get_image_url(self, obj):
-        """Get the full image URL"""
+        """Get the optimized image URL"""
         if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
+            try:
+                # Import the function here to avoid circular imports
+                from .models import get_responsive_image_urls
+                optimized_url = get_responsive_image_urls(obj.image.name, ['md']).get('md')
+                if optimized_url:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(optimized_url)
+                    return optimized_url
+                else:
+                    # Fallback to original if optimization fails
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+            except Exception:
+                # Fallback to original if any error occurs
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
         return None
     
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs"""
         representation = super().to_representation(instance)
         
-        # Provide full URL for image field
+        # Use optimized image URLs for better quality
         if instance.image:
-            request = self.context.get('request')
-            if request:
-                representation['image'] = request.build_absolute_uri(instance.image.url)
-                representation['image_url'] = request.build_absolute_uri(instance.image.url)
-            else:
-                representation['image'] = instance.image.url
-                representation['image_url'] = instance.image.url
+            try:
+                # Import the function here to avoid circular imports
+                from .models import get_responsive_image_urls
+                optimized_url = get_responsive_image_urls(instance.image.name, ['md']).get('md')
+                if optimized_url:
+                    request = self.context.get('request')
+                    if request:
+                        representation['image'] = request.build_absolute_uri(optimized_url)
+                        representation['image_url'] = request.build_absolute_uri(optimized_url)
+                    else:
+                        representation['image'] = optimized_url
+                        representation['image_url'] = optimized_url
+                else:
+                    # Fallback to original if optimization fails
+                    request = self.context.get('request')
+                    if request:
+                        representation['image'] = request.build_absolute_uri(instance.image.url)
+                        representation['image_url'] = request.build_absolute_uri(instance.image.url)
+                    else:
+                        representation['image'] = instance.image.url
+                        representation['image_url'] = instance.image.url
+            except Exception:
+                # Fallback to original if any error occurs
+                request = self.context.get('request')
+                if request:
+                    representation['image'] = request.build_absolute_uri(instance.image.url)
+                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
+                else:
+                    representation['image'] = instance.image.url
+                    representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
             representation['image_url'] = None
@@ -75,17 +115,40 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         return None
     
     def to_representation(self, instance):
-        """Custom representation to include full URLs"""
+        """Custom representation to include optimized image URLs"""
         representation = super().to_representation(instance)
-        # Keep the original image field for the frontend, but also provide image_url
+        # Use optimized image URLs for better quality
         if instance.image:
-            request = self.context.get('request')
-            if request:
-                representation['image'] = request.build_absolute_uri(instance.image.url)
-                representation['image_url'] = request.build_absolute_uri(instance.image.url)
-            else:
-                representation['image'] = instance.image.url
-                representation['image_url'] = instance.image.url
+            try:
+                # Import the function here to avoid circular imports
+                from .models import get_responsive_image_urls
+                optimized_url = get_responsive_image_urls(instance.image.name, ['md']).get('md')
+                if optimized_url:
+                    request = self.context.get('request')
+                    if request:
+                        representation['image'] = request.build_absolute_uri(optimized_url)
+                        representation['image_url'] = request.build_absolute_uri(optimized_url)
+                    else:
+                        representation['image'] = optimized_url
+                        representation['image_url'] = optimized_url
+                else:
+                    # Fallback to original if optimization fails
+                    request = self.context.get('request')
+                    if request:
+                        representation['image'] = request.build_absolute_uri(instance.image.url)
+                        representation['image_url'] = request.build_absolute_uri(instance.image.url)
+                    else:
+                        representation['image'] = instance.image.url
+                        representation['image_url'] = instance.image.url
+            except Exception:
+                # Fallback to original if any error occurs
+                request = self.context.get('request')
+                if request:
+                    representation['image'] = request.build_absolute_uri(instance.image.url)
+                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
+                else:
+                    representation['image'] = instance.image.url
+                    representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
             representation['image_url'] = None
