@@ -23,7 +23,17 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
         # Only optimize if this is a new project or if images have changed
         if created or instance.image:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            transaction.on_commit(lambda: ImageOptimizer.optimize_project_images(instance))
+            # Also add a small delay to ensure files are fully written to disk
+            def delayed_optimization():
+                import time
+                time.sleep(1)  # Wait 1 second for file system sync
+                try:
+                    ImageOptimizer.optimize_project_images(instance)
+                    logger.info(f"Successfully optimized images for project: {instance.title}")
+                except Exception as e:
+                    logger.error(f"Failed to optimize project {instance.title}: {str(e)}")
+            
+            transaction.on_commit(delayed_optimization)
             logger.info(f"Queued image optimization for project: {instance.title}")
             
         # Clear cache for this project
@@ -42,11 +52,21 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
         # Only optimize if this is a new service or if icon has changed
         if created or instance.icon:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            transaction.on_commit(lambda: ImageOptimizer.optimize_service_images(instance))
+            # Also add a small delay to ensure files are fully written to disk
+            def delayed_optimization():
+                import time
+                time.sleep(1)  # Wait 1 second for file system sync
+                try:
+                    ImageOptimizer.optimize_service_images(instance)
+                    logger.info(f"Successfully optimized images for service: {instance.name}")
+                except Exception as e:
+                    logger.error(f"Failed to optimize service {instance.name}: {str(e)}")
+            
+            transaction.on_commit(delayed_optimization)
             logger.info(f"Queued image optimization for service: {instance.name}")
             
         # Clear cache for this service
-        cache_key = f"service_{instance.id}_images"
+        cache_key = f"service_id_images"
         cache.delete(cache_key)
         
     except Exception as e:

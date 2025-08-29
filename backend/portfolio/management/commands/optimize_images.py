@@ -30,11 +30,31 @@ class Command(BaseCommand):
             action='store_true',
             help='Force re-optimization of already optimized images',
         )
+        parser.add_argument(
+            '--project-id',
+            type=int,
+            help='Optimize specific project by ID',
+        )
+        parser.add_argument(
+            '--service-id',
+            type=int,
+            help='Optimize specific service by ID',
+        )
     
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('Starting image optimization...'))
         
         try:
+            # Handle specific project/service optimization
+            if options['project_id']:
+                self.optimize_specific_project(options['project_id'], options['force'])
+                return
+            
+            if options['service_id']:
+                self.optimize_specific_service(options['service_id'], options['force'])
+                return
+            
+            # Handle bulk optimization
             if not options['services_only']:
                 self.optimize_projects(options['force'])
             
@@ -131,6 +151,48 @@ class Command(BaseCommand):
             return False
         
         return True
+    
+    def optimize_specific_project(self, project_id, force=False):
+        """Optimize a specific project by ID"""
+        try:
+            project = Project.objects.get(id=project_id)
+            self.stdout.write(f'Optimizing project: {project.title}')
+            
+            # Check if optimization is needed
+            if not force and self._is_project_optimized(project):
+                self.stdout.write(f'  - Project {project.title} already optimized, skipping...')
+                return
+            
+            # Optimize images
+            ImageOptimizer.optimize_project_images(project)
+            self.stdout.write(f'  - Successfully optimized project: {project.title}')
+            
+        except Project.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f'Project with ID {project_id} not found'))
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  - Failed to optimize project {project_id}: {str(e)}'))
+            logger.error(f'Failed to optimize project {project_id}: {str(e)}')
+    
+    def optimize_specific_service(self, service_id, force=False):
+        """Optimize a specific service by ID"""
+        try:
+            service = Service.objects.get(id=service_id)
+            self.stdout.write(f'Optimizing service: {service.name}')
+            
+            # Check if optimization is needed
+            if not force and self._is_service_optimized(service):
+                self.stdout.write(f'  - Service {service.name} already optimized, skipping...')
+                return
+            
+            # Optimize images
+            ImageOptimizer.optimize_service_images(service)
+            self.stdout.write(f'  - Successfully optimized service: {service.name}')
+            
+        except Service.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f'Service with ID {service_id} not found'))
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  - Failed to optimize service {service_id}: {str(e)}'))
+            logger.error(f'Failed to optimize service {service_id}: {str(e)}')
     
     def _is_service_optimized(self, service):
         """Check if a service already has optimized images"""

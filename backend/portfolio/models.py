@@ -482,6 +482,18 @@ class Project(models.Model):
                 optimized_urls.append(optimized_url)
         
         return optimized_urls
+    
+    def optimize_images_manually(self):
+        """
+        Manually trigger image optimization for this project
+        Useful if automatic optimization fails
+        """
+        try:
+            from .image_optimizer import ImageOptimizer
+            ImageOptimizer.optimize_project_images(self)
+            return True, "Images optimized successfully"
+        except Exception as e:
+            return False, f"Optimization failed: {str(e)}"
 
 
 class Service(models.Model):
@@ -683,6 +695,18 @@ class Service(models.Model):
                 optimized_urls.append(optimized_url)
         
         return optimized_urls
+    
+    def optimize_images_manually(self):
+        """
+        Manually trigger image optimization for this service
+        Useful if automatic optimization fails
+        """
+        try:
+            from .image_optimizer import ImageOptimizer
+            ImageOptimizer.optimize_service_images(self)
+            return True, "Images optimized successfully"
+        except Exception as e:
+            return False, f"Optimization failed: {str(e)}"
 
 
 class ProjectImage(models.Model):

@@ -91,7 +91,51 @@ python test_optimization.py
 ## 📋 Usage
 
 ### **For New Projects/Services**
-Simply create them normally - images are automatically optimized!
+Images are automatically optimized when you create them! If automatic optimization fails, you can manually trigger it.
+
+### **Manual Optimization Methods**
+
+#### **1. Django Management Command (Recommended)**
+```bash
+# Optimize all images
+python manage.py optimize_images
+
+# Optimize only projects
+python manage.py optimize_images --projects-only
+
+# Optimize only services
+python manage.py optimize_images --services-only
+
+# Optimize specific project by ID
+python manage.py optimize_images --project-id 1
+
+# Optimize specific service by ID
+python manage.py optimize_images --service-id 1
+
+# Force re-optimization
+python manage.py optimize_images --force
+```
+
+#### **2. Interactive Python Script**
+```bash
+cd backend
+python manual_optimize.py
+```
+This gives you a menu to:
+- List all projects/services
+- Optimize specific projects/services by ID
+- Optimize all projects/services at once
+
+#### **3. Python Code (In Django Shell)**
+```python
+# Optimize specific project
+project = Project.objects.get(id=1)
+success, message = project.optimize_images_manually()
+
+# Optimize specific service
+service = Service.objects.get(id=1)
+success, message = service.optimize_images_manually()
+```
 
 ### **For Existing Images**
 Run the management command to optimize all existing images:
@@ -223,6 +267,38 @@ Check Django logs for optimization details:
 ```bash
 tail -f logs/django.log
 ```
+
+### **Automatic Optimization Issues**
+If images aren't automatically optimizing when you create projects/services:
+
+1. **Check if Pillow is installed**:
+   ```bash
+   pip install Pillow==10.4.0
+   ```
+
+2. **Verify signals are working**:
+   ```bash
+   python manage.py check
+   ```
+
+3. **Check Django logs for errors**:
+   ```bash
+   tail -f logs/django.log
+   ```
+
+4. **Manual optimization as fallback**:
+   ```bash
+   # For specific project
+   python manage.py optimize_images --project-id 1
+   
+   # For specific service
+   python manage.py optimize_images --service-id 1
+   ```
+
+5. **Use interactive script**:
+   ```bash
+   python manual_optimize.py
+   ```
 
 ## 📈 Monitoring
 
