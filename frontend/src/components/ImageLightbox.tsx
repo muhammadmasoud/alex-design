@@ -158,7 +158,7 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
   // Touch support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     if (scale > 1 && e.touches.length === 1) {
-      e.preventDefault();
+      // Remove preventDefault to avoid passive event listener issues
       e.stopPropagation();
       setIsDragging(true);
       const touch = e.touches[0];
@@ -173,7 +173,8 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
   useEffect(() => {
     const handleGlobalTouchMove = (e: TouchEvent) => {
       if (isDragging && scale > 1 && e.touches.length === 1) {
-        e.preventDefault();
+        // Don't call preventDefault() to avoid passive listener issues
+        // Instead, handle the touch movement without preventing default
         const touch = e.touches[0];
         const newX = touch.clientX - dragStart.x;
         const newY = touch.clientY - dragStart.y;
@@ -188,8 +189,9 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
     };
 
     if (isDragging) {
-      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-      document.addEventListener('touchend', handleGlobalTouchEnd);
+      // Remove passive: false to avoid the preventDefault error
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: true });
+      document.addEventListener('touchend', handleGlobalTouchEnd, { passive: true });
     }
 
     return () => {
