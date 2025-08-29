@@ -1229,6 +1229,3 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
         
         else:
             return Response({'error': 'Invalid direction or new_order parameter'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
