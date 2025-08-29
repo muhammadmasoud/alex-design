@@ -61,7 +61,7 @@ Write-Success "Database migrations completed"
 # 4. OPTIMIZE EXISTING IMAGES
 Write-Status "Step 4: Optimizing existing images (this may take a while)..."
 $pythonScript = @"
-from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
+from portfolio.image_optimizer import ImageOptimizer
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
 import os
 

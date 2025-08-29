@@ -18,7 +18,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
-from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
+from portfolio.image_optimizer import ImageOptimizer
 import logging
 
 # Setup logging
@@ -37,9 +37,7 @@ def reoptimize_all_images():
         if project.image:
             try:
                 logger.info(f"Processing project: {project.title}")
-                # Note: ConsolidatedImageOptimizer handles optimization differently
-                # These calls are now handled automatically via signals
-                pass
+                ImageOptimizer.save_optimized_versions(project.image.name)
             except Exception as e:
                 logger.error(f"Error processing project {project.title}: {e}")
     
@@ -50,9 +48,7 @@ def reoptimize_all_images():
         if service.icon:
             try:
                 logger.info(f"Processing service: {service.name}")
-                # Note: ConsolidatedImageOptimizer handles optimization differently
-                # These calls are now handled automatically via signals
-                pass
+                ImageOptimizer.save_optimized_versions(service.icon.name)
             except Exception as e:
                 logger.error(f"Error processing service {service.name}: {e}")
     
@@ -63,22 +59,18 @@ def reoptimize_all_images():
         if img.image:
             try:
                 logger.info(f"Processing project image: {img.id}")
-                # Note: ConsolidatedImageOptimizer handles optimization differently
-                # These calls are now handled automatically via signals
-                pass
+                ImageOptimizer.save_optimized_versions(img.image.name)
             except Exception as e:
                 logger.error(f"Error processing project image {img.id}: {e}")
     
     # Re-optimize service album images
-    logger.info("🖼️ Re-optimized service album images...")
+    logger.info("🖼️ Re-optimizing service album images...")
     service_images = ServiceImage.objects.all()
     for img in service_images:
         if img.image:
             try:
                 logger.info(f"Processing service image: {img.id}")
-                # Note: ConsolidatedImageOptimizer handles optimization differently
-                # These calls are now handled automatically via signals
-                pass
+                ImageOptimizer.save_optimized_versions(img.image.name)
             except Exception as e:
                 logger.error(f"Error processing service image {img.id}: {e}")
     

@@ -4,7 +4,7 @@ Management command to test the enhanced image optimization system
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from portfolio.models import Project, ProjectImage
-from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
+from portfolio.enhanced_image_optimizer import EnhancedImageOptimizer
 import os
 
 class Command(BaseCommand):
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         
         # Test optimizer
         self.stdout.write('\n🧪 Testing Optimizer:')
-        optimizer = ConsolidatedImageOptimizer()
+        optimizer = EnhancedImageOptimizer()
         
         self.stdout.write(f"   WebP Quality: {optimizer.webp_quality}")
         self.stdout.write(f"   Delete Original: {optimizer.delete_original}")

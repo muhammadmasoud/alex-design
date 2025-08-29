@@ -66,7 +66,7 @@ print_success "Database migrations completed"
 # 4. OPTIMIZE EXISTING IMAGES
 print_status "Step 4: Optimizing existing images (this may take a while)..."
 python manage.py shell << EOF
-from portfolio.consolidated_image_optimizer import ConsolidatedImageOptimizer
+from portfolio.image_optimizer import ImageOptimizer
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
 import os
 

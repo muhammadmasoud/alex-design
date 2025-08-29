@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from django.core.files.storage import default_storage
 from rest_framework.authtoken.models import Token
 from .models import Project, Service, User, ProjectImage, ServiceImage
-from .consolidated_image_optimizer import optimize_image, should_optimize_image
+from .image_utils import optimize_image, should_optimize_image
 import os
 
 
