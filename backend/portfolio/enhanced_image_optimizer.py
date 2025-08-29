@@ -225,7 +225,17 @@ class EnhancedImageOptimizer:
             base_name = os.path.splitext(os.path.basename(webp_path))[0]
             dir_name = os.path.dirname(webp_path)
             thumb_filename = f"{base_name}_{size_name}.webp"
-            thumb_path = os.path.join(dir_name, 'thumbnails', thumb_filename)
+            
+            # Create thumbnails folder in the same directory as the image
+            thumb_dir = os.path.join(dir_name, 'thumbnails')
+            thumb_path = os.path.join(thumb_dir, thumb_filename)
+            
+            # Ensure thumbnails directory exists
+            try:
+                if not os.path.exists(thumb_dir):
+                    os.makedirs(thumb_dir, exist_ok=True)
+            except Exception as e:
+                logger.error(f"Error creating thumbnails directory {thumb_dir}: {e}")
             
             # Save thumbnail
             if default_storage.exists(thumb_path):

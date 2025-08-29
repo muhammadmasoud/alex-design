@@ -139,8 +139,11 @@ def project_image_upload_path(instance, filename):
     else:
         filename = f"project_{timestamp}_{unique_id}.{ext}"
     
-    # Full path
-    upload_path = f"projects/{filename}"
+    # Create project folder structure
+    project_folder = f"projects/{base_name if instance.title else 'project'}"
+    
+    # Full path - main image goes directly in project folder
+    upload_path = f"{project_folder}/{filename}"
     
     return upload_path
 
@@ -191,8 +194,12 @@ def project_album_image_upload_path(instance, filename):
     else:
         filename = f"project_album_{timestamp}_{unique_id}.{ext}"
     
-    # Full path
-    upload_path = f"projects/albums/{filename}"
+    # Create project folder structure with album subfolder
+    project_folder = f"projects/{base_name if instance.project.title else 'project'}"
+    album_folder = f"{project_folder}/album"
+    
+    # Full path - album images go in album subfolder
+    upload_path = f"{album_folder}/{filename}"
     
     return upload_path
 
@@ -262,6 +269,10 @@ class Project(models.Model):
             max_order = Project.objects.aggregate(models.Max('order'))['order__max']
             self.order = (max_order or 0) + 1
         
+        # Create project folder structure on first save
+        if not self.pk:
+            self._create_project_folders()
+        
         # Handle image deletion logic
         if self.pk:
             try:
@@ -280,6 +291,32 @@ class Project(models.Model):
         super().save(*args, **kwargs)
         if self.image:
             optimize_uploaded_image(self.image, self)
+    
+    def _create_project_folders(self):
+        """Create the project folder structure automatically"""
+        import os
+        from django.conf import settings
+        
+        if not self.title:
+            return
+        
+        # Create base project folder
+        project_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(self.title))
+        album_folder = os.path.join(project_folder, 'album')
+        
+        try:
+            # Create project folder
+            if not os.path.exists(project_folder):
+                os.makedirs(project_folder, exist_ok=True)
+                print(f"Created project folder: {project_folder}")
+            
+            # Create album subfolder
+            if not os.path.exists(album_folder):
+                os.makedirs(album_folder, exist_ok=True)
+                print(f"Created album folder: {album_folder}")
+                
+        except Exception as e:
+            print(f"Error creating project folders: {e}")
 
     def __str__(self):
         return self.title
@@ -473,6 +510,10 @@ class ProjectImage(models.Model):
         return f"{self.project.title} - Image {self.pk}"
     
     def save(self, *args, **kwargs):
+        # Ensure project album folder exists before saving
+        if self.project and self.project.title:
+            self._ensure_album_folder_exists()
+        
         # Delete old image if updating and a new image is provided
         if self.pk:
             try:
@@ -487,6 +528,32 @@ class ProjectImage(models.Model):
             except ProjectImage.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
+    
+    def _ensure_album_folder_exists(self):
+        """Ensure the album folder exists for this project"""
+        import os
+        from django.conf import settings
+        
+        if not self.project or not self.project.title:
+            return
+        
+        # Create project album folder
+        project_folder = os.path.join(settings.MEDIA_ROOT, 'projects', slugify(self.project.title))
+        album_folder = os.path.join(project_folder, 'album')
+        
+        try:
+            # Create project folder if it doesn't exist
+            if not os.path.exists(project_folder):
+                os.makedirs(project_folder, exist_ok=True)
+                print(f"Created project folder: {project_folder}")
+            
+            # Create album subfolder if it doesn't exist
+            if not os.path.exists(album_folder):
+                os.makedirs(album_folder, exist_ok=True)
+                print(f"Created album folder: {album_folder}")
+                
+        except Exception as e:
+            print(f"Error creating album folder: {e}")
 
     def delete(self, *args, **kwargs):
         # Delete the image file when deleting the model instance
