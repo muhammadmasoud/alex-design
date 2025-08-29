@@ -416,3 +416,6 @@ cypress/screenshots/
 .env.test.local
 .env.production.local
 .env.production
+backend/projects/
+backend/services/
+backend/media/
