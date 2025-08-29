@@ -221,11 +221,19 @@ class EnhancedImageOptimizer:
             thumb.save(output, format='WEBP', quality=self.webp_quality, method=self.compression_method)
             output.seek(0)
             
-            # Generate thumbnail path
+            # Generate thumbnail path - maintain project folder structure
             base_name = os.path.splitext(os.path.basename(webp_path))[0]
             dir_name = os.path.dirname(webp_path)
-            thumb_filename = f"{base_name}_{size_name}.webp"
-            thumb_path = os.path.join(dir_name, 'thumbnails', thumb_filename)
+            
+            # Check if this is a project image or album image
+            if 'album' in dir_name:
+                # This is an album image, create thumbnails in project/album/thumbnails
+                thumb_filename = f"{base_name}_{size_name}.webp"
+                thumb_path = os.path.join(dir_name, 'thumbnails', thumb_filename)
+            else:
+                # This is a main project image, create thumbnails in project/thumbnails
+                thumb_filename = f"{base_name}_{size_name}.webp"
+                thumb_path = os.path.join(dir_name, 'thumbnails', thumb_filename)
             
             # Save thumbnail
             if default_storage.exists(thumb_path):
@@ -271,8 +279,14 @@ class EnhancedImageOptimizer:
             if default_storage.exists(webp_path):
                 return f"/media/{webp_path}"
         else:
-            # Return thumbnail version
-            thumb_path = os.path.join(dir_name, 'thumbnails', f"{base_name}_{size}.webp")
+            # Return thumbnail version - maintain project folder structure
+            if 'album' in dir_name:
+                # This is an album image, look for thumbnails in project/album/thumbnails
+                thumb_path = os.path.join(dir_name, 'thumbnails', f"{base_name}_{size}.webp")
+            else:
+                # This is a main project image, look for thumbnails in project/thumbnails
+                thumb_path = os.path.join(dir_name, 'thumbnails', f"{base_name}_{size}.webp")
+            
             if default_storage.exists(thumb_path):
                 return f"/media/{thumb_path}"
         
