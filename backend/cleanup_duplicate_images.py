@@ -18,7 +18,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from portfolio.models import Project, Service, ProjectImage, ServiceImage
-from portfolio.image_optimizer import ImageOptimizer
 
 def cleanup_duplicate_images():
     """Remove duplicate images and keep only optimized versions"""
@@ -37,118 +36,143 @@ def cleanup_duplicate_images():
     print(f"📁 Optimized directory: {optimized_dir}")
     print(f"📁 WebP directory: {webp_dir}")
     
-    # Check if optimized versions exist
-    if not optimized_dir.exists():
-        print("❌ Optimized directory doesn't exist. Run reoptimize_images_hq.py first!")
-        return
+    # Strategy: Keep only the BEST optimized versions and remove everything else
     
-    # Get all optimized image files
-    optimized_files = set()
-    if optimized_dir.exists():
-        for file_path in optimized_dir.rglob("*"):
-            if file_path.is_file() and file_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
-                # Get the base name without optimization suffixes
-                base_name = file_path.stem
-                if '_' in base_name:
-                    # Remove quality/size suffixes
-                    parts = base_name.split('_')
-                    if len(parts) > 2:
-                        # Keep only the original filename part
-                        base_name = '_'.join(parts[:-2])
-                optimized_files.add(base_name)
-    
-    print(f"✅ Found {len(optimized_files)} optimized image versions")
-    
-    # Check for duplicates in projects folder
+    # 1. Remove projects folder (contains original uploads)
     if projects_dir.exists():
-        print(f"\n🔍 Checking projects folder for duplicates...")
-        project_files = list(projects_dir.rglob("*"))
-        project_images = [f for f in project_files if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png']]
-        
-        duplicates_found = 0
-        for img_file in project_images:
-            base_name = img_file.stem
-            if base_name in optimized_files:
-                print(f"🗑️  Removing duplicate: {img_file}")
-                try:
-                    img_file.unlink()
-                    duplicates_found += 1
-                except Exception as e:
-                    print(f"❌ Error removing {img_file}: {e}")
-        
-        print(f"✅ Removed {duplicates_found} duplicate project images")
+        print(f"\n🗑️  Removing projects folder (original uploads)...")
+        try:
+            import shutil
+            shutil.rmtree(projects_dir)
+            print(f"✅ Removed projects folder")
+        except Exception as e:
+            print(f"❌ Error removing projects folder: {e}")
     
-    # Check for duplicates in services folder
+    # 2. Remove services folder (contains original uploads)
     if services_dir.exists():
-        print(f"\n🔍 Checking services folder for duplicates...")
-        service_files = list(services_dir.rglob("*"))
-        service_images = [f for f in service_files if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png']]
-        
-        duplicates_found = 0
-        for img_file in service_images:
-            base_name = img_file.stem
-            if base_name in optimized_files:
-                print(f"🗑️  Removing duplicate: {img_file}")
-                try:
-                    img_file.unlink()
-                    duplicates_found += 1
-                except Exception as e:
-                    print(f"❌ Error removing {img_file}: {e}")
-        
-        print(f"✅ Removed {duplicates_found} duplicate service images")
+        print(f"\n🗑️  Removing services folder (original uploads)...")
+        try:
+            import shutil
+            shutil.rmtree(services_dir)
+            print(f"✅ Removed services folder")
+        except Exception as e:
+            print(f"❌ Error removing services folder: {e}")
     
-    # Check for old low-quality optimized versions
-    print(f"\n🔍 Checking for old low-quality optimized versions...")
-    old_versions_removed = 0
-    
+    # 3. Clean up optimized folder - keep only the best versions
     if optimized_dir.exists():
-        for file_path in optimized_dir.rglob("*"):
-            if file_path.is_file() and file_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
-                filename = file_path.name
-                # Look for old quality indicators (85, 80, etc.)
-                if any(quality in filename for quality in ['_85_', '_80_', '_70_', '_60_']):
-                    print(f"🗑️  Removing old low-quality version: {file_path}")
+        print(f"\n🔍 Cleaning optimized folder...")
+        optimized_files = list(optimized_dir.rglob("*"))
+        image_files = [f for f in optimized_files if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']]
+        
+        # Group files by base name
+        file_groups = {}
+        for img_file in image_files:
+            base_name = img_file.stem
+            if '_' in base_name:
+                # Remove quality/size suffixes to get base name
+                parts = base_name.split('_')
+                if len(parts) > 2:
+                    base_name = '_'.join(parts[:-2])
+            
+            if base_name not in file_groups:
+                file_groups[base_name] = []
+            file_groups[base_name].append(img_file)
+        
+        # Keep only the best version of each image
+        files_removed = 0
+        for base_name, files in file_groups.items():
+            if len(files) > 1:
+                # Sort by file size (larger = better quality)
+                files.sort(key=lambda x: x.stat().st_size, reverse=True)
+                
+                # Keep the largest file (best quality) and remove the rest
+                best_file = files[0]
+                for file_to_remove in files[1:]:
                     try:
-                        file_path.unlink()
-                        old_versions_removed += 1
+                        file_to_remove.unlink()
+                        files_removed += 1
+                        print(f"🗑️  Removed duplicate: {file_to_remove.name}")
                     except Exception as e:
-                        print(f"❌ Error removing {file_path}: {e}")
+                        print(f"❌ Error removing {file_to_remove}: {e}")
+        
+        print(f"✅ Removed {files_removed} duplicate optimized files")
     
-    print(f"✅ Removed {old_versions_removed} old low-quality versions")
+    # 4. Clean up webp folder - keep only the best versions
+    if webp_dir.exists():
+        print(f"\n🔍 Cleaning webp folder...")
+        webp_files = list(webp_dir.rglob("*"))
+        image_files = [f for f in webp_files if f.is_file() and f.suffix.lower() in ['.webp']]
+        
+        # Group files by base name
+        file_groups = {}
+        for img_file in image_files:
+            base_name = img_file.stem
+            if '_' in base_name:
+                # Remove quality/size suffixes to get base name
+                parts = base_name.split('_')
+                if len(parts) > 2:
+                    base_name = '_'.join(parts[:-2])
+            
+            if base_name not in file_groups:
+                file_groups[base_name] = []
+            file_groups[base_name].append(img_file)
+        
+        # Keep only the best version of each image
+        files_removed = 0
+        for base_name, files in file_groups.items():
+            if len(files) > 1:
+                # Sort by file size (larger = better quality)
+                files.sort(key=lambda x: x.stat().st_size, reverse=True)
+                
+                # Keep the largest file (best quality) and remove the rest
+                best_file = files[0]
+                for file_to_remove in files[1:]:
+                    try:
+                        file_to_remove.unlink()
+                        files_removed += 1
+                        print(f"🗑️  Removed duplicate: {file_to_remove.name}")
+                    except Exception as e:
+                        print(f"❌ Error removing {file_to_remove}: {e}")
+        
+        print(f"✅ Removed {files_removed} duplicate webp files")
     
     # Final storage check
     print(f"\n📊 Final storage check:")
     total_size = sum(f.stat().st_size for f in media_dir.rglob('*') if f.is_file())
     print(f"Total media size: {total_size / (1024*1024):.1f} MB")
     
-    print("\n🎯 Cleanup complete! You now have only optimized images.")
+    print("\n🎯 Cleanup complete! You now have only the best optimized images.")
 
-def verify_optimized_images():
-    """Verify that all images have optimized versions"""
-    print("\n🔍 Verifying optimized images...")
+def verify_cleanup():
+    """Verify the cleanup was successful"""
+    print("\n🔍 Verifying cleanup...")
     
-    # Check projects
-    projects = Project.objects.all()
-    for project in projects:
-        if project.image:
-            optimized_path = ImageOptimizer.get_optimized_path(project.image.name, 'md', 'webp', 'high')
-            if not os.path.exists(optimized_path):
-                print(f"⚠️  Project {project.title} missing optimized image: {optimized_path}")
+    media_dir = Path(settings.MEDIA_ROOT)
     
-    # Check services
-    services = Service.objects.all()
-    for service in services:
-        if service.icon:
-            optimized_path = ImageOptimizer.get_optimized_path(service.icon.name, 'md', 'webp', 'high')
-            if not os.path.exists(optimized_path):
-                print(f"⚠️  Service {service.name} missing optimized image: {optimized_path}")
+    # Check what's left
+    directories = {
+        'media': media_dir,
+        'projects': media_dir / "projects",
+        'services': media_dir / "services", 
+        'optimized': media_dir / "optimized",
+        'webp': media_dir / "webp"
+    }
+    
+    for name, directory in directories.items():
+        if directory.exists():
+            files = list(directory.rglob("*"))
+            image_files = [f for f in files if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']]
+            size = sum(f.stat().st_size for f in image_files) if image_files else 0
+            print(f"📁 {name}: {len(image_files)} files, {size / (1024*1024):.1f} MB")
+        else:
+            print(f"📁 {name}: Does not exist")
     
     print("✅ Verification complete!")
 
 if __name__ == "__main__":
     try:
         cleanup_duplicate_images()
-        verify_optimized_images()
+        verify_cleanup()
         print("\n🎉 All done! Your images are now clean and optimized.")
     except Exception as e:
         print(f"❌ Error during cleanup: {e}")
