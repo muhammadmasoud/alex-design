@@ -347,6 +347,7 @@ class Project(models.Model):
         import logging
         from django.conf import settings
         from django.core.exceptions import ValidationError
+        from .image_optimizer import ImageOptimizer
         
         # Set up logging
         logger = logging.getLogger(__name__)
@@ -456,6 +457,31 @@ class Project(models.Model):
             return self.album_images.all()
         return self.album_images.all()[:limit]
     
+    def get_optimized_image_url(self, size='medium', format='webp'):
+        """
+        Get the URL for the optimized main image
+        Returns the path to the optimized version if it exists
+        """
+        if not self.image:
+            return None
+        
+        from .image_optimizer import ImageOptimizer
+        return ImageOptimizer.get_optimized_image_url(self.image.path, size, format)
+    
+    def get_optimized_album_image_urls(self, size='medium', format='webp'):
+        """
+        Get optimized URLs for all album images
+        Returns a list of optimized image URLs
+        """
+        from .image_optimizer import ImageOptimizer
+        optimized_urls = []
+        
+        for album_image in self.album_images.all():
+            if album_image.image:
+                optimized_url = ImageOptimizer.get_optimized_image_url(album_image.image.path, size, format)
+                optimized_urls.append(optimized_url)
+        
+        return optimized_urls
 
 
 class Service(models.Model):
@@ -632,7 +658,31 @@ class Service(models.Model):
             return self.album_images.all()
         return self.album_images.all()[:limit]
     
-
+    def get_optimized_icon_url(self, size='medium', format='webp'):
+        """
+        Get the URL for the optimized service icon
+        Returns the path to the optimized version if it exists
+        """
+        if not self.icon:
+            return None
+        
+        from .image_optimizer import ImageOptimizer
+        return ImageOptimizer.get_optimized_image_url(self.icon.path, size, format)
+    
+    def get_optimized_album_image_urls(self, size='medium', format='webp'):
+        """
+        Get optimized URLs for all album images
+        Returns a list of optimized image URLs
+        """
+        from .image_optimizer import ImageOptimizer
+        optimized_urls = []
+        
+        for album_image in self.album_images.all():
+            if album_image.image:
+                optimized_url = ImageOptimizer.get_optimized_image_url(album_image.image.path, size, format)
+                optimized_urls.append(optimized_url)
+        
+        return optimized_urls
 
 
 class ProjectImage(models.Model):
