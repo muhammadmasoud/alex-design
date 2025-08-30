@@ -425,7 +425,12 @@ class Project(models.Model):
         return self.title
     
     class Meta:
-        ordering = ['order', '-project_date']  # Order by manual order first, then by project_date descending
+        ordering = ['order', '-project_date']
+        indexes = [
+            models.Index(fields=['order', '-project_date']),
+            models.Index(fields=['project_date']),
+            models.Index(fields=['order']),
+        ]  # Order by manual order first, then by project_date descending
 
     def get_category_names(self):
         """Get all category names as a list"""

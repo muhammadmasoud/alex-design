@@ -59,7 +59,6 @@ export default function ProjectsPage() {
             page_size: PAGE_SIZE,
           },
         });
-        console.log("Full API Response:", data); // Log full response
         const results = Array.isArray(data) ? data : data?.results || []; // Handle plain array or paginated response
         setItems(results);
         setCount(Array.isArray(data) ? results.length : data?.count || 0);

@@ -44,7 +44,7 @@ IS_LIGHTSAIL = os.environ.get('LIGHTSAIL') == 'true'
 SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = not IS_PRODUCTION
+DEBUG = False if IS_PRODUCTION else env.bool("DEBUG", default=True)
 
 # CSRF Configuration for Production
 if IS_PRODUCTION:
@@ -279,6 +279,7 @@ if IS_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
     
     # Additional security headers for production
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

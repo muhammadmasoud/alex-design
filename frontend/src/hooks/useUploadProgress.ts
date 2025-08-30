@@ -110,7 +110,10 @@ export function useUploadProgress() {
         uploadFormData.append('images', fileObj.file);
       });
 
-      console.log(`Starting upload to ${endpoint} with ${files.length} files`);
+      // Log upload start for debugging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Starting upload to ${endpoint} with ${files.length} files`);
+      }
 
       // Configure axios for progress tracking with better error handling
       const response = await api.post(endpoint, uploadFormData, {
@@ -153,11 +156,12 @@ export function useUploadProgress() {
         },
       });
 
-      console.log('Upload response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        data: response.data
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Upload response received:', {
+          status: response.status,
+          dataKeys: Object.keys(response.data)
+        });
+      }
 
       // Check if the response indicates success
       if (response.status >= 200 && response.status < 300) {

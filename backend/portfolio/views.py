@@ -26,7 +26,6 @@ from .contact_serializers import ContactSerializer
 from django.db import transaction
 from django.middleware.csrf import get_token
 from django.conf import settings
-from django.db import models
 import time
 from asgiref.sync import sync_to_async
 from celery import shared_task
@@ -155,10 +154,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 else:
                     serializer.save()
         except Exception as e:
-            print(f"Error in perform_create: {e}")
-            print(f"Error type: {type(e)}")
+            logger.error(f"Error in perform_create: {e}")
+            logger.error(f"Error type: {type(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             raise e
 
     def perform_update(self, serializer):
@@ -170,10 +169,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
             else:
                 serializer.save()
         except Exception as e:
-            print(f"Error in perform_update: {e}")
-            print(f"Error type: {type(e)}")
+            logger.error(f"Error in perform_update: {e}")
+            logger.error(f"Error type: {type(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             raise e
 
     def perform_destroy(self, instance):
@@ -204,10 +203,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
             else:
                 raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
         except Exception as e:
-            print(f"Error in project create: {e}")
-            print(f"Error type: {type(e)}")
+            logger.error(f"Error in project create: {e}")
+            logger.error(f"Error type: {type(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             
             # Return a proper error response instead of letting Django handle it
             if hasattr(e, 'detail'):

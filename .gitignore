@@ -437,6 +437,7 @@ temp/
 # Runtime configuration files
 .env.local
 .env.development.local
+.env.production.template
 .env.test.local
 .env.production.local
 .env.production
