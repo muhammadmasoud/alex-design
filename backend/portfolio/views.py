@@ -810,35 +810,74 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
         """
         Bulk upload multiple images for a project
         """
-        project_id = request.data.get('project_id')
-        if not project_id:
-            return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
         try:
-            project = Project.objects.get(id=project_id)
-        except Project.DoesNotExist:
-            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        images = request.FILES.getlist('images')
-        if not images:
-            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        created_images = []
-        with transaction.atomic():
-            for i, image in enumerate(images):
-                project_image = ProjectImage.objects.create(
-                    project=project,
-                    image=image,
-                    original_filename=image.name,
-                    order=i
-                )
-                created_images.append(project_image)
-        
-        serializer = self.get_serializer(created_images, many=True)
-        return Response({
-            'message': f'{len(created_images)} images uploaded successfully',
-            'images': serializer.data
-        }, status=status.HTTP_201_CREATED)
+            project_id = request.data.get('project_id')
+            if not project_id:
+                return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                project = Project.objects.get(id=project_id)
+            except Project.DoesNotExist:
+                return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            images = request.FILES.getlist('images')
+            if not images:
+                return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if we should replace existing images
+            replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
+            
+            created_images = []
+            with transaction.atomic():
+                # If replacing, delete all existing images first
+                if replace_existing:
+                    try:
+                        existing_images = ProjectImage.objects.filter(project=project)
+                        for existing_image in existing_images:
+                            # Delete the image file from storage
+                            if existing_image.image:
+                                existing_image.image.delete(save=False)
+                        existing_images.delete()
+                    except Exception as e:
+                        return Response({
+                            'error': f'Failed to delete existing images: {str(e)}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Create new images
+                for i, image in enumerate(images):
+                    try:
+                        # Validate image before creating
+                        if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+                            return Response({
+                                'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        project_image = ProjectImage.objects.create(
+                            project=project,
+                            image=image,
+                            original_filename=image.name,
+                            order=i
+                        )
+                        created_images.append(project_image)
+                    except Exception as e:
+                        # Rollback transaction on any error
+                        transaction.set_rollback(True)
+                        return Response({
+                            'error': f'Failed to create image {image.name}: {str(e)}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            serializer = self.get_serializer(created_images, many=True)
+            action_text = "replaced" if replace_existing else "added to"
+            return Response({
+                'message': f'{len(created_images)} images {action_text} successfully',
+                'images': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            # Catch any other unexpected errors
+            return Response({
+                'error': f'Unexpected error during bulk upload: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ServiceImageViewSet(viewsets.ModelViewSet):
@@ -879,35 +918,74 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
         """
         Bulk upload multiple images for a service
         """
-        service_id = request.data.get('service_id')
-        if not service_id:
-            return Response({'error': 'service_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
         try:
-            service = Service.objects.get(id=service_id)
-        except Service.DoesNotExist:
-            return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        images = request.FILES.getlist('images')
-        if not images:
-            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        created_images = []
-        with transaction.atomic():
-            for i, image in enumerate(images):
-                service_image = ServiceImage.objects.create(
-                    service=service,
-                    image=image,
-                    original_filename=image.name,
-                    order=i
-                )
-                created_images.append(service_image)
-        
-        serializer = self.get_serializer(created_images, many=True)
-        return Response({
-            'message': f'{len(created_images)} images uploaded successfully',
-            'images': serializer.data
-        }, status=status.HTTP_201_CREATED)
+            service_id = request.data.get('service_id')
+            if not service_id:
+                return Response({'error': 'service_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                service = Service.objects.get(id=service_id)
+            except Service.DoesNotExist:
+                return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            images = request.FILES.getlist('images')
+            if not images:
+                return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if we should replace existing images
+            replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
+            
+            created_images = []
+            with transaction.atomic():
+                # If replacing, delete all existing images first
+                if replace_existing:
+                    try:
+                        existing_images = ServiceImage.objects.filter(service=service)
+                        for existing_image in existing_images:
+                            # Delete the image file from storage
+                            if existing_image.image:
+                                existing_image.image.delete(save=False)
+                        existing_images.delete()
+                    except Exception as e:
+                        return Response({
+                            'error': f'Failed to delete existing images: {str(e)}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Create new images
+                for i, image in enumerate(images):
+                    try:
+                        # Validate image before creating
+                        if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+                            return Response({
+                                'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        service_image = ServiceImage.objects.create(
+                            service=service,
+                            image=image,
+                            original_filename=image.name,
+                            order=i
+                        )
+                        created_images.append(service_image)
+                    except Exception as e:
+                        # Rollback transaction on any error
+                        transaction.set_rollback(True)
+                        return Response({
+                            'error': f'Failed to create image {image.name}: {str(e)}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            serializer = self.get_serializer(created_images, many=True)
+            action_text = "replaced" if replace_existing else "added to"
+            return Response({
+                'message': f'{len(created_images)} images {action_text} successfully',
+                'images': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            # Catch any other unexpected errors
+            return Response({
+                'error': f'Unexpected error during bulk upload: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ProjectAlbumView(APIView):

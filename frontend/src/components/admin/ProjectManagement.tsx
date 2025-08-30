@@ -63,6 +63,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectCategories, setProjectCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [uploadMode, setUploadMode] = useState<'replace' | 'add'>('replace');
   
   const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
 
@@ -202,15 +203,26 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
         const albumFormData = new FormData();
         albumFormData.append("project_id", projectId.toString());
+        
+        // Check upload mode
+        if (uploadMode === 'replace') {
+          // For replace mode, we need to delete existing images first
+          // This will be handled by the backend when we send the replace flag
+          albumFormData.append("replace_existing", "true");
+        } else {
+          // For add mode, we append to existing images
+          albumFormData.append("replace_existing", "false");
+        }
 
         await uploadFiles(
           albumFiles,
           endpoints.projectImagesBulkUpload,
           albumFormData,
           (response) => {
+            const modeText = uploadMode === 'replace' ? 'replaced' : 'added to';
             toast({ 
               title: editingProject ? "Project updated successfully!" : "Project created successfully!",
-              description: `${albumFiles.length} album images uploaded successfully!`
+              description: `${albumFiles.length} album images ${modeText} successfully!`
             });
             setEditingProject(null);
             form.reset();
@@ -252,6 +264,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
+    // Set upload mode based on whether project has existing images
+    setUploadMode(project.featured_album_images && project.featured_album_images.length > 0 ? 'add' : 'replace');
     form.reset({
       title: project.title,
       description: project.description,
@@ -284,6 +298,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const handleNewProject = () => {
     setEditingProject(null);
+    setUploadMode('replace'); // Default to replace mode for new projects
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     form.reset({
@@ -615,18 +630,65 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                             </div>
                           </div>
                         )}
-                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                          <Input 
-                            type="file" 
-                            multiple
-                            accept="image/*"
-                            {...form.register("album_images")}
-                            className="h-12 text-base"
-                          />
-                          <p className="text-sm text-muted-foreground mt-3">
-                            Multiple images for project album gallery.
-                            {editingProject?.featured_album_images && editingProject.featured_album_images.length > 0 && " Leave empty to keep current, or add new images."}
-                          </p>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-4">
+                            <label className="text-sm font-medium">Upload Mode:</label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="upload-mode-replace"
+                                name="uploadMode"
+                                value="replace"
+                                checked={uploadMode === 'replace'}
+                                onChange={() => {
+                                  setUploadMode('replace');
+                                  // Reset album images when switching to replace mode
+                                  if (editingProject?.featured_album_images && editingProject.featured_album_images.length > 0) {
+                                    form.setValue("album_images", []);
+                                  }
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <label htmlFor="upload-mode-replace" className="text-sm cursor-pointer">
+                                Replace all images
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="upload-mode-add"
+                                name="uploadMode"
+                                value="add"
+                                checked={uploadMode === 'add'}
+                                onChange={() => setUploadMode('add')}
+                                className="h-4 w-4"
+                              />
+                              <label htmlFor="upload-mode-add" className="text-sm cursor-pointer">
+                                Add to existing album
+                              </label>
+                            </div>
+                          </div>
+                          
+                          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                            <Input 
+                              type="file" 
+                              multiple
+                              accept="image/*"
+                              {...form.register("album_images")}
+                              className="h-12 text-base"
+                            />
+                            <p className="text-sm text-muted-foreground mt-3">
+                              {uploadMode === 'add' 
+                                ? "Add new images to the existing album gallery."
+                                : "Upload all images for the project album gallery."
+                              }
+                              {editingProject?.featured_album_images && editingProject.featured_album_images.length > 0 && 
+                               uploadMode === 'add' &&
+                               " New images will be appended to the current collection."
+                              }
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>

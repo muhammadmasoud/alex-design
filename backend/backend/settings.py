@@ -196,8 +196,8 @@ else:
 # ]
 
 # File upload settings for large architecture images - Production Optimized
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2.5 * 1024 * 1024  # 2.5MB - force disk streaming for large files
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10MB - overall memory limit
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB - increased from 2.5MB for better performance
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024   # 50MB - increased from 10MB for large album uploads
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Allow many album images
 ALLOWED_UPLOAD_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp',
