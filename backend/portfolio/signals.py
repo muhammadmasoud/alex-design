@@ -17,6 +17,10 @@ from .image_optimizer import ImageOptimizer
 
 logger = logging.getLogger(__name__)
 
+# Thread lock to prevent duplicate optimizations
+optimization_lock = threading.Lock()
+currently_optimizing = set()
+
 @receiver(post_save, sender=Project)
 def optimize_project_images_on_save(sender, instance, created, **kwargs):
     """
@@ -28,11 +32,23 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
             def delayed_optimization():
                 def run_optimization():
+                    # Prevent duplicate optimization with lock
+                    with optimization_lock:
+                        project_key = f"project_{instance.id}"
+                        if project_key in currently_optimizing:
+                            logger.info(f"Skipping project optimization - already in progress for: {instance.title}")
+                            return
+                        currently_optimizing.add(project_key)
+                    
                     try:
                         ImageOptimizer.optimize_project_images(instance)
                         logger.info(f"Successfully optimized images for project: {instance.title}")
                     except Exception as e:
                         logger.error(f"Failed to optimize project {instance.title}: {str(e)}")
+                    finally:
+                        # Remove from optimization set
+                        with optimization_lock:
+                            currently_optimizing.discard(project_key)
                 
                 # Run optimization in background thread to avoid blocking
                 thread = threading.Thread(target=run_optimization)
@@ -60,11 +76,23 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
             def delayed_optimization():
                 def run_optimization():
+                    # Prevent duplicate optimization with lock
+                    with optimization_lock:
+                        service_key = f"service_{instance.id}"
+                        if service_key in currently_optimizing:
+                            logger.info(f"Skipping service optimization - already in progress for: {instance.name}")
+                            return
+                        currently_optimizing.add(service_key)
+                    
                     try:
                         ImageOptimizer.optimize_service_images(instance)
                         logger.info(f"Successfully optimized images for service: {instance.name}")
                     except Exception as e:
                         logger.error(f"Failed to optimize service {instance.name}: {str(e)}")
+                    finally:
+                        # Remove from optimization set
+                        with optimization_lock:
+                            currently_optimizing.discard(service_key)
                 
                 # Run optimization in background thread to avoid blocking
                 thread = threading.Thread(target=run_optimization)
@@ -85,12 +113,55 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
 def optimize_project_album_image_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project album images when they are created or updated
+    OPTIMIZED: Only trigger for single image uploads, not bulk uploads, with duplicate prevention
     """
     try:
         if created and instance.project:
-            # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            transaction.on_commit(lambda: ImageOptimizer.optimize_project_images(instance.project))
-            logger.info(f"Queued album image optimization for project: {instance.project.title}")
+            # Prevent duplicate optimization with lock
+            with optimization_lock:
+                project_key = f"project_{instance.project.id}"
+                if project_key in currently_optimizing:
+                    logger.info(f"Skipping album image optimization - project already optimizing: {instance.project.title}")
+                    return
+            
+            # Check if this is part of a bulk upload (multiple images created rapidly)
+            recent_images = ProjectImage.objects.filter(
+                project=instance.project,
+                id__gte=instance.id - 10  # Check last 10 IDs
+            ).count()
+            
+            if recent_images > 3:  # Likely bulk upload, skip individual optimization
+                logger.info(f"Skipping individual optimization for album image {instance.id} - appears to be bulk upload")
+                return
+            
+            # Single image upload - optimize immediately
+            def delayed_optimization():
+                def run_optimization():
+                    # Double-check lock before proceeding
+                    with optimization_lock:
+                        project_key = f"project_{instance.project.id}"
+                        if project_key in currently_optimizing:
+                            logger.info(f"Skipping single album optimization - project already optimizing: {instance.project.title}")
+                            return
+                        currently_optimizing.add(project_key)
+                    
+                    try:
+                        ImageOptimizer.optimize_project_images(instance.project)
+                        logger.info(f"Successfully optimized single album image for project: {instance.project.title}")
+                    except Exception as e:
+                        logger.error(f"Failed to optimize single album image for project {instance.project.title}: {str(e)}")
+                    finally:
+                        # Remove from optimization set
+                        with optimization_lock:
+                            currently_optimizing.discard(project_key)
+                
+                # Run optimization in background thread to avoid blocking
+                thread = threading.Thread(target=run_optimization)
+                thread.daemon = True
+                thread.start()
+            
+            transaction.on_commit(delayed_optimization)
+            logger.info(f"Queued single album image optimization for project: {instance.project.title}")
             
         # Clear cache for the parent project
         if instance.project:

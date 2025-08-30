@@ -914,13 +914,17 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
     def bulk_upload(self, request):
         """
         Bulk upload multiple images for a project
+        OPTIMIZED: Sends response immediately, processes images efficiently with single optimization call
         """
         import logging
+        import threading
+        from django.db.models.signals import post_save
+        from .signals import optimize_project_album_image_on_save
+        
         logger = logging.getLogger(__name__)
-
         start_time = time.time()
-        logger.info(f"Starting bulk upload for project with {len(request.FILES.getlist('images', []))} images")
 
+        # Validate inputs first
         project_id = request.data.get('project_id')
         if not project_id:
             return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -934,39 +938,92 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
         if not images:
             return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate image files before processing
+        for image in images:
+            if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+                return Response({
+                    'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
 
-        if replace_existing:
-            existing_images = ProjectImage.objects.filter(project=project)
-            for existing_image in existing_images:
-                if existing_image.image:
-                    existing_image.image.delete(save=False)
-            existing_images.delete()
+        # CRITICAL FIX: Disconnect optimization signals during bulk upload
+        post_save.disconnect(optimize_project_album_image_on_save, sender=ProjectImage)
+        
+        try:
+            # Fast database operations only
+            with transaction.atomic():
+                if replace_existing:
+                    existing_images = ProjectImage.objects.filter(project=project)
+                    for existing_image in existing_images:
+                        if existing_image.image:
+                            existing_image.image.delete(save=False)
+                    existing_images.delete()
 
-        created_image_ids = []
-        for i, image in enumerate(images):
+                # Create image records without triggering signals
+                created_images = []
+                for i, image in enumerate(images):
+                    project_image = ProjectImage.objects.create(
+                        project=project,
+                        image=image,
+                        original_filename=image.name,
+                        order=i
+                    )
+                    created_images.append(project_image)
+
+            # SEND RESPONSE IMMEDIATELY - before optimization
+            response_data = {
+                'message': f'{len(created_images)} images uploaded successfully',
+                'images': [{'id': img.id, 'name': img.original_filename} for img in created_images],
+                'processing_status': 'Image optimization will continue in background'
+            }
+            
+            # Schedule SINGLE optimization call in background thread AFTER response
+            def optimize_project_once():
+                try:
+                    # Prevent any signal-based optimization during our manual optimization
+                    from django.db.models.signals import post_save
+                    from .signals import optimize_project_images_on_save
+                    
+                    # Ensure no signals interfere
+                    post_save.disconnect(optimize_project_images_on_save, sender=Project)
+                    
+                    # Single optimization call for entire project
+                    from .image_optimizer import ImageOptimizer
+                    ImageOptimizer.optimize_project_images(project)
+                    
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} images")
+                    
+                except Exception as e:
+                    logger.error(f"Error in single background optimization: {e}")
+                finally:
+                    # Re-enable signals after optimization is complete
+                    try:
+                        post_save.connect(optimize_project_images_on_save, sender=Project)
+                        post_save.connect(optimize_project_album_image_on_save, sender=ProjectImage)
+                    except:
+                        pass  # Already connected
+
+            # Start SINGLE background processing thread
+            optimization_thread = threading.Thread(target=optimize_project_once)
+            optimization_thread.daemon = True
+            optimization_thread.start()
+            
+            logger.info(f"Immediate bulk upload response sent in {time.time() - start_time:.2f}s, single optimization running in background")
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error in bulk upload: {e}")
+            return Response({
+                'error': f'Failed during bulk upload: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # Always reconnect the signal if not handled by thread
             try:
-                project_image = ProjectImage.objects.create(
-                    project=project,
-                    image=image,
-                    original_filename=image.name,
-                    order=i
-                )
-                created_image_ids.append({
-                    'id': project_image.id,
-                    'name': project_image.original_filename
-                })
-            except Exception as e:
-                logger.error(f"Error creating image {image.name}: {e}")
-                return Response({'error': f'Failed to create image {image.name}: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        elapsed_time = time.time() - start_time
-        logger.info(f"Bulk upload completed successfully in {elapsed_time:.2f}s")
-
-        return Response({
-            'message': f'{len(created_image_ids)} images uploaded successfully',
-            'images': created_image_ids
-        }, status=status.HTTP_201_CREATED)
+                post_save.connect(optimize_project_album_image_on_save, sender=ProjectImage)
+            except:
+                pass  # Already connected
 
 
 class ServiceImageViewSet(viewsets.ModelViewSet):

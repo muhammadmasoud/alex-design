@@ -416,9 +416,26 @@ class ImageOptimizer:
     
     @classmethod
     def _create_optimized_webp(cls, original_path, webp_path, image_type):
-        """Create optimized WebP version of the image with maximum quality preservation and AWS compatibility"""
+        """Create optimized WebP version of the image with maximum quality preservation, AWS compatibility, and memory optimization"""
         try:
             with Image.open(original_path) as img:
+                # Get original file size for comparison
+                original_size = os.path.getsize(original_path)
+                
+                # MEMORY OPTIMIZATION: Resize large images before processing
+                max_dimension = 3000  # Reasonable limit for web use
+                if img.width > max_dimension or img.height > max_dimension:
+                    # Calculate new dimensions maintaining aspect ratio
+                    if img.width > img.height:
+                        new_width = max_dimension
+                        new_height = int((max_dimension * img.height) / img.width)
+                    else:
+                        new_height = max_dimension
+                        new_width = int((max_dimension * img.width) / img.height)
+                    
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    logger.info(f"Resized large image from {original_path} to {new_width}x{new_height}")
+                
                 # Preserve original image data and metadata
                 original_img = img.copy()
                 
@@ -464,13 +481,17 @@ class ImageOptimizer:
                     # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
+                # PERFORMANCE: Use faster quality for development
+                webp_quality = cls.WEBP_QUALITY if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 85)
+                webp_method = cls.WEBP_METHOD if cls.PRODUCTION_MODE else min(cls.WEBP_METHOD, 4)
+                
                 # Save as WebP with optimal settings and AWS compatibility
                 if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
                     # Lossless WebP for maximum quality preservation
                     save_kwargs = {
                         'format': 'WEBP',
                         'lossless': True,
-                        'method': cls.WEBP_METHOD,
+                        'method': webp_method,
                         'optimize': True
                     }
                     
@@ -504,8 +525,8 @@ class ImageOptimizer:
                     # High quality WebP
                     save_kwargs = {
                         'format': 'WEBP',
-                        'quality': cls.WEBP_QUALITY,
-                        'method': cls.WEBP_METHOD,
+                        'quality': webp_quality,
+                        'method': webp_method,
                         'optimize': True
                     }
                     
@@ -529,14 +550,20 @@ class ImageOptimizer:
                 # Save with error handling and fallbacks
                 try:
                     img.save(webp_path, **save_kwargs)
+                    
+                    # Check file size improvement
+                    webp_size = os.path.getsize(webp_path)
+                    compression_ratio = (1 - webp_size / original_size) * 100
+                    logger.info(f"WebP created: {os.path.basename(webp_path)} - {compression_ratio:.1f}% smaller")
+                    
                 except Exception as save_error:
                     logger.warning(f"Advanced WebP save failed, trying basic save: {str(save_error)}")
                     # Fallback to basic save
                     fallback_kwargs = {
                         'format': 'WEBP',
-                        'quality': cls.WEBP_QUALITY if not cls.WEBP_LOSSLESS else None,
+                        'quality': webp_quality if not cls.WEBP_LOSSLESS else None,
                         'lossless': cls.WEBP_LOSSLESS,
-                        'method': min(cls.WEBP_METHOD, 4)  # Use safer method
+                        'method': min(webp_method, 4)  # Use safer method
                     }
                     if cls.WEBP_LOSSLESS:
                         fallback_kwargs.pop('quality', None)
