@@ -29,82 +29,49 @@ class ProjectImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename', 
+                 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
     
     def get_image_url(self, obj):
-        """Get the optimized image URL automatically"""
-        if obj.image:
-            try:
-                # Use the new display method from the Project model
-                from .models import Project
-                # Find the project this image belongs to
-                project = obj.project_set.first()
-                if project:
-                    # Get optimized URL using the project's display method
-                    optimized_url = project.get_display_album_urls('medium', 'webp')
-                    if optimized_url and len(optimized_url) > 0:
-                        # Find the matching optimized URL for this specific image
-                        for i, album_image in enumerate(project.album_images.all()):
-                            if album_image.id == obj.id:
-                                if i < len(optimized_url):
-                                    request = self.context.get('request')
-                                    if request:
-                                        return request.build_absolute_uri(optimized_url[i])
-                                    return optimized_url[i]
-                                break
-                
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
+        """Get the optimized image URL from the database"""
+        if obj.optimized_image_medium:
+            # Use the medium optimized image if available
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+        elif obj.optimized_image:
+            # Fallback to default optimized image
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image.replace('\\', '/')}"
+        elif obj.image:
+            # Fallback to original if no optimized version exists
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
         return None
     
     def to_representation(self, instance):
-        """Custom representation to include optimized image URLs"""
+        """Custom representation to include optimized image URLs automatically"""
         representation = super().to_representation(instance)
         
-        # Use optimized image URLs for better quality
-        if instance.image:
-            try:
-                # Import the function here to avoid circular imports
-                from .models import get_responsive_image_urls
-                optimized_url = get_responsive_image_urls(instance.image.name, ['md']).get('md')
-                if optimized_url:
-                    request = self.context.get('request')
-                    if request:
-                        representation['image'] = request.build_absolute_uri(optimized_url)
-                        representation['image_url'] = request.build_absolute_uri(optimized_url)
-                    else:
-                        representation['image'] = optimized_url
-                        representation['image_url'] = optimized_url
-                else:
-                    # Fallback to original if optimization fails
-                    request = self.context.get('request')
-                    if request:
-                        representation['image'] = request.build_absolute_uri(instance.image.url)
-                        representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                    else:
-                        representation['image'] = instance.image.url
-                        representation['image_url'] = instance.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    representation['image'] = request.build_absolute_uri(instance.image.url)
-                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                else:
-                    representation['image'] = instance.image.url
-                    representation['image_url'] = instance.image.url
+        # Use optimized image URLs from database
+        if instance.optimized_image_medium:
+            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+        elif instance.optimized_image:
+            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+        elif instance.image:
+            representation['image'] = instance.image.url
+            representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
             representation['image_url'] = None
+        
         return representation
 
 class ServiceImageSerializer(serializers.ModelSerializer):
@@ -112,86 +79,44 @@ class ServiceImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename']
+        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename',
+                 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
     
     def get_image_url(self, obj):
-        """Get the optimized image URL automatically"""
-        if obj.image:
-            try:
-                # Use the new display method from the Service model
-                from .models import Service
-                # Find the service this image belongs to
-                service = obj.service_set.first()
-                if service:
-                    # Get optimized URL using the service's display method
-                    optimized_url = service.get_display_album_urls('medium', 'webp')
-                    if optimized_url and len(optimized_url) > 0:
-                        # Find the matching optimized URL for this specific image
-                        for i, album_image in enumerate(service.album_images.all()):
-                            if album_image.id == obj.id:
-                                if i < len(optimized_url):
-                                    request = self.context.get('request')
-                                    if request:
-                                        return request.build_absolute_uri(optimized_url[i])
-                                    return optimized_url[i]
-                                break
-                
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
+        """Get the optimized image URL from the database"""
+        if obj.optimized_image_medium:
+            # Use the medium optimized image if available
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+        elif obj.optimized_image:
+            # Fallback to default optimized image
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image.replace('\\', '/')}"
+        elif obj.image:
+            # Fallback to original if no optimized version exists
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
         return None
     
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs automatically"""
         representation = super().to_representation(instance)
-        # Use optimized image URLs for better quality
-        if instance.image:
-            try:
-                # Use the new display method from the Service model
-                from .models import Service
-                service = instance.service_set.first()
-                if service:
-                    optimized_url = service.get_display_album_urls('medium', 'webp')
-                    if optimized_url and len(optimized_url) > 0:
-                        # Find the matching optimized URL for this specific image
-                        for i, album_image in enumerate(service.album_images.all()):
-                            if album_image.id == instance.id:
-                                if i < len(optimized_url):
-                                    request = self.context.get('request')
-                                    if request:
-                                        representation['image'] = request.build_absolute_uri(optimized_url[i])
-                                        representation['image_url'] = request.build_absolute_uri(optimized_url[i])
-                                    else:
-                                        representation['image'] = optimized_url[i]
-                                        representation['image_url'] = optimized_url[i]
-                                    return representation
-                                break
-                
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    representation['image'] = request.build_absolute_uri(instance.image.url)
-                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                else:
-                    representation['image'] = instance.image.url
-                    representation['image_url'] = instance.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    representation['image'] = request.build_absolute_uri(instance.image.url)
-                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                else:
-                    representation['image'] = instance.image.url
-                    representation['image_url'] = instance.image.url
+        # Use optimized image URLs from database
+        if instance.optimized_image_medium:
+            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+        elif instance.optimized_image:
+            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+        elif instance.image:
+            representation['image'] = instance.image.url
+            representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
             representation['image_url'] = None
@@ -213,28 +138,25 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_image_url(self, obj):
-        """Get the optimized image URL automatically"""
-        if obj.image:
-            try:
-                # Use the new display method for automatic optimization
-                optimized_url = obj.get_display_image_url('medium', 'webp')
-                if optimized_url:
-                    request = self.context.get('request')
-                    if request:
-                        return request.build_absolute_uri(optimized_url)
-                    return optimized_url
-                
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
+        """Get the optimized image URL from the database"""
+        if obj.optimized_image_medium:
+            # Use the medium optimized image if available
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+        elif obj.optimized_image:
+            # Fallback to default optimized image
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+            return f"/media/{obj.optimized_image.replace('\\', '/')}"
+        elif obj.image:
+            # Fallback to original if no optimized version exists
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
         return None
     
     def get_category_name(self, obj):
@@ -271,39 +193,20 @@ class ProjectSerializer(serializers.ModelSerializer):
         """Custom representation to include optimized image URLs automatically"""
         representation = super().to_representation(instance)
         
-        # Use optimized image URLs automatically
-        if instance.image:
-            try:
-                optimized_url = instance.get_display_image_url('medium', 'webp')
-                if optimized_url:
-                    request = self.context.get('request')
-                    if request:
-                        representation['image'] = request.build_absolute_uri(optimized_url)
-                        representation['image_url'] = request.build_absolute_uri(optimized_url)
-                    else:
-                        representation['image'] = optimized_url
-                        representation['image_url'] = optimized_url
-                else:
-                    # Fallback to original if optimization fails
-                    request = self.context.get('request')
-                    if request:
-                        representation['image'] = request.build_absolute_uri(instance.image.url)
-                        representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                    else:
-                        representation['image'] = instance.image.url
-                        representation['image_url'] = instance.image.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    representation['image'] = request.build_absolute_uri(instance.image.url)
-                    representation['image_url'] = request.build_absolute_uri(instance.image.url)
-                else:
-                    representation['image'] = instance.image.url
-                    representation['image_url'] = instance.image.url
+        # Use optimized image URLs from database
+        if instance.optimized_image_medium:
+            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+        elif instance.optimized_image:
+            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+        elif instance.image:
+            representation['image'] = instance.image.url
+            representation['image_url'] = instance.image.url
         else:
             representation['image'] = None
             representation['image_url'] = None
+        
         return representation
 
 
@@ -323,28 +226,25 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_icon_url(self, obj):
-        """Get the optimized icon URL automatically"""
-        if obj.icon:
-            try:
-                # Use the new display method for automatic optimization
-                optimized_url = obj.get_display_icon_url('medium', 'webp')
-                if optimized_url:
-                    request = self.context.get('request')
-                    if request:
-                        return request.build_absolute_uri(optimized_url)
-                    return optimized_url
-                
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.icon.url)
-                return obj.icon.url
-            except Exception:
-                # Fallback to original if any error occurs
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.icon.url)
-                return obj.icon.url
+        """Get the optimized icon URL from the database"""
+        if obj.optimized_icon_medium:
+            # Use the medium optimized icon if available
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_icon_medium.replace('\\', '/')}")
+            return f"/media/{obj.optimized_icon_medium.replace('\\', '/')}"
+        elif obj.optimized_icon:
+            # Fallback to default optimized icon
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f"/media/{obj.optimized_icon.replace('\\', '/')}")
+            return f"/media/{obj.optimized_icon.replace('\\', '/')}"
+        elif obj.icon:
+            # Fallback to original if no optimized version exists
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.icon.url)
+            return obj.icon.url
         return None
     
     def get_category_names(self, obj):
@@ -377,29 +277,18 @@ class ServiceSerializer(serializers.ModelSerializer):
         return ServiceImageSerializer(featured_images, many=True, context=self.context).data
     
     def to_representation(self, instance):
-        """Custom representation to include both icon field and icon_url"""
+        """Custom representation to include optimized icon URLs automatically"""
         representation = super().to_representation(instance)
-        # Use optimized icon URLs for better quality
-        if instance.icon:
-            # Try to get optimized URL first
-            optimized_url = instance.get_optimized_image_url(size='lg', format='webp', quality='high')
-            if optimized_url:
-                request = self.context.get('request')
-                if request:
-                    representation['icon'] = request.build_absolute_uri(optimized_url)
-                    representation['icon_url'] = request.build_absolute_uri(optimized_url)
-                else:
-                    representation['icon'] = optimized_url
-                    representation['icon_url'] = optimized_url
-            else:
-                # Fallback to original if optimization fails
-                request = self.context.get('request')
-                if request:
-                    representation['icon'] = request.build_absolute_uri(instance.icon.url)
-                    representation['icon_url'] = request.build_absolute_uri(instance.icon.url)
-                else:
-                    representation['icon'] = instance.icon.url
-                    representation['icon_url'] = instance.icon.url
+        # Use optimized icon URLs from database
+        if instance.optimized_icon_medium:
+            representation['icon'] = f"/media/{instance.optimized_icon_medium}"
+            representation['icon_url'] = f"/media/{instance.optimized_icon_medium}"
+        elif instance.optimized_icon:
+            representation['icon'] = f"/media/{instance.optimized_icon}"
+            representation['icon_url'] = f"/media/{instance.optimized_icon}"
+        elif instance.icon:
+            representation['icon'] = instance.icon.url
+            representation['icon_url'] = instance.icon.url
         else:
             representation['icon'] = None
             representation['icon_url'] = None

@@ -283,6 +283,12 @@ class Project(models.Model):
     image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True, validators=[validate_image])
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
+    # Optimized image paths - store the .webp paths instead of original
+    optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the main image")
+    optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
+    optimized_image_medium = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the medium optimized .webp version")
+    optimized_image_large = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the large optimized .webp version")
+    
     # Category fields - Multiple categories allowed
     categories = models.ManyToManyField(
         ProjectCategory, 
@@ -524,6 +530,13 @@ class Service(models.Model):
     description = models.TextField()
     icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True, validators=[validate_image])
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
+    
+    # Optimized icon paths - store the .webp paths instead of original
+    optimized_icon = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the icon")
+    optimized_icon_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
+    optimized_icon_medium = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the medium optimized .webp version")
+    optimized_icon_large = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the large optimized .webp version")
+    
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Service price in USD")
     
     # Category fields - Multiple categories allowed
@@ -771,6 +784,13 @@ class ProjectImage(models.Model):
         help_text="Album image file"
     )
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
+    
+    # Optimized image paths - store the .webp paths instead of original
+    optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the album image")
+    optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
+    optimized_image_medium = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the medium optimized .webp version")
+    optimized_image_large = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the large optimized .webp version")
+    
     title = models.CharField(
         max_length=200, 
         blank=True, 
@@ -836,6 +856,13 @@ class ServiceImage(models.Model):
         help_text="Album image file"
     )
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
+    
+    # Optimized image paths - store the .webp paths instead of original
+    optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the album image")
+    optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
+    optimized_image_medium = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the medium optimized .webp version")
+    optimized_image_large = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the large optimized .webp version")
+    
     title = models.CharField(
         max_length=200, 
         blank=True, 

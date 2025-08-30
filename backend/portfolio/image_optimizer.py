@@ -112,10 +112,48 @@ class ImageOptimizer:
             # Create thumbnails
             cls._create_thumbnails(original_path, webp_folder, name_without_ext, 'main')
             
+            # Update the project model with optimized image paths
+            cls._update_project_optimized_paths(project, webp_folder, name_without_ext)
+            
             logger.info(f"Optimized main image for project: {project.title}")
             
         except Exception as e:
             logger.error(f"Error optimizing main image for project {project.title}: {str(e)}")
+    
+    @classmethod
+    def _update_project_optimized_paths(cls, project, webp_folder, base_name):
+        """Update the project model with optimized image paths"""
+        try:
+            from django.conf import settings
+            
+            # Get relative paths for database storage
+            media_root = settings.MEDIA_ROOT
+            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            
+            # Update the project model fields - main images are in webp/ folder
+            project.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
+            project.optimized_image_small = f"{webp_folder_rel}/{base_name}_small.webp"
+            project.optimized_image_medium = f"{webp_folder_rel}/{base_name}_medium.webp"
+            project.optimized_image_large = f"{webp_folder_rel}/{base_name}_large.webp"
+            
+            # Save without triggering signals
+            from django.db.models.signals import post_save
+            from .signals import optimize_project_images_on_save
+            post_save.disconnect(optimize_project_images_on_save, sender=type(project))
+            
+            try:
+                project.save(update_fields=[
+                    'optimized_image', 'optimized_image_small', 
+                    'optimized_image_medium', 'optimized_image_large'
+                ])
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_project_images_on_save, sender=type(project))
+                
+            logger.info(f"Updated optimized image paths for project: {project.title}")
+            
+        except Exception as e:
+            logger.error(f"Error updating optimized image paths for project {project.title}: {str(e)}")
     
     @classmethod
     def _optimize_album_image(cls, album_image, project_folder):
@@ -137,10 +175,48 @@ class ImageOptimizer:
             # Create thumbnails
             cls._create_thumbnails(original_path, webp_album_folder, name_without_ext, 'album')
             
+            # Update the album image model with optimized image paths
+            cls._update_project_album_optimized_paths(album_image, webp_album_folder, name_without_ext)
+            
             logger.info(f"Optimized album image: {original_filename}")
             
         except Exception as e:
             logger.error(f"Error optimizing album image {album_image.image.name}: {str(e)}")
+    
+    @classmethod
+    def _update_project_album_optimized_paths(cls, album_image, webp_folder, base_name):
+        """Update the project album image model with optimized image paths"""
+        try:
+            from django.conf import settings
+            
+            # Get relative paths for database storage
+            media_root = settings.MEDIA_ROOT
+            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            
+            # Update the album image model fields - album images are in webp/album/ folder
+            album_image.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
+            album_image.optimized_image_small = f"{webp_folder_rel}/{base_name}_small.webp"
+            album_image.optimized_image_medium = f"{webp_folder_rel}/{base_name}_medium.webp"
+            album_image.optimized_image_large = f"{webp_folder_rel}/{base_name}_large.webp"
+            
+            # Save without triggering signals
+            from django.db.models.signals import post_save
+            from .signals import optimize_project_album_image_on_save
+            post_save.disconnect(optimize_project_album_image_on_save, sender=type(album_image))
+            
+            try:
+                album_image.save(update_fields=[
+                    'optimized_image', 'optimized_image_small', 
+                    'optimized_image_medium', 'optimized_image_large'
+                ])
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_project_album_image_on_save, sender=type(album_image))
+                
+            logger.info(f"Updated optimized image paths for album image: {album_image.id}")
+            
+        except Exception as e:
+            logger.error(f"Error updating optimized image paths for album image {album_image.id}: {str(e)}")
     
     @classmethod
     def _optimize_service_icon(cls, service, service_folder):
@@ -162,10 +238,48 @@ class ImageOptimizer:
             # Create thumbnails
             cls._create_thumbnails(original_path, webp_folder, name_without_ext, 'icon')
             
+            # Update the service model with optimized icon paths
+            cls._update_service_optimized_paths(service, webp_folder, name_without_ext)
+            
             logger.info(f"Optimized icon for service: {service.name}")
             
         except Exception as e:
             logger.error(f"Error optimizing icon for service {service.name}: {str(e)}")
+    
+    @classmethod
+    def _update_service_optimized_paths(cls, service, webp_folder, base_name):
+        """Update the service model with optimized icon paths"""
+        try:
+            from django.conf import settings
+            
+            # Get relative paths for database storage
+            media_root = settings.MEDIA_ROOT
+            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            
+            # Update the service model fields
+            service.optimized_icon = f"{webp_folder_rel}/{base_name}.webp"
+            service.optimized_icon_small = f"{webp_folder_rel}/{base_name}_small.webp"
+            service.optimized_icon_medium = f"{webp_folder_rel}/{base_name}_medium.webp"
+            service.optimized_icon_large = f"{webp_folder_rel}/{base_name}_large.webp"
+            
+            # Save without triggering signals
+            from django.db.models.signals import post_save
+            from .signals import optimize_service_images_on_save
+            post_save.disconnect(optimize_service_images_on_save, sender=type(service))
+            
+            try:
+                service.save(update_fields=[
+                    'optimized_icon', 'optimized_icon_small', 
+                    'optimized_icon_medium', 'optimized_icon_large'
+                ])
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_service_images_on_save, sender=type(service))
+                
+            logger.info(f"Updated optimized icon paths for service: {service.name}")
+            
+        except Exception as e:
+            logger.error(f"Error updating optimized icon paths for service {service.name}: {str(e)}")
     
     @classmethod
     def _optimize_service_album_image(cls, album_image, service_folder):
@@ -187,10 +301,48 @@ class ImageOptimizer:
             # Create thumbnails
             cls._create_thumbnails(original_path, webp_album_folder, name_without_ext, 'album')
             
+            # Update the service album image model with optimized image paths
+            cls._update_service_album_optimized_paths(album_image, webp_album_folder, name_without_ext)
+            
             logger.info(f"Optimized service album image: {original_filename}")
             
         except Exception as e:
             logger.error(f"Error optimizing service album image {album_image.image.name}: {str(e)}")
+    
+    @classmethod
+    def _update_service_album_optimized_paths(cls, album_image, webp_folder, base_name):
+        """Update the service album image model with optimized image paths"""
+        try:
+            from django.conf import settings
+            
+            # Get relative paths for database storage
+            media_root = settings.MEDIA_ROOT
+            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            
+            # Update the album image model fields - service album images are in webp/album/ folder
+            album_image.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
+            album_image.optimized_image_small = f"{webp_folder_rel}/{base_name}_small.webp"
+            album_image.optimized_image_medium = f"{webp_folder_rel}/{base_name}_medium.webp"
+            album_image.optimized_image_large = f"{webp_folder_rel}/{base_name}_large.webp"
+            
+            # Save without triggering signals
+            from django.db.models.signals import post_save
+            from .signals import optimize_service_album_image_on_save
+            post_save.disconnect(optimize_service_album_image_on_save, sender=type(album_image))
+            
+            try:
+                album_image.save(update_fields=[
+                    'optimized_image', 'optimized_image_small', 
+                    'optimized_image_medium', 'optimized_image_large'
+                ])
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_service_album_image_on_save, sender=type(album_image))
+                
+            logger.info(f"Updated optimized image paths for service album image: {album_image.id}")
+            
+        except Exception as e:
+            logger.error(f"Error updating optimized image paths for service album image {album_image.id}: {str(e)}")
     
     @classmethod
     def _create_optimized_webp(cls, original_path, webp_path, image_type):

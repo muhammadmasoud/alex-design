@@ -11,18 +11,40 @@ from .models import (
 class ProjectImageInline(admin.TabularInline):
     model = ProjectImage
     extra = 3  # Allow multiple empty forms for bulk upload
-    fields = ('image', 'order', 'image_preview')
-    readonly_fields = ('image_preview',)
+    fields = ('image', 'order', 'image_preview', 'optimized_paths')
+    readonly_fields = ('image_preview', 'optimized_paths')
     ordering = ['order']
     
     def image_preview(self, obj):
-        if obj.image:
+        if obj.optimized_image_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 60px; max-width: 60px;" />',
+                obj.optimized_image_medium
+            )
+        elif obj.image:
             return format_html(
                 '<img src="{}" style="max-height: 60px; max-width: 60px;" />',
                 obj.image.url
             )
         return "No image"
     image_preview.short_description = "Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_image_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.image.name if obj.image else "No image",
+                obj.optimized_image_medium
+            )
+        elif obj.image:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.image.name
+            )
+        return "No image"
+    optimized_paths.short_description = "Image Paths"
     
     class Media:
         js = ('admin/js/bulk_upload.js',)  # Custom JS for bulk upload (optional)
@@ -33,18 +55,40 @@ class ProjectImageInline(admin.TabularInline):
 class ServiceImageInline(admin.TabularInline):
     model = ServiceImage
     extra = 3  # Allow multiple empty forms for bulk upload
-    fields = ('image', 'order', 'image_preview')
-    readonly_fields = ('image_preview',)
+    fields = ('image', 'order', 'image_preview', 'optimized_paths')
+    readonly_fields = ('image_preview', 'optimized_paths')
     ordering = ['order']
     
     def image_preview(self, obj):
-        if obj.image:
+        if obj.optimized_image_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 60px; max-width: 60px;" />',
+                obj.optimized_image_medium
+            )
+        elif obj.image:
             return format_html(
                 '<img src="{}" style="max-height: 60px; max-width: 60px;" />',
                 obj.image.url
             )
         return "No image"
     image_preview.short_description = "Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_image_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.image.name if obj.image else "No image",
+                obj.optimized_image_medium
+            )
+        elif obj.image:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.image.name
+            )
+        return "No image"
+    optimized_paths.short_description = "Image Paths"
     
     class Media:
         js = ('admin/js/bulk_upload.js',)  # Custom JS for bulk upload (optional)
@@ -57,7 +101,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ('title', 'display_categories', 'display_subcategories', 'project_date', 'order', 'image_preview', 'album_count')
     list_filter = ('categories', 'subcategories', 'project_date')
     search_fields = ('title', 'description', 'categories__name', 'subcategories__name')
-    readonly_fields = ('image_preview', 'album_count')
+    readonly_fields = ('image_preview', 'album_count', 'optimized_paths')
     ordering = ('order', '-project_date')
     list_editable = ('order',)
     inlines = [ProjectImageInline]
@@ -76,7 +120,7 @@ class ProjectAdmin(admin.ModelAdmin):
             'description': 'Choose one or more categories and subcategories for this project.'
         }),
         ('Main Display Image', {
-            'fields': ('image', 'image_preview'),
+            'fields': ('image', 'image_preview', 'optimized_paths'),
             'description': 'This image will be shown as the main project image in listings and details.'
         }),
         ('Project Album', {
@@ -87,13 +131,35 @@ class ProjectAdmin(admin.ModelAdmin):
     )
     
     def image_preview(self, obj):
-        if obj.image:
+        if obj.optimized_image_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.optimized_image_medium
+            )
+        elif obj.image:
             return format_html(
                 '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
                 obj.image.url
             )
         return "No image"
     image_preview.short_description = "Image Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_image_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.image.name if obj.image else "No image",
+                obj.optimized_image_medium
+            )
+        elif obj.image:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.image.name
+            )
+        return "No image"
+    optimized_paths.short_description = "Image Paths"
     
     def album_count(self, obj):
         """Show the number of album images"""
@@ -133,7 +199,7 @@ class ServiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'display_categories', 'display_subcategories', 'order', 'icon_preview', 'album_count')
     list_filter = ('categories', 'subcategories')
     search_fields = ('name', 'description', 'categories__name', 'subcategories__name')
-    readonly_fields = ('icon_preview', 'album_count')
+    readonly_fields = ('icon_preview', 'album_count', 'optimized_paths')
     ordering = ('order', 'name')
     list_editable = ('order',)
     inlines = [ServiceImageInline]
@@ -152,7 +218,7 @@ class ServiceAdmin(admin.ModelAdmin):
             'description': 'Choose one or more categories and subcategories for this service.'
         }),
         ('Main Display Icon', {
-            'fields': ('icon', 'icon_preview'),
+            'fields': ('icon', 'icon_preview', 'optimized_paths'),
             'description': 'This icon will be shown as the main service icon in listings and details.'
         }),
         ('Service Album', {
@@ -163,13 +229,35 @@ class ServiceAdmin(admin.ModelAdmin):
     )
     
     def icon_preview(self, obj):
-        if obj.icon:
+        if obj.optimized_icon_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.optimized_icon_medium
+            )
+        elif obj.icon:
             return format_html(
                 '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
                 obj.icon.url
             )
         return "No icon"
     icon_preview.short_description = "Icon Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_icon_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.icon.name if obj.icon else "No icon",
+                obj.optimized_icon_medium
+            )
+        elif obj.icon:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.icon.name
+            )
+        return "No icon"
+    optimized_paths.short_description = "Icon Paths"
     
     def album_count(self, obj):
         """Show the number of album images"""
@@ -382,7 +470,7 @@ class ProjectImageAdmin(admin.ModelAdmin):
     list_display = ('project', 'title', 'order', 'image_preview')
     list_filter = ('project',)
     search_fields = ('project__title', 'title', 'description')
-    readonly_fields = ('image_preview',)
+    readonly_fields = ('image_preview', 'optimized_paths')
     ordering = ('project', 'order')
     
     fieldsets = (
@@ -390,18 +478,40 @@ class ProjectImageAdmin(admin.ModelAdmin):
             'fields': ('project',)
         }),
         ('Image Details', {
-            'fields': ('image', 'image_preview', 'title', 'description', 'order')
+            'fields': ('image', 'image_preview', 'title', 'description', 'order', 'optimized_paths')
         }),
     )
     
     def image_preview(self, obj):
-        if obj.image:
+        if obj.optimized_image_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.optimized_image_medium
+            )
+        elif obj.image:
             return format_html(
                 '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
                 obj.image.url
             )
         return "No image"
     image_preview.short_description = "Image Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_image_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.image.name if obj.image else "No image",
+                obj.optimized_image_medium
+            )
+        elif obj.image:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.image.name
+            )
+        return "No image"
+    optimized_paths.short_description = "Image Paths"
 
 
 @admin.register(ServiceImage)
@@ -409,7 +519,7 @@ class ServiceImageAdmin(admin.ModelAdmin):
     list_display = ('service', 'title', 'order', 'image_preview')
     list_filter = ('service',)
     search_fields = ('service__name', 'title', 'description')
-    readonly_fields = ('image_preview',)
+    readonly_fields = ('image_preview', 'optimized_paths')
     ordering = ('service', 'order')
     
     fieldsets = (
@@ -417,15 +527,37 @@ class ServiceImageAdmin(admin.ModelAdmin):
             'fields': ('service',)
         }),
         ('Image Details', {
-            'fields': ('image', 'image_preview', 'title', 'description', 'order')
+            'fields': ('image', 'image_preview', 'title', 'description', 'order', 'optimized_paths')
         }),
     )
     
     def image_preview(self, obj):
-        if obj.image:
+        if obj.optimized_image_medium:
+            return format_html(
+                '<img src="/media/{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.optimized_image_medium
+            )
+        elif obj.image:
             return format_html(
                 '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
                 obj.image.url
             )
         return "No image"
     image_preview.short_description = "Image Preview"
+    
+    def optimized_paths(self, obj):
+        if obj.optimized_image_medium:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: green;">{}</span><br>'
+                '<strong>Optimized:</strong> <span style="color: blue;">{}</span>',
+                obj.image.name if obj.image else "No image",
+                obj.optimized_image_medium
+            )
+        elif obj.image:
+            return format_html(
+                '<strong>Currently:</strong> <span style="color: orange;">{}</span><br>'
+                '<strong>Status:</strong> <span style="color: red;">Not optimized</span>',
+                obj.image.name
+            )
+        return "No image"
+    optimized_paths.short_description = "Image Paths"
