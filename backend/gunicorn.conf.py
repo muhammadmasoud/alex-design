@@ -79,11 +79,5 @@ def worker_exit(server, worker):
 def child_exit(server, worker):
     server.log.info("Child exited (pid: %s)", worker.pid)
 
-def post_fork(server, worker):
-    server.log.info("Worker spawned (pid: %s)", worker.pid)
-
-def pre_fork(server, worker):
-    server.log.info("Worker spawned (pid: %s)", worker.pid)
-
 def on_exit(server):
     server.log.info("Server is shutting down")
