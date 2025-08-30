@@ -992,6 +992,9 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     from .image_optimizer import ImageOptimizer
                     ImageOptimizer.optimize_project_images(project)
                     
+                    # TRIGGER PROJECT SAVE to update optimization status
+                    project.save(update_fields=['order'])  # Minimal save to trigger signal
+                    
                     elapsed_time = time.time() - start_time
                     logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} images")
                     

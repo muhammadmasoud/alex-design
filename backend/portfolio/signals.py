@@ -27,8 +27,20 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
     Automatically optimize project images when a project is created or updated
     """
     try:
-        # Only optimize if this is a new project or if images have changed
-        if created or instance.image:
+        # FIXED: Optimize if new project has images OR if existing project has images or album images
+        should_optimize = False
+        
+        if created and instance.image:
+            # New project with main image
+            should_optimize = True
+            logger.info(f"New project with main image - queuing optimization: {instance.title}")
+        elif not created:
+            # Existing project - check if it has any images (main or album)
+            if instance.image or instance.album_images.exists():
+                should_optimize = True
+                logger.info(f"Existing project with images - queuing optimization: {instance.title}")
+        
+        if should_optimize:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
             def delayed_optimization():
                 def run_optimization():
