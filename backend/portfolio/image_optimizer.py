@@ -36,10 +36,13 @@ except ImportError:
     # Advanced settings
     PRESERVE_METADATA = True
     PRESERVE_TRANSPARENCY = True
-    USE_SHARP_YUVA = True
+    USE_SHARP_YUVA = False  # Disabled for AWS compatibility
     ALPHA_QUALITY = 100
-    THUMBNAIL_SHARPENING = True
+    THUMBNAIL_SHARPENING = False  # Disabled for AWS compatibility
     PRESERVE_ICC_PROFILE = True
+    # AWS compatibility settings
+    AWS_SAFE_MODE = True
+    SKIP_ADVANCED_FEATURES = True
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +63,7 @@ class ImageOptimizer:
     - WEBP_QUALITY: Quality setting for WebP compression (100 = lossless for production)
     - WEBP_LOSSLESS: Enable lossless WebP encoding for maximum quality preservation
     - WEBP_METHOD: WebP compression method (6 = best quality, slowest)
+    - AWS_SAFE_MODE: Enable AWS-safe mode with fallbacks
     
     Usage:
     - Set PRODUCTION_MODE = True for production use (0% quality loss, slower processing)
@@ -68,6 +72,7 @@ class ImageOptimizer:
     - Set THUMBNAIL_METHOD to 'padded' if you need consistent dimensions with padding
     - Set THUMBNAIL_METHOD to 'fit' if you need exact dimensions and cropping is acceptable
     - WEBP_LOSSLESS=True ensures 0% quality loss for production use
+    - AWS_SAFE_MODE=True ensures compatibility with AWS environments
     """
     
     # Quality settings - imported from configuration
@@ -84,6 +89,18 @@ class ImageOptimizer:
     
     # Thumbnail sizes - imported from configuration
     THUMBNAIL_SIZES = THUMBNAIL_SIZES
+    
+    # AWS compatibility settings - imported from configuration
+    AWS_SAFE_MODE = AWS_SAFE_MODE if 'AWS_SAFE_MODE' in globals() else True
+    SKIP_ADVANCED_FEATURES = SKIP_ADVANCED_FEATURES if 'SKIP_ADVANCED_FEATURES' in globals() else True
+    
+    # Advanced quality settings - imported from configuration
+    PRESERVE_METADATA = PRESERVE_METADATA if 'PRESERVE_METADATA' in globals() else True
+    PRESERVE_TRANSPARENCY = PRESERVE_TRANSPARENCY if 'PRESERVE_TRANSPARENCY' in globals() else True
+    USE_SHARP_YUVA = USE_SHARP_YUVA if 'USE_SHARP_YUVA' in globals() else False
+    ALPHA_QUALITY = ALPHA_QUALITY if 'ALPHA_QUALITY' in globals() else 100
+    THUMBNAIL_SHARPENING = THUMBNAIL_SHARPENING if 'THUMBNAIL_SHARPENING' in globals() else False
+    PRESERVE_ICC_PROFILE = PRESERVE_ICC_PROFILE if 'PRESERVE_ICC_PROFILE' in globals() else True
     
     @classmethod
     def optimize_project_images(cls, project):
@@ -399,7 +416,7 @@ class ImageOptimizer:
     
     @classmethod
     def _create_optimized_webp(cls, original_path, webp_path, image_type):
-        """Create optimized WebP version of the image with maximum quality preservation"""
+        """Create optimized WebP version of the image with maximum quality preservation and AWS compatibility"""
         try:
             with Image.open(original_path) as img:
                 # Preserve original image data and metadata
@@ -447,33 +464,39 @@ class ImageOptimizer:
                     # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
-                # Save as WebP with optimal settings
+                # Save as WebP with optimal settings and AWS compatibility
                 if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
                     # Lossless WebP for maximum quality preservation
                     save_kwargs = {
                         'format': 'WEBP',
                         'lossless': True,
                         'method': cls.WEBP_METHOD,
-                        'optimize': True,
-                        'save_all': True
+                        'optimize': True
                     }
-                    # Add advanced quality settings if available
-                    try:
-                        if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
-                            save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
-                        if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
-                            save_kwargs['sharp_yuva'] = True
-                    except:
-                        pass  # Ignore if PIL version doesn't support these options
+                    
+                    # Add advanced quality settings if available and safe
+                    if cls.AWS_SAFE_MODE:
+                        try:
+                            if cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                        except:
+                            pass  # Skip if not supported
+                    else:
+                        # Try advanced features if not in AWS safe mode
+                        try:
+                            if cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            if cls.USE_SHARP_YUVA:
+                                save_kwargs['sharp_yuva'] = True
+                        except:
+                            pass  # Ignore if PIL version doesn't support these options
                     
                     # Preserve metadata if possible and enabled
-                    if (hasattr(cls, 'PRESERVE_METADATA') and cls.PRESERVE_METADATA and 
-                        hasattr(original_img, 'info') and original_img.info):
+                    if cls.PRESERVE_METADATA and hasattr(original_img, 'info') and original_img.info:
                         try:
                             if original_img.info.get('exif'):
                                 save_kwargs['exif'] = original_img.info.get('exif', b'')
-                            if (hasattr(cls, 'PRESERVE_ICC_PROFILE') and cls.PRESERVE_ICC_PROFILE and 
-                                original_img.info.get('icc_profile')):
+                            if cls.PRESERVE_ICC_PROFILE and original_img.info.get('icc_profile'):
                                 save_kwargs['icc_profile'] = original_img.info.get('icc_profile', b'')
                         except:
                             pass  # Ignore metadata errors
@@ -483,19 +506,44 @@ class ImageOptimizer:
                         'format': 'WEBP',
                         'quality': cls.WEBP_QUALITY,
                         'method': cls.WEBP_METHOD,
-                        'optimize': True,
-                        'save_all': True
+                        'optimize': True
                     }
-                    # Add advanced quality settings if available
-                    try:
-                        if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
-                            save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
-                        if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
-                            save_kwargs['sharp_yuva'] = True
-                    except:
-                        pass  # Ignore if PIL version doesn't support these options
+                    
+                    # Add advanced quality settings if available and safe
+                    if cls.AWS_SAFE_MODE:
+                        try:
+                            if cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                        except:
+                            pass  # Skip if not supported
+                    else:
+                        # Try advanced features if not in AWS safe mode
+                        try:
+                            if cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            if cls.USE_SHARP_YUVA:
+                                save_kwargs['sharp_yuva'] = True
+                        except:
+                            pass  # Ignore if PIL version doesn't support these options
                 
-                img.save(webp_path, **save_kwargs)
+                # Save with error handling and fallbacks
+                try:
+                    img.save(webp_path, **save_kwargs)
+                except Exception as save_error:
+                    logger.warning(f"Advanced WebP save failed, trying basic save: {str(save_error)}")
+                    # Fallback to basic save
+                    fallback_kwargs = {
+                        'format': 'WEBP',
+                        'quality': cls.WEBP_QUALITY if not cls.WEBP_LOSSLESS else None,
+                        'lossless': cls.WEBP_LOSSLESS,
+                        'method': min(cls.WEBP_METHOD, 4)  # Use safer method
+                    }
+                    if cls.WEBP_LOSSLESS:
+                        fallback_kwargs.pop('quality', None)
+                    else:
+                        fallback_kwargs.pop('lossless', None)
+                    
+                    img.save(webp_path, **fallback_kwargs)
                 
                 # Set proper permissions
                 os.chmod(webp_path, 0o644)
@@ -592,14 +640,14 @@ class ImageOptimizer:
                             Image.Resampling.LANCZOS
                         )
                     
-                    # Apply sharpening if enabled
-                    if (hasattr(cls, 'THUMBNAIL_SHARPENING') and cls.THUMBNAIL_SHARPENING and 
-                        size_name in ['small', 'medium']):  # Only sharpen smaller thumbnails
+                    # Apply sharpening if enabled and safe
+                    if cls.THUMBNAIL_SHARPENING and not cls.AWS_SAFE_MODE and size_name in ['small', 'medium']:  # Only sharpen smaller thumbnails
                         try:
                             from PIL import ImageFilter
                             # Apply subtle sharpening
                             thumbnail = thumbnail.filter(ImageFilter.UnsharpMask(radius=0.5, percent=50, threshold=0))
-                        except:
+                        except Exception as sharp_error:
+                            logger.warning(f"Thumbnail sharpening failed, skipping: {str(sharp_error)}")
                             pass  # Ignore sharpening errors
                     
                     # Save as WebP with optimal settings
@@ -612,26 +660,32 @@ class ImageOptimizer:
                             'format': 'WEBP',
                             'lossless': True,
                             'method': cls.WEBP_METHOD,
-                            'optimize': True,
-                            'save_all': True
+                            'optimize': True
                         }
-                        # Add advanced quality settings if available
-                        try:
-                            if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
-                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
-                            if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
-                                save_kwargs['sharp_yuva'] = True
-                        except:
-                            pass  # Ignore if PIL version doesn't support these options
+                        
+                        # Add advanced quality settings if available and safe
+                        if cls.AWS_SAFE_MODE:
+                            try:
+                                if cls.ALPHA_QUALITY:
+                                    save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            except:
+                                pass  # Skip if not supported
+                        else:
+                            # Try advanced features if not in AWS safe mode
+                            try:
+                                if cls.ALPHA_QUALITY:
+                                    save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                                if cls.USE_SHARP_YUVA:
+                                    save_kwargs['sharp_yuva'] = True
+                            except:
+                                pass  # Ignore if PIL version doesn't support these options
                         
                         # Preserve metadata if possible and enabled
-                        if (hasattr(cls, 'PRESERVE_METADATA') and cls.PRESERVE_METADATA and 
-                            hasattr(original_img, 'info') and original_img.info):
+                        if cls.PRESERVE_METADATA and hasattr(original_img, 'info') and original_img.info:
                             try:
                                 if original_img.info.get('exif'):
                                     save_kwargs['exif'] = original_img.info.get('exif', b'')
-                                if (hasattr(cls, 'PRESERVE_ICC_PROFILE') and cls.PRESERVE_ICC_PROFILE and 
-                                    original_img.info.get('icc_profile')):
+                                if cls.PRESERVE_ICC_PROFILE and original_img.info.get('icc_profile'):
                                     save_kwargs['icc_profile'] = original_img.info.get('icc_profile', b'')
                             except:
                                 pass  # Ignore metadata errors
@@ -641,19 +695,44 @@ class ImageOptimizer:
                             'format': 'WEBP',
                             'quality': cls.WEBP_QUALITY,
                             'method': cls.WEBP_METHOD,
-                            'optimize': True,
-                            'save_all': True
+                            'optimize': True
                         }
-                        # Add advanced quality settings if available
-                        try:
-                            if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
-                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
-                            if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
-                                save_kwargs['sharp_yuva'] = True
-                        except:
-                            pass  # Ignore if PIL version doesn't support these options
+                        
+                        # Add advanced quality settings if available and safe
+                        if cls.AWS_SAFE_MODE:
+                            try:
+                                if cls.ALPHA_QUALITY:
+                                    save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            except:
+                                pass  # Skip if not supported
+                        else:
+                            # Try advanced features if not in AWS safe mode
+                            try:
+                                if cls.ALPHA_QUALITY:
+                                    save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                                if cls.USE_SHARP_YUVA:
+                                    save_kwargs['sharp_yuva'] = True
+                            except:
+                                pass  # Ignore if PIL version doesn't support these options
                     
-                    thumbnail.save(webp_path, **save_kwargs)
+                    # Save with error handling and fallbacks
+                    try:
+                        thumbnail.save(webp_path, **save_kwargs)
+                    except Exception as save_error:
+                        logger.warning(f"Advanced WebP thumbnail save failed, trying basic save: {str(save_error)}")
+                        # Fallback to basic save
+                        fallback_kwargs = {
+                            'format': 'WEBP',
+                            'quality': cls.WEBP_QUALITY if not cls.WEBP_LOSSLESS else None,
+                            'lossless': cls.WEBP_LOSSLESS,
+                            'method': min(cls.WEBP_METHOD, 4)  # Use safer method
+                        }
+                        if cls.WEBP_LOSSLESS:
+                            fallback_kwargs.pop('quality', None)
+                        else:
+                            fallback_kwargs.pop('lossless', None)
+                        
+                        thumbnail.save(webp_path, **fallback_kwargs)
                     
                     # Set proper permissions
                     os.chmod(webp_path, 0o644)
