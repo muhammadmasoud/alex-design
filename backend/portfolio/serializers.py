@@ -36,7 +36,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         """Get the optimized image URL from the database"""
         try:
             # Safely check if optimized image paths exist and are valid
-            if obj.optimized_image_medium and obj.optimized_image_medium.strip():
+            if hasattr(obj, 'optimized_image_medium') and obj.optimized_image_medium and obj.optimized_image_medium.strip():
                 # Use the medium optimized image if available
                 request = self.context.get('request')
                 if request:
@@ -45,7 +45,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_image_medium.replace('\\', '/').strip()}"
-            elif obj.optimized_image and obj.optimized_image.strip():
+            elif hasattr(obj, 'optimized_image') and obj.optimized_image and obj.optimized_image.strip():
                 # Fallback to default optimized image
                 request = self.context.get('request')
                 if request:
@@ -53,7 +53,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_image.replace('\\', '/').strip()}"
-            elif obj.image:
+            elif hasattr(obj, 'image') and obj.image:
                 # Fallback to original if no optimized version exists
                 try:
                     request = self.context.get('request')
@@ -66,7 +66,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
-            print(f"Error building image URL for ProjectImage {obj.id}: {e}")
+            print(f"Error building image URL for ProjectImage {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def to_representation(self, instance):
@@ -78,7 +78,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
             
             # Safely handle image URLs with better error handling
             try:
-                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                if hasattr(instance, 'optimized_image_medium') and instance.optimized_image_medium and instance.optimized_image_medium.strip():
                     clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -86,7 +86,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.optimized_image and instance.optimized_image.strip():
+                elif hasattr(instance, 'optimized_image') and instance.optimized_image and instance.optimized_image.strip():
                     clean_path = instance.optimized_image.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -94,7 +94,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.image:
+                elif hasattr(instance, 'image') and instance.image:
                     try:
                         representation['image'] = instance.image.url
                         representation['image_url'] = instance.image.url
@@ -107,16 +107,16 @@ class ProjectImageSerializer(serializers.ModelSerializer):
                     representation['image_url'] = None
             except Exception as e:
                 # If image URL handling fails, set safe defaults
-                print(f"Error handling image URLs for ProjectImage {instance.id}: {e}")
+                print(f"Error handling image URLs for ProjectImage {getattr(instance, 'id', 'unknown')}: {e}")
                 representation['image'] = None
                 representation['image_url'] = None
             
             return representation
         except Exception as e:
             # If representation fails completely, return a safe fallback
-            print(f"Error in to_representation for ProjectImage {instance.id}: {e}")
+            print(f"Error in to_representation for ProjectImage {getattr(instance, 'id', 'unknown')}: {e}")
             return {
-                'id': instance.id,
+                'id': getattr(instance, 'id', None),
                 'image': None,
                 'image_url': None,
                 'title': getattr(instance, 'title', None),
@@ -141,7 +141,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         """Get the optimized image URL from the database"""
         try:
             # Safely check if optimized image paths exist and are valid
-            if obj.optimized_image_medium and obj.optimized_image_medium.strip():
+            if hasattr(obj, 'optimized_image_medium') and obj.optimized_image_medium and obj.optimized_image_medium.strip():
                 # Use the medium optimized image if available
                 request = self.context.get('request')
                 if request:
@@ -150,7 +150,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_image_medium.replace('\\', '/').strip()}"
-            elif obj.optimized_image and obj.optimized_image.strip():
+            elif hasattr(obj, 'optimized_image') and obj.optimized_image and obj.optimized_image.strip():
                 # Fallback to default optimized image
                 request = self.context.get('request')
                 if request:
@@ -158,7 +158,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_image.replace('\\', '/').strip()}"
-            elif obj.image:
+            elif hasattr(obj, 'image') and obj.image:
                 # Fallback to original if no optimized version exists
                 try:
                     request = self.context.get('request')
@@ -171,7 +171,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
-            print(f"Error building image URL for ServiceImage {obj.id}: {e}")
+            print(f"Error building image URL for ServiceImage {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def to_representation(self, instance):
@@ -183,7 +183,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
             
             # Safely handle image URLs with better error handling
             try:
-                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                if hasattr(instance, 'optimized_image_medium') and instance.optimized_image_medium and instance.optimized_image_medium.strip():
                     clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -191,7 +191,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.optimized_image and instance.optimized_image.strip():
+                elif hasattr(instance, 'optimized_image') and instance.optimized_image and instance.optimized_image.strip():
                     clean_path = instance.optimized_image.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -199,7 +199,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.image:
+                elif hasattr(instance, 'image') and instance.image:
                     try:
                         representation['image'] = instance.image.url
                         representation['image_url'] = instance.image.url
@@ -212,16 +212,16 @@ class ServiceImageSerializer(serializers.ModelSerializer):
                     representation['image_url'] = None
             except Exception as e:
                 # If image URL handling fails, set safe defaults
-                print(f"Error handling image URLs for ServiceImage {instance.id}: {e}")
+                print(f"Error handling image URLs for ServiceImage {getattr(instance, 'id', 'unknown')}: {e}")
                 representation['image'] = None
                 representation['image_url'] = None
             
             return representation
         except Exception as e:
             # If representation fails completely, return a safe fallback
-            print(f"Error in to_representation for ServiceImage {instance.id}: {e}")
+            print(f"Error in to_representation for ServiceImage {getattr(instance, 'id', 'unknown')}: {e}")
             return {
-                'id': instance.id,
+                'id': getattr(instance, 'id', None),
                 'image': None,
                 'image_url': None,
                 'title': getattr(instance, 'title', None),
@@ -252,19 +252,19 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
         try:
-            if obj.optimized_image_medium:
+            if hasattr(obj, 'optimized_image_medium') and obj.optimized_image_medium:
                 # Use the medium optimized image if available
                 request = self.context.get('request')
                 if request:
                     return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
                 return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-            elif obj.optimized_image:
+            elif hasattr(obj, 'optimized_image') and obj.optimized_image:
                 # Fallback to default optimized image
                 request = self.context.get('request')
                 if request:
                     return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
                 return f"/media/{obj.optimized_image.replace('\\', '/')}"
-            elif obj.image:
+            elif hasattr(obj, 'image') and obj.image:
                 # Fallback to original if no optimized version exists
                 request = self.context.get('request')
                 if request:
@@ -273,29 +273,49 @@ class ProjectSerializer(serializers.ModelSerializer):
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
-            print(f"Error building image URL for Project {obj.id}: {e}")
+            print(f"Error building image URL for Project {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def get_category_name(self, obj):
         """Get category name"""
-        return obj.get_category_name()
+        try:
+            return obj.get_category_name()
+        except Exception as e:
+            print(f"Error getting category name for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return ""
     
     def get_subcategory_name(self, obj):
         """Get subcategory name"""
-        return obj.get_subcategory_name()
+        try:
+            return obj.get_subcategory_name()
+        except Exception as e:
+            print(f"Error getting subcategory name for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return ""
     
     def get_category_names(self, obj):
         """Get all category names as a list"""
-        return obj.get_category_names()
+        try:
+            return obj.get_category_names()
+        except Exception as e:
+            print(f"Error getting category names for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return []
 
     def get_subcategory_names(self, obj):
         """Get all subcategory names as a list"""
-        return obj.get_subcategory_names()
+        try:
+            return obj.get_subcategory_names()
+        except Exception as e:
+            print(f"Error getting subcategory names for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return []
     
     def get_album_images_count(self, obj):
         """Get the count of album images - optimized to avoid extra queries"""
-        # Use the annotation if available, otherwise fallback to count
-        return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
+        try:
+            # Use the annotation if available, otherwise fallback to count
+            return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
+        except Exception as e:
+            print(f"Error getting album images count for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return 0
     
     def get_featured_album_images(self, obj):
         """Get first few album images for preview - optimized"""
@@ -310,11 +330,11 @@ class ProjectSerializer(serializers.ModelSerializer):
             try:
                 return ProjectImageSerializer(featured_images, many=True, context=self.context).data
             except Exception as e:
-                print(f"Error serializing featured album images for project {obj.id}: {e}")
+                print(f"Error serializing featured album images for project {getattr(obj, 'id', 'unknown')}: {e}")
                 # Return empty list if serialization fails
                 return []
         except Exception as e:
-            print(f"Error getting featured album images for project {obj.id}: {e}")
+            print(f"Error getting featured album images for project {getattr(obj, 'id', 'unknown')}: {e}")
             return []
     
     def to_representation(self, instance):
@@ -324,7 +344,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             
             # Safely handle image URLs with better error handling
             try:
-                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                if hasattr(instance, 'optimized_image_medium') and instance.optimized_image_medium and instance.optimized_image_medium.strip():
                     clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -332,7 +352,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.optimized_image and instance.optimized_image.strip():
+                elif hasattr(instance, 'optimized_image') and instance.optimized_image and instance.optimized_image.strip():
                     clean_path = instance.optimized_image.replace('\\', '/').strip()
                     if clean_path:
                         representation['image'] = f"/media/{clean_path}"
@@ -340,7 +360,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                     else:
                         representation['image'] = None
                         representation['image_url'] = None
-                elif instance.image:
+                elif hasattr(instance, 'image') and instance.image:
                     try:
                         representation['image'] = instance.image.url
                         representation['image_url'] = instance.image.url
@@ -353,16 +373,16 @@ class ProjectSerializer(serializers.ModelSerializer):
                     representation['image_url'] = None
             except Exception as e:
                 # If image URL handling fails, set safe defaults
-                print(f"Error handling image URLs for Project {instance.id}: {e}")
+                print(f"Error handling image URLs for Project {getattr(instance, 'id', 'unknown')}: {e}")
                 representation['image'] = None
                 representation['image_url'] = None
             
             return representation
         except Exception as e:
             # If representation fails completely, return a safe fallback
-            print(f"Error in to_representation for Project {instance.id}: {e}")
+            print(f"Error in to_representation for Project {getattr(instance, 'id', 'unknown')}: {e}")
             return {
-                'id': instance.id,
+                'id': getattr(instance, 'id', None),
                 'title': getattr(instance, 'title', ''),
                 'description': getattr(instance, 'description', ''),
                 'image': None,
@@ -395,7 +415,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         """Get the optimized icon URL from the database"""
         try:
             # Safely check if optimized icon paths exist and are valid
-            if obj.optimized_icon_medium and obj.optimized_icon_medium.strip():
+            if hasattr(obj, 'optimized_icon_medium') and obj.optimized_icon_medium and obj.optimized_icon_medium.strip():
                 # Use the medium optimized icon if available
                 request = self.context.get('request')
                 if request:
@@ -404,7 +424,7 @@ class ServiceSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_icon_medium.replace('\\', '/').strip()}"
-            elif obj.optimized_icon and obj.optimized_icon.strip():
+            elif hasattr(obj, 'optimized_icon') and obj.optimized_icon and obj.optimized_icon.strip():
                 # Fallback to default optimized icon
                 request = self.context.get('request')
                 if request:
@@ -412,7 +432,7 @@ class ServiceSerializer(serializers.ModelSerializer):
                     if clean_path:
                         return request.build_absolute_uri(f"/media/{clean_path}")
                 return f"/media/{obj.optimized_icon.replace('\\', '/').strip()}"
-            elif obj.icon:
+            elif hasattr(obj, 'icon') and obj.icon:
                 # Fallback to original if no optimized version exists
                 try:
                     request = self.context.get('request')
@@ -425,7 +445,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
-            print(f"Error building icon URL for Service {obj.id}: {e}")
+            print(f"Error building icon URL for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return None
 
     def get_category_names(self, obj):
@@ -433,7 +453,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         try:
             return obj.get_category_names()
         except Exception as e:
-            print(f"Error getting category names for Service {obj.id}: {e}")
+            print(f"Error getting category names for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return []
 
     def get_subcategory_names(self, obj):
@@ -441,7 +461,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         try:
             return obj.get_subcategory_names()
         except Exception as e:
-            print(f"Error getting subcategory names for Service {obj.id}: {e}")
+            print(f"Error getting subcategory names for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return []
     
     def get_category_name(self, obj):
@@ -449,7 +469,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         try:
             return obj.get_category_name()
         except Exception as e:
-            print(f"Error getting category name for Service {obj.id}: {e}")
+            print(f"Error getting category name for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return ""
     
     def get_subcategory_name(self, obj):
@@ -457,7 +477,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         try:
             return obj.get_subcategory_name()
         except Exception as e:
-            print(f"Error getting subcategory name for Service {obj.id}: {e}")
+            print(f"Error getting subcategory name for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return ""
     
     def get_album_images_count(self, obj):
@@ -465,7 +485,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         try:
             return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
         except Exception as e:
-            print(f"Error getting album images count for Service {obj.id}: {e}")
+            print(f"Error getting album images count for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return 0
     
     def get_featured_album_images(self, obj):
@@ -481,11 +501,11 @@ class ServiceSerializer(serializers.ModelSerializer):
             try:
                 return ServiceImageSerializer(featured_images, many=True, context=self.context).data
             except Exception as e:
-                print(f"Error serializing featured album images for service {obj.id}: {e}")
+                print(f"Error serializing featured album images for service {getattr(obj, 'id', 'unknown')}: {e}")
                 # Return empty list if serialization fails
                 return []
         except Exception as e:
-            print(f"Error getting featured album images for service {obj.id}: {e}")
+            print(f"Error getting featured album images for service {getattr(obj, 'id', 'unknown')}: {e}")
             return []
     
     def to_representation(self, instance):
@@ -495,7 +515,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             
             # Safely handle icon URLs with better error handling
             try:
-                if instance.optimized_icon_medium and instance.optimized_icon_medium.strip():
+                if hasattr(instance, 'optimized_icon_medium') and instance.optimized_icon_medium and instance.optimized_icon_medium.strip():
                     clean_path = instance.optimized_icon_medium.replace('\\', '/').strip()
                     if clean_path:
                         representation['icon'] = f"/media/{clean_path}"
@@ -503,7 +523,7 @@ class ServiceSerializer(serializers.ModelSerializer):
                     else:
                         representation['icon'] = None
                         representation['icon_url'] = None
-                elif instance.optimized_icon and instance.optimized_icon.strip():
+                elif hasattr(instance, 'optimized_icon') and instance.optimized_icon and instance.optimized_icon.strip():
                     clean_path = instance.optimized_icon.replace('\\', '/').strip()
                     if clean_path:
                         representation['icon'] = f"/media/{clean_path}"
@@ -511,7 +531,7 @@ class ServiceSerializer(serializers.ModelSerializer):
                     else:
                         representation['icon'] = None
                         representation['icon_url'] = None
-                elif instance.icon:
+                elif hasattr(instance, 'icon') and instance.icon:
                     try:
                         representation['icon'] = instance.icon.url
                         representation['icon_url'] = instance.icon.url
@@ -524,16 +544,16 @@ class ServiceSerializer(serializers.ModelSerializer):
                     representation['icon_url'] = None
             except Exception as e:
                 # If icon URL handling fails, set safe defaults
-                print(f"Error handling icon URLs for Service {instance.id}: {e}")
+                print(f"Error handling icon URLs for Service {getattr(instance, 'id', 'unknown')}: {e}")
                 representation['icon'] = None
                 representation['icon_url'] = None
             
             return representation
         except Exception as e:
             # If representation fails completely, return a safe fallback
-            print(f"Error in to_representation for Service {instance.id}: {e}")
+            print(f"Error in to_representation for Service {getattr(instance, 'id', 'unknown')}: {e}")
             return {
-                'id': instance.id,
+                'id': getattr(instance, 'id', None),
                 'name': getattr(instance, 'name', ''),
                 'description': getattr(instance, 'description', ''),
                 'icon': None,

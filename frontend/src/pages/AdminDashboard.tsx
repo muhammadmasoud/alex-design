@@ -57,10 +57,49 @@ export default function AdminDashboard() {
       setDashboardData(response.data);
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
-        variant: "destructive",
+      
+      // Check if it's a 500 error
+      if (error.response?.status === 500) {
+        console.error("Server error details:", error.response.data);
+        toast({
+          title: "Server Error",
+          description: "The server encountered an error while loading dashboard data. Please try again or contact support.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.detail || "Failed to load dashboard data",
+          variant: "destructive",
+        });
+      }
+      
+      // Set a fallback dashboard data to prevent the component from crashing
+      setDashboardData({
+        user: {
+          id: 0,
+          username: 'Unknown',
+          email: '',
+          is_superuser: false,
+          is_staff: false
+        },
+        statistics: {
+          projects_count: 0,
+          services_count: 0,
+          storage: {
+            media_size_mb: 0,
+            media_file_count: 0,
+            disk_total_gb: 0,
+            disk_free_gb: 0,
+            disk_used_gb: 0,
+            disk_usage_percent: 0
+          }
+        },
+        recent_projects: [],
+        categories: {
+          projects: {},
+          services: {}
+        }
       });
     }
   };
@@ -81,8 +120,19 @@ export default function AdminDashboard() {
     try {
       const response = await api.get(endpoints.admin.dashboard);
       setDashboardData(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error refreshing dashboard data:", error);
+      
+      // Check if it's a 500 error
+      if (error.response?.status === 500) {
+        console.error("Server error details:", error.response.data);
+        toast({
+          title: "Dashboard Update Error",
+          description: "Failed to refresh dashboard data. The server encountered an error.",
+          variant: "destructive",
+        });
+      }
+      
       // Don't show error toast here since components handle their own errors
     }
   };
@@ -100,8 +150,19 @@ export default function AdminDashboard() {
           storage: response.data.storage
         }
       } : null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error refreshing storage data:", error);
+      
+      // Check if it's a 500 error
+      if (error.response?.status === 500) {
+        console.error("Server error details:", error.response.data);
+        toast({
+          title: "Storage Update Error",
+          description: "Failed to update storage statistics. The server encountered an error.",
+          variant: "destructive",
+        });
+      }
+      
       // Fallback to full dashboard refresh
       handleDataUpdate();
     }

@@ -114,33 +114,47 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        # Capture original filename from uploaded image
-        image_file = self.request.FILES.get('image')
-        
-        # Get the order from the data
-        order = serializer.validated_data.get('order')
-        
-        with transaction.atomic():
-            # If an order is specified, shift existing projects to make room
-            if order is not None and order >= 1:
-                # Shift all projects with order >= new_order by +1
-                Project.objects.filter(order__gte=order).update(
-                    order=models.F('order') + 1
-                )
+        try:
+            # Capture original filename from uploaded image
+            image_file = self.request.FILES.get('image')
             
-            # Save the project with the image filename if provided
+            # Get the order from the data
+            order = serializer.validated_data.get('order')
+            
+            with transaction.atomic():
+                # If an order is specified, shift existing projects to make room
+                if order is not None and order >= 1:
+                    # Shift all projects with order >= new_order by +1
+                    Project.objects.filter(order__gte=order).update(
+                        order=models.F('order') + 1
+                    )
+                
+                # Save the project with the image filename if provided
+                if image_file:
+                    serializer.save(original_filename=image_file.name)
+                else:
+                    serializer.save()
+        except Exception as e:
+            print(f"Error in perform_create: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
+
+    def perform_update(self, serializer):
+        try:
+            # Capture original filename from uploaded image if a new one is provided
+            image_file = self.request.FILES.get('image')
             if image_file:
                 serializer.save(original_filename=image_file.name)
             else:
                 serializer.save()
-
-    def perform_update(self, serializer):
-        # Capture original filename from uploaded image if a new one is provided
-        image_file = self.request.FILES.get('image')
-        if image_file:
-            serializer.save(original_filename=image_file.name)
-        else:
-            serializer.save()
+        except Exception as e:
+            print(f"Error in perform_update: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
 
     def perform_destroy(self, instance):
         """
@@ -159,15 +173,27 @@ class ProjectViewSet(viewsets.ModelViewSet):
             )
 
     def create(self, request, *args, **kwargs):
-        if isinstance(request.data, list):
-            serializer = self.get_serializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif isinstance(request.data, dict):
-            return super().create(request, *args, **kwargs)
-        else:
-            raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
+        try:
+            if isinstance(request.data, list):
+                serializer = self.get_serializer(data=request.data, many=True)
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            elif isinstance(request.data, dict):
+                return super().create(request, *args, **kwargs)
+            else:
+                raise ValidationError("Invalid data format. Expected a dictionary or a list of dictionaries.")
+        except Exception as e:
+            print(f"Error in project create: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Return a proper error response instead of letting Django handle it
+            if hasattr(e, 'detail'):
+                return Response({'error': str(e.detail)}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reorder(self, request, pk=None):
@@ -299,33 +325,47 @@ class ServiceViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        # Capture original filename from uploaded icon
-        icon_file = self.request.FILES.get('icon')
-        
-        # Get the order from the data
-        order = serializer.validated_data.get('order')
-        
-        with transaction.atomic():
-            # If an order is specified, shift existing services to make room
-            if order is not None and order >= 1:
-                # Shift all services with order >= new_order by +1
-                Service.objects.filter(order__gte=order).update(
-                    order=models.F('order') + 1
-                )
+        try:
+            # Capture original filename from uploaded icon
+            icon_file = self.request.FILES.get('icon')
             
-            # Save the service with the icon filename if provided
+            # Get the order from the data
+            order = serializer.validated_data.get('order')
+            
+            with transaction.atomic():
+                # If an order is specified, shift existing services to make room
+                if order is not None and order >= 1:
+                    # Shift all services with order >= new_order by +1
+                    Service.objects.filter(order__gte=order).update(
+                        order=models.F('order') + 1
+                    )
+                
+                # Save the service with the icon filename if provided
+                if icon_file:
+                    serializer.save(original_filename=icon_file.name)
+                else:
+                    serializer.save()
+        except Exception as e:
+            print(f"Error in service perform_create: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
+
+    def perform_update(self, serializer):
+        try:
+            # Capture original filename from uploaded icon if a new one is provided
+            icon_file = self.request.FILES.get('icon')
             if icon_file:
                 serializer.save(original_filename=icon_file.name)
             else:
                 serializer.save()
-
-    def perform_update(self, serializer):
-        # Capture original filename from uploaded icon if a new one is provided
-        icon_file = self.request.FILES.get('icon')
-        if icon_file:
-            serializer.save(original_filename=icon_file.name)
-        else:
-            serializer.save()
+        except Exception as e:
+            print(f"Error in service perform_update: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
 
     def perform_destroy(self, instance):
         """
@@ -638,60 +678,105 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request):
-        user = request.user
-        
-        # Import models here to avoid circular imports
-        from .models import ProjectCategory, ProjectSubcategory, ServiceCategory, ServiceSubcategory
-        
-        # Get statistics
-        projects_count = Project.objects.count()
-        services_count = Service.objects.count()
-        recent_projects = Project.objects.order_by('order', '-project_date')[:5]
-        
-        # Get storage information
-        storage_info = calculate_storage_info()
-        
-        # Get dynamic categories
-        project_categories = ProjectCategory.objects.prefetch_related('subcategories').all()
-        service_categories = ServiceCategory.objects.prefetch_related('subcategories').all()
-        
-        # Format project categories
-        project_cats_formatted = {}
-        for cat in project_categories:
-            subcategories = [
-                {'id': sub.id, 'name': sub.name, 'description': sub.description} 
-                for sub in cat.subcategories.all()
-            ]
-            project_cats_formatted[cat.name] = subcategories
-        
-        # Format service categories
-        service_cats_formatted = {}
-        for cat in service_categories:
-            subcategories = [
-                {'id': sub.id, 'name': sub.name, 'description': sub.description} 
-                for sub in cat.subcategories.all()
-            ]
-            service_cats_formatted[cat.name] = subcategories
-        
-        return Response({
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'is_superuser': user.is_superuser,
-                'is_staff': user.is_staff
-            },
-            'statistics': {
-                'projects_count': projects_count,
-                'services_count': services_count,
-                'storage': storage_info,
-            },
-            'recent_projects': ProjectSerializer(recent_projects, many=True).data,
-            'categories': {
-                'projects': project_cats_formatted,
-                'services': service_cats_formatted
-            }
-        })
+        try:
+            user = request.user
+            
+            # Import models here to avoid circular imports
+            from .models import ProjectCategory, ProjectSubcategory, ServiceCategory, ServiceSubcategory
+            
+            # Get statistics
+            projects_count = Project.objects.count()
+            services_count = Service.objects.count()
+            recent_projects = Project.objects.order_by('order', '-project_date')[:5]
+            
+            # Get storage information
+            storage_info = calculate_storage_info()
+            
+            # Get dynamic categories
+            project_categories = ProjectCategory.objects.prefetch_related('subcategories').all()
+            service_categories = ServiceCategory.objects.prefetch_related('subcategories').all()
+            
+            # Format project categories
+            project_cats_formatted = {}
+            for cat in project_categories:
+                subcategories = [
+                    {'id': sub.id, 'name': sub.name, 'description': sub.description} 
+                    for sub in cat.subcategories.all()
+                ]
+                project_cats_formatted[cat.name] = subcategories
+            
+            # Format service categories
+            service_cats_formatted = {}
+            for cat in service_categories:
+                subcategories = [
+                    {'id': sub.id, 'name': sub.name, 'description': sub.description} 
+                    for sub in cat.subcategories.all()
+                ]
+                service_cats_formatted[cat.name] = subcategories
+            
+            # Serialize recent projects with proper context
+            try:
+                recent_projects_data = ProjectSerializer(recent_projects, many=True, context={'request': request}).data
+            except Exception as e:
+                print(f"Error serializing recent projects: {e}")
+                print(f"Error type: {type(e)}")
+                import traceback
+                traceback.print_exc()
+                # Return empty list if serialization fails
+                recent_projects_data = []
+            
+            return Response({
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'is_superuser': user.is_superuser,
+                    'is_staff': user.is_staff
+                },
+                'statistics': {
+                    'projects_count': projects_count,
+                    'services_count': services_count,
+                    'storage': storage_info,
+                },
+                'recent_projects': recent_projects_data,
+                'categories': {
+                    'projects': project_cats_formatted,
+                    'services': service_cats_formatted
+                }
+            })
+        except Exception as e:
+            print(f"Error in AdminDashboardView: {e}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Return a basic response if there's an error
+            return Response({
+                'user': {
+                    'id': request.user.id if request.user.is_authenticated else None,
+                    'username': request.user.username if request.user.is_authenticated else 'Unknown',
+                    'email': request.user.email if request.user.is_authenticated else '',
+                    'is_superuser': request.user.is_superuser if request.user.is_authenticated else False,
+                    'is_staff': request.user.is_staff if request.user.is_authenticated else False
+                },
+                'statistics': {
+                    'projects_count': 0,
+                    'services_count': 0,
+                    'storage': {
+                        'media_size_mb': 0,
+                        'media_file_count': 0,
+                        'disk_total_gb': 0,
+                        'disk_free_gb': 0,
+                        'disk_used_gb': 0,
+                        'disk_usage_percent': 0
+                    },
+                },
+                'recent_projects': [],
+                'categories': {
+                    'projects': {},
+                    'services': {}
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class AdminCheckView(APIView):
@@ -873,18 +958,21 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             
             try:
                 # Ensure serializer has proper context for URL building
-                serializer = self.get_serializer(created_images, many=True)
-                serializer.context = self.get_serializer_context()
+                serializer_context = self.get_serializer_context()
+                serializer_context['request'] = request  # Ensure request is set
                 
                 # Test serialization with a single image first to catch errors early
                 if created_images:
                     try:
                         test_serializer = self.get_serializer([created_images[0]], many=True)
-                        test_serializer.context = self.get_serializer_context()
+                        test_serializer.context = serializer_context
                         test_data = test_serializer.data
                         print(f"Test serialization successful for first image")
                     except Exception as test_error:
                         print(f"Test serialization failed for first image: {test_error}")
+                        print(f"Error type: {type(test_error)}")
+                        import traceback
+                        traceback.print_exc()
                         # If test fails, return success response without serialized data
                         return Response({
                             'message': f'{len(created_images)} images {action_text} successfully',
@@ -894,13 +982,29 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                         }, status=status.HTTP_201_CREATED)
                 
                 # If test passed, try full serialization
-                serialized_data = serializer.data
-                print(f"Full serialization successful for {len(created_images)} images")
-                
-                return Response({
-                    'message': f'{len(created_images)} images {action_text} successfully',
-                    'images': serialized_data
-                }, status=status.HTTP_201_CREATED)
+                try:
+                    serializer = self.get_serializer(created_images, many=True)
+                    serializer.context = serializer_context
+                    serialized_data = serializer.data
+                    print(f"Full serialization successful for {len(created_images)} images")
+                    
+                    return Response({
+                        'message': f'{len(created_images)} images {action_text} successfully',
+                        'images': serialized_data
+                    }, status=status.HTTP_201_CREATED)
+                except Exception as serialization_error:
+                    print(f"Full serialization failed: {serialization_error}")
+                    print(f"Error type: {type(serialization_error)}")
+                    import traceback
+                    traceback.print_exc()
+                    
+                    # Return success response without serialized data
+                    return Response({
+                        'message': f'{len(created_images)} images {action_text} successfully',
+                        'images_count': len(created_images),
+                        'warning': 'Images created but serialization failed - check server logs',
+                        'error_details': str(serialization_error)
+                    }, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
                 # If serialization fails, return a successful response with warning
@@ -1028,18 +1132,21 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
             
             try:
                 # Ensure serializer has proper context for URL building
-                serializer = self.get_serializer(created_images, many=True)
-                serializer.context = self.get_serializer_context()
+                serializer_context = self.get_serializer_context()
+                serializer_context['request'] = request  # Ensure request is set
                 
                 # Test serialization with a single image first to catch errors early
                 if created_images:
                     try:
                         test_serializer = self.get_serializer([created_images[0]], many=True)
-                        test_serializer.context = self.get_serializer_context()
+                        test_serializer.context = serializer_context
                         test_data = test_serializer.data
                         print(f"Test serialization successful for first service image")
                     except Exception as test_error:
                         print(f"Test serialization failed for first service image: {test_error}")
+                        print(f"Error type: {type(test_error)}")
+                        import traceback
+                        traceback.print_exc()
                         # If test fails, return success response without serialized data
                         return Response({
                             'message': f'{len(created_images)} images {action_text} successfully',
@@ -1049,13 +1156,29 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                         }, status=status.HTTP_201_CREATED)
                 
                 # If test passed, try full serialization
-                serialized_data = serializer.data
-                print(f"Full serialization successful for {len(created_images)} service images")
-                
-                return Response({
-                    'message': f'{len(created_images)} images {action_text} successfully',
-                    'images': serialized_data
-                }, status=status.HTTP_201_CREATED)
+                try:
+                    serializer = self.get_serializer(created_images, many=True)
+                    serializer.context = serializer_context
+                    serialized_data = serializer.data
+                    print(f"Full serialization successful for {len(created_images)} service images")
+                    
+                    return Response({
+                        'message': f'{len(created_images)} images {action_text} successfully',
+                        'images': serialized_data
+                    }, status=status.HTTP_201_CREATED)
+                except Exception as serialization_error:
+                    print(f"Full serialization failed: {serialization_error}")
+                    print(f"Error type: {type(serialization_error)}")
+                    import traceback
+                    traceback.print_exc()
+                    
+                    # Return success response without serialized data
+                    return Response({
+                        'message': f'{len(created_images)} images {action_text} successfully',
+                        'images_count': len(created_images),
+                        'warning': 'Images created but serialization failed - check server logs',
+                        'error_details': str(serialization_error)
+                    }, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
                 # If serialization fails, return a successful response with warning

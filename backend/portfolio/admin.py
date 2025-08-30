@@ -130,6 +130,32 @@ class ProjectAdmin(admin.ModelAdmin):
         }),
     )
     
+    def save_model(self, request, obj, form, change):
+        """Override save_model to add error handling"""
+        try:
+            super().save_model(request, obj, form, change)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving project {obj.title}: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise e
+    
+    def save_formset(self, request, form, formset, change):
+        """Override save_formset to add error handling"""
+        try:
+            super().save_formset(request, form, formset, change)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving project formset: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise e
+    
     def image_preview(self, obj):
         if obj.optimized_image_medium:
             return format_html(
@@ -227,6 +253,32 @@ class ServiceAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def save_model(self, request, obj, form, change):
+        """Override save_model to add error handling"""
+        try:
+            super().save_model(request, obj, form, change)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving service {obj.name}: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise e
+    
+    def save_formset(self, request, form, formset, change):
+        """Override save_formset to add error handling"""
+        try:
+            super().save_formset(request, form, formset, change)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving service formset: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise e
     
     def icon_preview(self, obj):
         if obj.optimized_icon_medium:
