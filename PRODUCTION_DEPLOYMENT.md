@@ -110,22 +110,22 @@ sudo journalctl -u alex-design -f --lines=50
 ### Step 9: Verify Deployment
 ```bash
 # Check if application is responding
-curl -I http://your-domain.com
+curl -I http://52.47.162.66/
 
 # Check Django admin is accessible
-curl -I http://your-domain.com/admin/
+curl -I http://52.47.162.66/admin/
 
 # Check API endpoints
-curl -I http://your-domain.com/api/projects/
+curl -I http://52.47.162.66/api/projects/
 ```
 
 ### Step 10: Performance & Security Verification
 ```bash
 # Check new security headers are applied
-curl -I http://your-domain.com | grep -E "(X-Content-Type-Options|X-Frame-Options|Content-Security-Policy)"
+curl -I http://52.47.162.66/ | grep -E "(X-Content-Type-Options|X-Frame-Options|Content-Security-Policy)"
 
 # Check response times (should be faster with optimizations)
-curl -w "%{time_total}\n" -o /dev/null -s http://your-domain.com
+curl -w "%{time_total}\n" -o /dev/null -s http://52.47.162.66/
 
 # Monitor application logs for performance middleware
 sudo journalctl -u alex-design -f | grep "Performance\|Response-Time"
@@ -298,7 +298,7 @@ ORDER BY idx_tup_read DESC;"
 ### Security Headers Verification
 ```bash
 # Test security headers are working
-curl -I http://your-domain.com | grep -E "(X-Content-Type|X-Frame|Content-Security|Referrer-Policy)"
+curl -I http://52.47.162.66/ | grep -E "(X-Content-Type|X-Frame|Content-Security|Referrer-Policy)"
 ```
 
 ## 📞 Support

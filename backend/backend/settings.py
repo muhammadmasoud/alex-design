@@ -96,7 +96,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'portfolio.middleware.RequestTimeoutMiddleware',  # Add timeout middleware first
+    'portfolio.middleware.RequestTimeoutMiddleware',
+    'portfolio.middleware_security.SecurityHeadersMiddleware',
+    'portfolio.middleware_performance.PerformanceMonitoringMiddleware',
     'portfolio.middleware.ImageServingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
