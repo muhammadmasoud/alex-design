@@ -96,6 +96,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'portfolio.middleware.RequestTimeoutMiddleware',  # Add timeout middleware first
     'portfolio.middleware.ImageServingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -199,6 +200,11 @@ else:
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB - increased from 2.5MB for better performance
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024   # 50MB - increased from 10MB for large album uploads
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Allow many album images
+
+# Request timeout settings for long-running operations like bulk uploads
+REQUEST_TIMEOUT = 300  # 5 minutes for request processing
+UPLOAD_TIMEOUT = 300   # 5 minutes for file uploads
+
 ALLOWED_UPLOAD_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp',
     'JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'TIFF', 'TIF', 'WEBP',

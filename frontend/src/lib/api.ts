@@ -6,6 +6,7 @@ export const API_BASE_URL = "/api"; // Use proxy for local development
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Important for CSRF cookies
+  timeout: 300000, // 5 minutes timeout for large file uploads
 });
 
 // Function to get CSRF token

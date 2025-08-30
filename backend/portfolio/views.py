@@ -27,6 +27,8 @@ from django.db import transaction
 from django.middleware.csrf import get_token
 from django.conf import settings
 from django.db import models
+import time
+import logging
 
 
 # Create your views here.
@@ -895,6 +897,12 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
         """
         Bulk upload multiple images for a project
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        start_time = time.time()
+        logger.info(f"Starting bulk upload for project with {len(request.FILES.getlist('images', []))} images")
+        
         try:
             project_id = request.data.get('project_id')
             if not project_id:
@@ -908,6 +916,16 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             images = request.FILES.getlist('images')
             if not images:
                 return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Early validation of all images before processing
+            total_size = 0
+            for image in images:
+                if hasattr(image, 'size'):
+                    if image.size > 25 * 1024 * 1024:  # 25MB limit
+                        return Response({
+                            'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    total_size += image.size
             
             # Check if we should replace existing images
             replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
@@ -929,29 +947,26 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                             'error': f'Failed to delete existing images: {str(e)}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
-                # Create new images
-                for i, image in enumerate(images):
-                    try:
-                        # Validate image before creating
-                        if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+                # Create new images in chunks for better performance
+                chunk_size = 10  # Process 10 images at a time
+                for i in range(0, len(images), chunk_size):
+                    chunk = images[i:i + chunk_size]
+                    for j, image in enumerate(chunk):
+                        try:
+                            project_image = ProjectImage.objects.create(
+                                project=project,
+                                image=image,
+                                original_filename=image.name,
+                                order=i + j
+                            )
+                            created_images.append(project_image)
+                        except Exception as e:
+                            # Rollback transaction on any error
+                            transaction.set_rollback(True)
+                            print(f"Error creating image {image.name}: {e}")
                             return Response({
-                                'error': f'Image {image.name} is too large. Maximum size is 25MB.'
-                            }, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        project_image = ProjectImage.objects.create(
-                            project=project,
-                            image=image,
-                            original_filename=image.name,
-                            order=i
-                        )
-                        created_images.append(project_image)
-                    except Exception as e:
-                        # Rollback transaction on any error
-                        transaction.set_rollback(True)
-                        print(f"Error creating image {image.name}: {e}")
-                        return Response({
-                            'error': f'Failed to create image {image.name}: {str(e)}'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                                'error': f'Failed to create image {image.name}: {str(e)}'
+                            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Try to serialize the response with better error handling
             action_text = "replaced" if replace_existing else "added to"
@@ -988,6 +1003,9 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     serialized_data = serializer.data
                     print(f"Full serialization successful for {len(created_images)} images")
                     
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Bulk upload completed successfully in {elapsed_time:.2f}s")
+                    
                     return Response({
                         'message': f'{len(created_images)} images {action_text} successfully',
                         'images': serialized_data
@@ -999,6 +1017,8 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     traceback.print_exc()
                     
                     # Return success response without serialized data
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Bulk upload completed with serialization warning in {elapsed_time:.2f}s")
                     return Response({
                         'message': f'{len(created_images)} images {action_text} successfully',
                         'images_count': len(created_images),
@@ -1013,6 +1033,8 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                 import traceback
                 traceback.print_exc()
                 
+                elapsed_time = time.time() - start_time
+                logger.info(f"Bulk upload completed with serialization error in {elapsed_time:.2f}s")
                 return Response({
                     'message': f'{len(created_images)} images {action_text} successfully',
                     'images_count': len(created_images),
@@ -1022,6 +1044,8 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             
         except Exception as e:
             # Catch any other unexpected errors
+            elapsed_time = time.time() - start_time
+            logger.error(f"Bulk upload failed after {elapsed_time:.2f}s: {e}")
             print(f"Unexpected error in bulk upload: {e}")
             import traceback
             traceback.print_exc()

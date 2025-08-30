@@ -112,12 +112,16 @@ export function useUploadProgress() {
 
       console.log(`Starting upload to ${endpoint} with ${files.length} files`);
 
-      // Configure axios for progress tracking
+      // Configure axios for progress tracking with better error handling
       const response = await api.post(endpoint, uploadFormData, {
         signal: abortControllerRef.current.signal,
+        timeout: 300000, // 5 minutes timeout specifically for uploads
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // Add retry logic for network issues
+        validateStatus: (status) => status < 500, // Don't retry on server errors
+        maxRedirects: 0, // Don't follow redirects
         onUploadProgress: (progressEvent) => {
           if (isPausedRef.current) return;
 

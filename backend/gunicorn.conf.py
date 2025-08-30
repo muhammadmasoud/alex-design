@@ -17,9 +17,9 @@ max_requests_jitter = 50
 preload_app = True
 
 # Timeout settings
-timeout = 30
+timeout = 300  # Increased from 30 to 5 minutes for large file uploads
 keepalive = 2
-graceful_timeout = 30
+graceful_timeout = 300  # Increased from 30 to 5 minutes
 
 # Logging
 accesslog = "-"
