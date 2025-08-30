@@ -943,15 +943,6 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     existing_image.image.delete(save=False)
             existing_images.delete()
 
-        # Send immediate response to client
-        return Response({
-            'message': 'Upload initiated successfully. You will receive another notification when processing is complete.',
-            'project_id': project_id,
-            'image_count': len(images),
-            'replace_existing': replace_existing
-        }, status=status.HTTP_202_ACCEPTED)
-
-        # Move image creation logic to background task
         created_image_ids = []
         for i, image in enumerate(images):
             try:
@@ -1032,14 +1023,6 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
             
             # Check if we should replace existing images
             replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
-            
-            # Send immediate response to client
-            return Response({
-                'message': 'Upload initiated successfully. You will receive another notification when processing is complete.',
-                'service_id': service_id,
-                'image_count': len(images),
-                'replace_existing': replace_existing
-            }, status=status.HTTP_202_ACCEPTED)
             
             created_images = []
             with transaction.atomic():
