@@ -192,6 +192,8 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
           size: file.size
         }));
 
+        console.log('Starting album upload for service:', serviceId, 'with files:', albumFiles);
+
         const albumFormData = new FormData();
         albumFormData.append("service_id", serviceId.toString());
         
@@ -205,30 +207,41 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
           albumFormData.append("replace_existing", "false");
         }
 
-        await uploadFiles(
-          albumFiles,
-          endpoints.serviceImagesBulkUpload,
-          albumFormData,
-          (response) => {
-            const modeText = uploadMode === 'replace' ? 'replaced' : 'added to';
-            toast({ 
-              title: editingService ? "Service updated successfully!" : "Service created successfully!",
-              description: `${albumFiles.length} album images ${modeText} successfully!`
-            });
-            setEditingService(null);
-            form.reset();
-            fetchData();
-            onUpdate();
-            onStorageUpdate?.(); // Update storage stats after file uploads
-          },
-          (error) => {
-            toast({
-              title: "Album Upload Error",
-              description: error,
-              variant: "destructive",
-            });
-          }
-        );
+        try {
+          await uploadFiles(
+            albumFiles,
+            endpoints.serviceImagesBulkUpload,
+            albumFormData,
+            (response) => {
+              console.log('Service album upload success response:', response);
+              const modeText = uploadMode === 'replace' ? 'replaced' : 'added to';
+              toast({ 
+                title: editingService ? "Service updated successfully!" : "Service created successfully!",
+                description: `${albumFiles.length} album images ${modeText} successfully!`
+              });
+              setEditingService(null);
+              form.reset();
+              fetchData();
+              onUpdate();
+              onStorageUpdate?.(); // Update storage stats after file uploads
+            },
+            (error) => {
+              console.error('Service album upload error:', error);
+              toast({
+                title: "Album Upload Error",
+                description: error,
+                variant: "destructive",
+              });
+            }
+          );
+        } catch (uploadError) {
+          console.error('Error in uploadFiles call for service:', uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to start service album upload process",
+            variant: "destructive",
+          });
+        }
         
         // Exit early - upload progress will handle the rest
         return;

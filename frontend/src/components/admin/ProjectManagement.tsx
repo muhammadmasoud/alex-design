@@ -201,6 +201,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
           size: file.size
         }));
 
+        console.log('Starting album upload for project:', projectId, 'with files:', albumFiles);
+
         const albumFormData = new FormData();
         albumFormData.append("project_id", projectId.toString());
         
@@ -214,30 +216,41 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
           albumFormData.append("replace_existing", "false");
         }
 
-        await uploadFiles(
-          albumFiles,
-          endpoints.projectImagesBulkUpload,
-          albumFormData,
-          (response) => {
-            const modeText = uploadMode === 'replace' ? 'replaced' : 'added to';
-            toast({ 
-              title: editingProject ? "Project updated successfully!" : "Project created successfully!",
-              description: `${albumFiles.length} album images ${modeText} successfully!`
-            });
-            setEditingProject(null);
-            form.reset();
-            fetchProjects();
-            onUpdate();
-            onStorageUpdate?.(); // Update storage stats after file uploads
-          },
-          (error) => {
-            toast({
-              title: "Album Upload Error",
-              description: error,
-              variant: "destructive",
-            });
-          }
-        );
+        try {
+          await uploadFiles(
+            albumFiles,
+            endpoints.projectImagesBulkUpload,
+            albumFormData,
+            (response) => {
+              console.log('Album upload success response:', response);
+              const modeText = uploadMode === 'replace' ? 'replaced' : 'added to';
+              toast({ 
+                title: editingProject ? "Project updated successfully!" : "Project created successfully!",
+                description: `${albumFiles.length} album images ${modeText} successfully!`
+              });
+              setEditingProject(null);
+              form.reset();
+              fetchProjects();
+              onUpdate();
+              onStorageUpdate?.(); // Update storage stats after file uploads
+            },
+            (error) => {
+              console.error('Album upload error:', error);
+              toast({
+                title: "Album Upload Error",
+                description: error,
+                variant: "destructive",
+              });
+            }
+          );
+        } catch (uploadError) {
+          console.error('Error in uploadFiles call:', uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to start album upload process",
+            variant: "destructive",
+          });
+        }
         
         // Exit early - upload progress will handle the rest
         return;

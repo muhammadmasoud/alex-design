@@ -110,6 +110,8 @@ export function useUploadProgress() {
         uploadFormData.append('images', fileObj.file);
       });
 
+      console.log(`Starting upload to ${endpoint} with ${files.length} files`);
+
       // Configure axios for progress tracking
       const response = await api.post(endpoint, uploadFormData, {
         signal: abortControllerRef.current.signal,
@@ -147,33 +149,101 @@ export function useUploadProgress() {
         },
       });
 
-      // Upload completed successfully
-      setUploadState(prev => ({
-        ...prev,
-        isUploading: false,
-        isCompleted: true,
-        uploadedFiles: files.length,
-        overallProgress: 100,
-        currentFileProgress: 100,
-        uploadedBytes: prev.totalBytes,
-        remainingBytes: 0,
-      }));
+      console.log('Upload response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data
+      });
 
-      onSuccess?.(response.data);
+      // Check if the response indicates success
+      if (response.status >= 200 && response.status < 300) {
+        // Upload completed successfully
+        setUploadState(prev => ({
+          ...prev,
+          isUploading: false,
+          isCompleted: true,
+          uploadedFiles: files.length,
+          overallProgress: 100,
+          currentFileProgress: 100,
+          uploadedBytes: prev.totalBytes,
+          remainingBytes: 0,
+        }));
+
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          try {
+            onSuccess(response.data);
+          } catch (callbackError) {
+            console.error('Error in onSuccess callback:', callbackError);
+            // Don't treat callback errors as upload failures
+            // The upload was successful, just the callback failed
+          }
+        }
+      } else {
+        // Handle unexpected response status
+        throw new Error(`Unexpected response status: ${response.status} ${response.statusText}`);
+      }
 
     } catch (error: any) {
-      const errorMessage = error.name === 'AbortError' 
-        ? 'Upload cancelled' 
-        : error.response?.data?.detail || error.message || 'Upload failed';
+      console.error('Upload error:', error);
+      
+      // Check if it's an abort error
+      if (error.name === 'AbortError') {
+        const errorMessage = 'Upload cancelled';
+        setUploadState(prev => ({
+          ...prev,
+          isUploading: false,
+          isCompleted: true,
+          error: errorMessage,
+        }));
+        onError?.(errorMessage);
+        return;
+      }
 
-      setUploadState(prev => ({
-        ...prev,
-        isUploading: false,
-        isCompleted: true,
-        error: errorMessage,
-      }));
-
-      onError?.(errorMessage);
+      // Check if it's an HTTP error response
+      if (error.response) {
+        console.error('HTTP Error Response:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+        
+        const errorMessage = error.response.data?.detail || 
+                           error.response.data?.error || 
+                           error.response.statusText || 
+                           `HTTP ${error.response.status} error`;
+        
+        setUploadState(prev => ({
+          ...prev,
+          isUploading: false,
+          isCompleted: true,
+          error: errorMessage,
+        }));
+        
+        onError?.(errorMessage);
+      } else if (error.request) {
+        // Network error - no response received
+        const errorMessage = 'Network error - no response received';
+        setUploadState(prev => ({
+          ...prev,
+          isUploading: false,
+          isCompleted: true,
+          error: errorMessage,
+        }));
+        
+        onError?.(errorMessage);
+      } else {
+        // Other error
+        const errorMessage = error.message || 'Upload failed';
+        setUploadState(prev => ({
+          ...prev,
+          isUploading: false,
+          isCompleted: true,
+          error: errorMessage,
+        }));
+        
+        onError?.(errorMessage);
+      }
     }
   }, [calculateProgress, calculateSpeed, calculateETA]);
 
