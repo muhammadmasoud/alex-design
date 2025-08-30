@@ -12,43 +12,12 @@ from django.core.files.storage import default_storage
 import uuid
 from datetime import datetime
 
-# Import configuration
-try:
-    from .optimization_config import (
-        QUALITY_PRESET, THUMBNAIL_METHOD, THUMBNAIL_SIZES,
-        SKIP_OPTIMIZATION_FOR_SMALL_IMAGES, SKIP_OPTIMIZATION_FOR_ALREADY_OPTIMAL,
-        THUMBNAIL_QUALITY_BOOST, SMALL_IMAGE_THRESHOLD,
-        OPTIMAL_IMAGE_THRESHOLD, WEBP_OPTIMAL_THRESHOLD
-    )
-except ImportError:
-    # Fallback to default values if config file doesn't exist
-    QUALITY_PRESET = 'high'
-    THUMBNAIL_METHOD = 'thumbnail'
-    THUMBNAIL_SIZES = {
-        'small': (400, 400),
-        'medium': (1000, 1000),
-        'large': (1600, 1600),
-        'original': None
-    }
-    SKIP_OPTIMIZATION_FOR_SMALL_IMAGES = True
-    SKIP_OPTIMIZATION_FOR_ALREADY_OPTIMAL = True
-    THUMBNAIL_QUALITY_BOOST = 5
-    SMALL_IMAGE_THRESHOLD = 200 * 1024
-    OPTIMAL_IMAGE_THRESHOLD = 500 * 1024
-    WEBP_OPTIMAL_THRESHOLD = 1000 * 1024
-
 logger = logging.getLogger(__name__)
 
 class ImageOptimizer:
     """
-    Image Optimization Utilities for Alex Design Portfolio
-    Handles automatic image optimization while maintaining quality and organizing files properly
-    
-    Quality Presets:
-    - 'ultra': Maximum quality (95-100), larger file sizes
-    - 'high': High quality (90-95), balanced file sizes (default)
-    - 'balanced': Good quality (80-90), smaller file sizes
-    - 'compressed': Lower quality (70-80), smallest file sizes
+    Handles automatic image optimization for projects and services
+    Creates organized folder structure with optimized images
     
     Thumbnail Creation Methods:
     - 'fit': Crops images to exact dimensions (original behavior)
@@ -56,98 +25,32 @@ class ImageOptimizer:
     - 'padded': Scales images to fit within dimensions and adds white padding to maintain exact dimensions
     
     Configuration:
-    - QUALITY_PRESET: Choose the quality preset for optimization
     - THUMBNAIL_METHOD: Choose the thumbnail creation method
     - THUMBNAIL_SIZES: Define the maximum dimensions for each size
-    - WEBP_QUALITY: Quality setting for WebP compression (auto-adjusted based on preset)
-    - WEBP_METHOD: WebP compression method (auto-adjusted based on preset)
+    - WEBP_QUALITY: Quality setting for WebP compression (85 = high quality)
     
     Usage:
-    - Set QUALITY_PRESET to 'ultra' for maximum quality (recommended for portfolios)
-    - Set QUALITY_PRESET to 'high' for high quality with reasonable file sizes
     - Set THUMBNAIL_METHOD to 'thumbnail' for no cropping (recommended for most use cases)
     - Set THUMBNAIL_METHOD to 'padded' if you need consistent dimensions with padding
     - Set THUMBNAIL_METHOD to 'fit' if you need exact dimensions and cropping is acceptable
     """
     
-    # Quality preset configuration
-    QUALITY_PRESET = QUALITY_PRESET  # From config file
-    
-    # Quality settings - automatically adjusted based on preset
-    _QUALITY_PRESETS = {
-        'lossless': {
-            'webp_quality': 100,
-            'jpeg_quality': 100,
-            'webp_method': 2,  # Best quality
-            'resampling': Image.Resampling.BICUBIC,
-            'lossless': True  # Use lossless WebP compression
-        },
-        'ultra': {
-            'webp_quality': 100,
-            'jpeg_quality': 100,
-            'webp_method': 2,  # Best quality
-            'resampling': Image.Resampling.BICUBIC
-        },
-        'high': {
-            'webp_quality': 95,
-            'jpeg_quality': 95,
-            'webp_method': 4,  # Better quality
-            'resampling': Image.Resampling.BICUBIC
-        },
-        'balanced': {
-            'webp_quality': 85,
-            'jpeg_quality': 88,
-            'webp_method': 6,  # Default
-            'resampling': Image.Resampling.LANCZOS
-        },
-        'compressed': {
-            'webp_quality': 75,
-            'jpeg_quality': 80,
-            'webp_method': 6,  # Default
-            'resampling': Image.Resampling.LANCZOS
-        }
-    }
-    
-    @classmethod
-    def get_webp_quality(cls):
-        """Get WebP quality based on current preset"""
-        return cls._QUALITY_PRESETS[cls.QUALITY_PRESET]['webp_quality']
-    
-    @classmethod
-    def get_jpeg_quality(cls):
-        """Get JPEG quality based on current preset"""
-        return cls._QUALITY_PRESETS[cls.QUALITY_PRESET]['jpeg_quality']
-    
-    @classmethod
-    def get_webp_method(cls):
-        """Get WebP method based on current preset"""
-        return cls._QUALITY_PRESETS[cls.QUALITY_PRESET]['webp_method']
-    
-    @classmethod
-    def get_resampling_method(cls):
-        """Get resampling method based on current preset"""
-        return cls._QUALITY_PRESETS[cls.QUALITY_PRESET]['resampling']
-    
-    @classmethod
-    def is_lossless_mode(cls):
-        """Check if lossless mode is enabled"""
-        preset_settings = cls._QUALITY_PRESETS.get(cls.QUALITY_PRESET, {})
-        return preset_settings.get('lossless', False)
-    
-    # Legacy quality settings (kept for backward compatibility)
-    WEBP_QUALITY = 95  # Very high quality WebP (increased from 85)
-    JPEG_QUALITY = 95  # Very high quality JPEG (increased from 88)
-    
-    # WebP compression method: 0=fast, 6=default, 4=better quality, 2=best quality
-    WEBP_METHOD = 4  # Better quality compression (changed from 6)
+    # Quality settings - optimized for web while maintaining visual quality
+    WEBP_QUALITY = 85  # High quality WebP
+    JPEG_QUALITY = 88  # High quality JPEG
     
     # Thumbnail creation method: 'fit' (crops to exact size), 'thumbnail' (preserves aspect ratio), 'padded' (adds padding)
-    THUMBNAIL_METHOD = THUMBNAIL_METHOD  # From config file
+    THUMBNAIL_METHOD = 'thumbnail'  # Options: 'fit', 'thumbnail', 'padded'
     
     # Thumbnail sizes for different use cases
     # These are maximum dimensions - images will be scaled down to fit within these bounds
     # while preserving their aspect ratio (no cropping)
-    THUMBNAIL_SIZES = THUMBNAIL_SIZES  # From config file
+    THUMBNAIL_SIZES = {
+        'small': (300, 300),      # For thumbnails and previews
+        'medium': (800, 800),     # For medium displays (increased from 600)
+        'large': (1200, 1200),    # For large displays
+        'original': None           # Keep original size
+    }
     
     @classmethod
     def optimize_project_images(cls, project):
@@ -462,39 +365,6 @@ class ImageOptimizer:
             logger.error(f"Error updating optimized image paths for service album image {album_image.id}: {str(e)}")
     
     @classmethod
-    def _should_optimize_image(cls, image_path, target_size=None):
-        """
-        Determine if an image should be optimized based on its current quality and size
-        Returns True if optimization would be beneficial
-        """
-        try:
-            with Image.open(image_path) as img:
-                # Get image info
-                width, height = img.size
-                file_size = os.path.getsize(image_path)
-                
-                # If image is already small enough and file size is reasonable, skip optimization
-                if target_size and width <= target_size[0] and height <= target_size[1]:
-                    if file_size < SMALL_IMAGE_THRESHOLD:  # Less than 200KB
-                        return False
-                
-                # If file size is already very small, skip optimization
-                if file_size < SMALL_IMAGE_THRESHOLD:  # Less than 200KB
-                    return False
-                
-                # Check if image is already in an optimal format
-                if image_path.lower().endswith('.webp'):
-                    # WebP images might already be optimized
-                    if file_size < WEBP_OPTIMAL_THRESHOLD:  # Less than 1MB
-                        return False
-                
-                return True
-                
-        except Exception as e:
-            logger.warning(f"Error checking if image should be optimized: {str(e)}")
-            return True  # Default to optimizing if we can't determine
-
-    @classmethod
     def _create_optimized_webp(cls, original_path, webp_path, image_type):
         """Create optimized WebP version of the image"""
         try:
@@ -510,20 +380,8 @@ class ImageOptimizer:
                 elif img.mode != 'RGB':
                     img = img.convert('RGB')
                 
-                # Check if we should optimize this image
-                if not cls._should_optimize_image(original_path):
-                    # Copy original without optimization if it's already good quality
-                    img.save(webp_path, 'WEBP', quality=100, method=2)
-                    logger.info(f"Skipped optimization for already high-quality image: {original_path}")
-                else:
-                    # Check if lossless mode is enabled
-                    if cls.is_lossless_mode():
-                        # Use lossless WebP compression - preserves 100% of original quality
-                        img.save(webp_path, 'WEBP', lossless=True, method=cls.get_webp_method())
-                        logger.info(f"Created lossless WebP preserving 100% quality: {original_path}")
-                    else:
-                        # Save as WebP with quality based on preset
-                        img.save(webp_path, 'WEBP', quality=cls.get_webp_quality(), method=cls.get_webp_method())
+                # Save as WebP with high quality
+                img.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
                 
                 # Set proper permissions
                 os.chmod(webp_path, 0o644)
@@ -552,38 +410,22 @@ class ImageOptimizer:
                     if dimensions is None:  # Skip original size
                         continue
                     
-                    # Check if original image is already smaller than this thumbnail size
-                    if img.width <= dimensions[0] and img.height <= dimensions[1]:
-                        # Image is already small enough, skip this thumbnail
-                        logger.info(f"Skipping {size_name} thumbnail - image already smaller than {dimensions}")
-                        continue
-                    
                     # Choose thumbnail creation method based on configuration
                     if cls.THUMBNAIL_METHOD == 'fit':
                         # Original method - crops to exact size
-                        thumbnail = ImageOps.fit(img, dimensions, method=cls.get_resampling_method())
+                        thumbnail = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
                     elif cls.THUMBNAIL_METHOD == 'padded':
                         # Method with padding to maintain dimensions
                         thumbnail = cls._create_single_padded_thumbnail(img, dimensions)
                     else:
                         # Default method - preserves aspect ratio (no cropping)
                         thumbnail = img.copy()
-                        thumbnail.thumbnail(dimensions, cls.get_resampling_method())
+                        thumbnail.thumbnail(dimensions, Image.Resampling.LANCZOS)
                     
                     # Save as WebP
                     webp_filename = f"{base_name}_{size_name}.webp"
                     webp_path = os.path.join(output_folder, webp_filename)
-                    
-                    # Use higher quality for thumbnails since they're smaller
-                    thumbnail_quality = min(100, cls.get_webp_quality() + THUMBNAIL_QUALITY_BOOST)  # Slightly higher quality for thumbnails
-                    
-                    # Check if lossless mode is enabled
-                    if cls.is_lossless_mode():
-                        # Use lossless WebP compression for thumbnails too
-                        thumbnail.save(webp_path, 'WEBP', lossless=True, method=cls.get_webp_method())
-                    else:
-                        # Use regular quality-based compression
-                        thumbnail.save(webp_path, 'WEBP', quality=thumbnail_quality, method=cls.get_webp_method())
+                    thumbnail.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
                     
                     # Set proper permissions
                     os.chmod(webp_path, 0o644)
@@ -609,7 +451,7 @@ class ImageOptimizer:
             new_width = int(dimensions[1] * img_ratio)
         
         # Resize image
-        thumbnail = img.resize((new_width, new_height), cls.get_resampling_method())
+        thumbnail = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
         # Create new image with target dimensions and white background
         final_thumbnail = Image.new('RGB', dimensions, (255, 255, 255))
@@ -657,7 +499,7 @@ class ImageOptimizer:
                         new_width = int(dimensions[1] * img_ratio)
                     
                     # Resize image
-                    thumbnail = img.resize((new_width, new_height), cls.get_resampling_method())
+                    thumbnail = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                     
                     # Create new image with target dimensions and white background
                     final_thumbnail = Image.new('RGB', dimensions, (255, 255, 255))
@@ -672,14 +514,7 @@ class ImageOptimizer:
                     # Save as WebP
                     webp_filename = f"{base_name}_{size_name}_padded.webp"
                     webp_path = os.path.join(output_folder, webp_filename)
-                    
-                    # Check if lossless mode is enabled
-                    if cls.is_lossless_mode():
-                        # Use lossless WebP compression for padded thumbnails too
-                        final_thumbnail.save(webp_path, 'WEBP', lossless=True, method=cls.get_webp_method())
-                    else:
-                        # Use regular quality-based compression
-                        final_thumbnail.save(webp_path, 'WEBP', quality=cls.get_webp_quality(), method=cls.get_webp_method())
+                    final_thumbnail.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
                     
                     # Set proper permissions
                     os.chmod(webp_path, 0o644)
