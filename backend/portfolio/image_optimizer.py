@@ -18,16 +18,36 @@ class ImageOptimizer:
     """
     Handles automatic image optimization for projects and services
     Creates organized folder structure with optimized images
+    
+    Thumbnail Creation Methods:
+    - 'fit': Crops images to exact dimensions (original behavior)
+    - 'thumbnail': Scales images to fit within dimensions while preserving aspect ratio (default)
+    - 'padded': Scales images to fit within dimensions and adds white padding to maintain exact dimensions
+    
+    Configuration:
+    - THUMBNAIL_METHOD: Choose the thumbnail creation method
+    - THUMBNAIL_SIZES: Define the maximum dimensions for each size
+    - WEBP_QUALITY: Quality setting for WebP compression (85 = high quality)
+    
+    Usage:
+    - Set THUMBNAIL_METHOD to 'thumbnail' for no cropping (recommended for most use cases)
+    - Set THUMBNAIL_METHOD to 'padded' if you need consistent dimensions with padding
+    - Set THUMBNAIL_METHOD to 'fit' if you need exact dimensions and cropping is acceptable
     """
     
     # Quality settings - optimized for web while maintaining visual quality
     WEBP_QUALITY = 85  # High quality WebP
     JPEG_QUALITY = 88  # High quality JPEG
     
+    # Thumbnail creation method: 'fit' (crops to exact size), 'thumbnail' (preserves aspect ratio), 'padded' (adds padding)
+    THUMBNAIL_METHOD = 'thumbnail'  # Options: 'fit', 'thumbnail', 'padded'
+    
     # Thumbnail sizes for different use cases
+    # These are maximum dimensions - images will be scaled down to fit within these bounds
+    # while preserving their aspect ratio (no cropping)
     THUMBNAIL_SIZES = {
         'small': (300, 300),      # For thumbnails and previews
-        'medium': (600, 600),     # For medium displays
+        'medium': (800, 800),     # For medium displays (increased from 600)
         'large': (1200, 1200),    # For large displays
         'original': None           # Keep original size
     }
@@ -389,9 +409,18 @@ class ImageOptimizer:
                 for size_name, dimensions in cls.THUMBNAIL_SIZES.items():
                     if dimensions is None:  # Skip original size
                         continue
-                        
-                    # Create thumbnail
-                    thumbnail = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
+                    
+                    # Choose thumbnail creation method based on configuration
+                    if cls.THUMBNAIL_METHOD == 'fit':
+                        # Original method - crops to exact size
+                        thumbnail = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
+                    elif cls.THUMBNAIL_METHOD == 'padded':
+                        # Method with padding to maintain dimensions
+                        thumbnail = cls._create_single_padded_thumbnail(img, dimensions)
+                    else:
+                        # Default method - preserves aspect ratio (no cropping)
+                        thumbnail = img.copy()
+                        thumbnail.thumbnail(dimensions, Image.Resampling.LANCZOS)
                     
                     # Save as WebP
                     webp_filename = f"{base_name}_{size_name}.webp"
@@ -403,6 +432,95 @@ class ImageOptimizer:
                     
         except Exception as e:
             logger.error(f"Error creating thumbnails for {original_path}: {str(e)}")
+            raise
+    
+    @classmethod
+    def _create_single_padded_thumbnail(cls, img, dimensions):
+        """Create a single padded thumbnail"""
+        # Calculate scaling factor to fit within dimensions
+        img_ratio = img.width / img.height
+        target_ratio = dimensions[0] / dimensions[1]
+        
+        if img_ratio > target_ratio:
+            # Image is wider than target - scale by width
+            new_width = dimensions[0]
+            new_height = int(dimensions[0] / img_ratio)
+        else:
+            # Image is taller than target - scale by height
+            new_height = dimensions[1]
+            new_width = int(dimensions[1] * img_ratio)
+        
+        # Resize image
+        thumbnail = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Create new image with target dimensions and white background
+        final_thumbnail = Image.new('RGB', dimensions, (255, 255, 255))
+        
+        # Calculate position to center the thumbnail
+        x = (dimensions[0] - new_width) // 2
+        y = (dimensions[1] - new_height) // 2
+        
+        # Paste the thumbnail onto the background
+        final_thumbnail.paste(thumbnail, (x, y))
+        
+        return final_thumbnail
+    
+    @classmethod
+    def _create_thumbnails_with_padding(cls, original_path, output_folder, base_name, image_type):
+        """Create thumbnails with padding to maintain consistent dimensions"""
+        try:
+            with Image.open(original_path) as img:
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Create thumbnails for each size
+                for size_name, dimensions in cls.THUMBNAIL_SIZES.items():
+                    if dimensions is None:  # Skip original size
+                        continue
+                    
+                    # Calculate scaling factor to fit within dimensions
+                    img_ratio = img.width / img.height
+                    target_ratio = dimensions[0] / dimensions[1]
+                    
+                    if img_ratio > target_ratio:
+                        # Image is wider than target - scale by width
+                        new_width = dimensions[0]
+                        new_height = int(dimensions[0] / img_ratio)
+                    else:
+                        # Image is taller than target - scale by height
+                        new_height = dimensions[1]
+                        new_width = int(dimensions[1] * img_ratio)
+                    
+                    # Resize image
+                    thumbnail = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Create new image with target dimensions and white background
+                    final_thumbnail = Image.new('RGB', dimensions, (255, 255, 255))
+                    
+                    # Calculate position to center the thumbnail
+                    x = (dimensions[0] - new_width) // 2
+                    y = (dimensions[1] - new_height) // 2
+                    
+                    # Paste the thumbnail onto the background
+                    final_thumbnail.paste(thumbnail, (x, y))
+                    
+                    # Save as WebP
+                    webp_filename = f"{base_name}_{size_name}_padded.webp"
+                    webp_path = os.path.join(output_folder, webp_filename)
+                    final_thumbnail.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
+                    
+                    # Set proper permissions
+                    os.chmod(webp_path, 0o644)
+                    
+        except Exception as e:
+            logger.error(f"Error creating padded thumbnails for {original_path}: {str(e)}")
             raise
     
     @classmethod
