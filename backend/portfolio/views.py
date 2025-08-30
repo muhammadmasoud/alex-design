@@ -892,171 +892,55 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             permission_classes = []
         return [permission() for permission in permission_classes]
 
+
     @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
     def bulk_upload(self, request):
         """
-        Bulk upload multiple images for a project
+        Asynchronous bulk upload for project images using Celery.
         """
         import logging
+        import base64
+        from .tasks import async_bulk_upload_project_images
         logger = logging.getLogger(__name__)
-        
-        start_time = time.time()
-        logger.info(f"Starting bulk upload for project with {len(request.FILES.getlist('images', []))} images")
-        
+
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            project_id = request.data.get('project_id')
-            if not project_id:
-                return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            try:
-                project = Project.objects.get(id=project_id)
-            except Project.DoesNotExist:
-                return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-            images = request.FILES.getlist('images')
-            if not images:
-                return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Early validation of all images before processing
-            total_size = 0
-            for image in images:
-                if hasattr(image, 'size'):
-                    if image.size > 25 * 1024 * 1024:  # 25MB limit
-                        return Response({
-                            'error': f'Image {image.name} is too large. Maximum size is 25MB.'
-                        }, status=status.HTTP_400_BAD_REQUEST)
-                    total_size += image.size
-            
-            # Check if we should replace existing images
-            replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
-            
-            created_images = []
-            with transaction.atomic():
-                # If replacing, delete all existing images first
-                if replace_existing:
-                    try:
-                        existing_images = ProjectImage.objects.filter(project=project)
-                        for existing_image in existing_images:
-                            # Delete the image file from storage
-                            if existing_image.image:
-                                existing_image.image.delete(save=False)
-                        existing_images.delete()
-                    except Exception as e:
-                        print(f"Error deleting existing images: {e}")
-                        return Response({
-                            'error': f'Failed to delete existing images: {str(e)}'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                # Create new images in chunks for better performance
-                chunk_size = 10  # Process 10 images at a time
-                for i in range(0, len(images), chunk_size):
-                    chunk = images[i:i + chunk_size]
-                    for j, image in enumerate(chunk):
-                        try:
-                            project_image = ProjectImage.objects.create(
-                                project=project,
-                                image=image,
-                                original_filename=image.name,
-                                order=i + j
-                            )
-                            created_images.append(project_image)
-                        except Exception as e:
-                            # Rollback transaction on any error
-                            transaction.set_rollback(True)
-                            print(f"Error creating image {image.name}: {e}")
-                            return Response({
-                                'error': f'Failed to create image {image.name}: {str(e)}'
-                            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            # Try to serialize the response with better error handling
-            action_text = "replaced" if replace_existing else "added to"
-            
-            try:
-                # Ensure serializer has proper context for URL building
-                serializer_context = self.get_serializer_context()
-                if not serializer_context:
-                    serializer_context = {}
-                serializer_context['request'] = request  # Ensure request is set
-                
-                logger.info(f"Using serializer context: {list(serializer_context.keys())}")
-                
-                # Test serialization with a single image first to catch errors early
-                if created_images:
-                    try:
-                        test_serializer = self.get_serializer([created_images[0]], many=True, context=serializer_context)
-                        test_data = test_serializer.data
-                        print(f"Test serialization successful for first image")
-                    except Exception as test_error:
-                        print(f"Test serialization failed for first image: {test_error}")
-                        print(f"Error type: {type(test_error)}")
-                        import traceback
-                        traceback.print_exc()
-                        # If test fails, return success response without serialized data
-                        elapsed_time = time.time() - start_time
-                        logger.info(f"Bulk upload completed with serialization warning in {elapsed_time:.2f}s")
-                        return Response({
-                            'message': f'{len(created_images)} images {action_text} successfully',
-                            'images_count': len(created_images),
-                            'warning': 'Images created but serialization failed - check server logs',
-                            'error_details': str(test_error)
-                        }, status=status.HTTP_201_CREATED)
-                
-                # If test passed, try full serialization
-                try:
-                    serializer = self.get_serializer(created_images, many=True, context=serializer_context)
-                    serialized_data = serializer.data
-                    print(f"Full serialization successful for {len(created_images)} images")
-                    
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Bulk upload completed successfully in {elapsed_time:.2f}s")
-                    
-                    return Response({
-                        'message': f'{len(created_images)} images {action_text} successfully',
-                        'images': serialized_data
-                    }, status=status.HTTP_201_CREATED)
-                except Exception as serialization_error:
-                    print(f"Full serialization failed: {serialization_error}")
-                    print(f"Error type: {type(serialization_error)}")
-                    import traceback
-                    traceback.print_exc()
-                    
-                    # Return success response without serialized data
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Bulk upload completed with serialization warning in {elapsed_time:.2f}s")
-                    return Response({
-                        'message': f'{len(created_images)} images {action_text} successfully',
-                        'images_count': len(created_images),
-                        'warning': 'Images created but serialization failed - check server logs',
-                        'error_details': str(serialization_error)
-                    }, status=status.HTTP_201_CREATED)
-                
-            except Exception as e:
-                # If serialization fails, return a successful response with warning
-                print(f"Serialization error in bulk upload: {e}")
-                print(f"Error type: {type(e)}")
-                import traceback
-                traceback.print_exc()
-                
-                elapsed_time = time.time() - start_time
-                logger.info(f"Bulk upload completed with serialization error in {elapsed_time:.2f}s")
-                return Response({
-                    'message': f'{len(created_images)} images {action_text} successfully',
-                    'images_count': len(created_images),
-                    'warning': 'Images created but serialization failed - check server logs',
-                    'error_details': str(e)
-                }, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
-            # Catch any other unexpected errors
-            elapsed_time = time.time() - start_time
-            logger.error(f"Bulk upload failed after {elapsed_time:.2f}s: {e}")
-            print(f"Unexpected error in bulk upload: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            return Response({
-                'error': f'Unexpected error during bulk upload: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        images = request.FILES.getlist('images')
+        if not images:
+            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate images
+        for image in images:
+            if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:
+                return Response({'error': f'Image {image.name} is too large. Maximum size is 25MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
+
+        # Prepare images data for Celery (base64 encode)
+        images_data = []
+        for image in images:
+            images_data.append({
+                'name': image.name,
+                'content': base64.b64encode(image.read()).decode('utf-8'),
+                'content_type': image.content_type
+            })
+
+        # Trigger async task
+        task = async_bulk_upload_project_images.delay(project_id, images_data, replace_existing)
+        logger.info(f"Triggered async bulk upload task {task.id} for project {project_id} with {len(images)} images.")
+
+        return Response({
+            'message': f'Bulk upload started for {len(images)} images. This may take a few minutes.',
+            'task_id': task.id,
+            'status': 'processing'
+        }, status=status.HTTP_202_ACCEPTED)
 
 
 class ServiceImageViewSet(viewsets.ModelViewSet):
