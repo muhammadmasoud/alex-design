@@ -12,6 +12,35 @@ from django.core.files.storage import default_storage
 import uuid
 from datetime import datetime
 
+# Import configuration
+try:
+    from .image_optimizer_config import *
+except ImportError:
+    # Fallback configuration if config file doesn't exist
+    PRODUCTION_MODE = True
+    PRODUCTION_WEBP_QUALITY = 100
+    PRODUCTION_JPEG_QUALITY = 100
+    PRODUCTION_WEBP_LOSSLESS = True
+    PRODUCTION_WEBP_METHOD = 6
+    DEVELOPMENT_WEBP_QUALITY = 95
+    DEVELOPMENT_JPEG_QUALITY = 95
+    DEVELOPMENT_WEBP_LOSSLESS = False
+    DEVELOPMENT_WEBP_METHOD = 4
+    THUMBNAIL_METHOD = 'thumbnail'
+    THUMBNAIL_SIZES = {
+        'small': (400, 400),
+        'medium': (1000, 1000),
+        'large': (1600, 1600),
+        'original': None
+    }
+    # Advanced settings
+    PRESERVE_METADATA = True
+    PRESERVE_TRANSPARENCY = True
+    USE_SHARP_YUVA = True
+    ALPHA_QUALITY = 100
+    THUMBNAIL_SHARPENING = True
+    PRESERVE_ICC_PROFILE = True
+
 logger = logging.getLogger(__name__)
 
 class ImageOptimizer:
@@ -27,30 +56,34 @@ class ImageOptimizer:
     Configuration:
     - THUMBNAIL_METHOD: Choose the thumbnail creation method
     - THUMBNAIL_SIZES: Define the maximum dimensions for each size
-    - WEBP_QUALITY: Quality setting for WebP compression (85 = high quality)
+    - PRODUCTION_MODE: Set to True for production (lossless), False for development (faster)
+    - WEBP_QUALITY: Quality setting for WebP compression (100 = lossless for production)
+    - WEBP_LOSSLESS: Enable lossless WebP encoding for maximum quality preservation
+    - WEBP_METHOD: WebP compression method (6 = best quality, slowest)
     
     Usage:
+    - Set PRODUCTION_MODE = True for production use (0% quality loss, slower processing)
+    - Set PRODUCTION_MODE = False for development (faster processing, high quality)
     - Set THUMBNAIL_METHOD to 'thumbnail' for no cropping (recommended for most use cases)
     - Set THUMBNAIL_METHOD to 'padded' if you need consistent dimensions with padding
     - Set THUMBNAIL_METHOD to 'fit' if you need exact dimensions and cropping is acceptable
+    - WEBP_LOSSLESS=True ensures 0% quality loss for production use
     """
     
-    # Quality settings - optimized for web while maintaining visual quality
-    WEBP_QUALITY = 85  # High quality WebP
-    JPEG_QUALITY = 88  # High quality JPEG
+    # Quality settings - imported from configuration
+    WEBP_QUALITY = PRODUCTION_WEBP_QUALITY if PRODUCTION_MODE else DEVELOPMENT_WEBP_QUALITY
+    JPEG_QUALITY = PRODUCTION_JPEG_QUALITY if PRODUCTION_MODE else DEVELOPMENT_JPEG_QUALITY
+    WEBP_LOSSLESS = PRODUCTION_WEBP_LOSSLESS if PRODUCTION_MODE else DEVELOPMENT_WEBP_LOSSLESS
+    WEBP_METHOD = PRODUCTION_WEBP_METHOD if PRODUCTION_MODE else DEVELOPMENT_WEBP_METHOD
     
-    # Thumbnail creation method: 'fit' (crops to exact size), 'thumbnail' (preserves aspect ratio), 'padded' (adds padding)
-    THUMBNAIL_METHOD = 'thumbnail'  # Options: 'fit', 'thumbnail', 'padded'
+    # Production mode - imported from configuration
+    PRODUCTION_MODE = PRODUCTION_MODE
     
-    # Thumbnail sizes for different use cases
-    # These are maximum dimensions - images will be scaled down to fit within these bounds
-    # while preserving their aspect ratio (no cropping)
-    THUMBNAIL_SIZES = {
-        'small': (300, 300),      # For thumbnails and previews
-        'medium': (800, 800),     # For medium displays (increased from 600)
-        'large': (1200, 1200),    # For large displays
-        'original': None           # Keep original size
-    }
+    # Thumbnail creation method - imported from configuration
+    THUMBNAIL_METHOD = THUMBNAIL_METHOD
+    
+    # Thumbnail sizes - imported from configuration
+    THUMBNAIL_SIZES = THUMBNAIL_SIZES
     
     @classmethod
     def optimize_project_images(cls, project):
@@ -366,22 +399,103 @@ class ImageOptimizer:
     
     @classmethod
     def _create_optimized_webp(cls, original_path, webp_path, image_type):
-        """Create optimized WebP version of the image"""
+        """Create optimized WebP version of the image with maximum quality preservation"""
         try:
             with Image.open(original_path) as img:
-                # Convert to RGB if necessary (WebP doesn't support RGBA well)
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    # Create white background for transparent images
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
+                # Preserve original image data and metadata
+                original_img = img.copy()
+                
+                # Handle different color modes properly
+                if img.mode in ('RGBA', 'LA'):
+                    # For images with alpha channel, preserve transparency if possible
+                    if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
+                        # Lossless WebP supports alpha channel
+                        if img.mode == 'LA':
+                            img = img.convert('RGBA')
+                        # Keep RGBA for lossless WebP
+                    else:
+                        # For quality-based WebP, create white background
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'LA':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1])
+                        img = background
+                elif img.mode == 'P':
+                    # Handle palette images properly
+                    if img.info.get('transparency') is not None:
+                        # Palette image with transparency
                         img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                    img = background
-                elif img.mode != 'RGB':
+                        if not (cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS):
+                            # Create white background for quality-based WebP
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            background.paste(img, mask=img.split()[-1])
+                            img = background
+                    else:
+                        # Palette image without transparency
+                        img = img.convert('RGB')
+                elif img.mode in ('L', 'LA'):
+                    # Grayscale images
+                    if img.mode == 'LA':
+                        img = img.convert('RGBA')
+                        if not (cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS):
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            background.paste(img, mask=img.split()[-1])
+                            img = background
+                    else:
+                        img = img.convert('RGB')
+                elif img.mode not in ('RGB', 'RGBA'):
+                    # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
-                # Save as WebP with high quality
-                img.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
+                # Save as WebP with optimal settings
+                if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
+                    # Lossless WebP for maximum quality preservation
+                    save_kwargs = {
+                        'format': 'WEBP',
+                        'lossless': True,
+                        'method': cls.WEBP_METHOD,
+                        'optimize': True,
+                        'save_all': True
+                    }
+                    # Add advanced quality settings if available
+                    try:
+                        if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
+                            save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                        if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
+                            save_kwargs['sharp_yuva'] = True
+                    except:
+                        pass  # Ignore if PIL version doesn't support these options
+                    
+                    # Preserve metadata if possible and enabled
+                    if (hasattr(cls, 'PRESERVE_METADATA') and cls.PRESERVE_METADATA and 
+                        hasattr(original_img, 'info') and original_img.info):
+                        try:
+                            if original_img.info.get('exif'):
+                                save_kwargs['exif'] = original_img.info.get('exif', b'')
+                            if (hasattr(cls, 'PRESERVE_ICC_PROFILE') and cls.PRESERVE_ICC_PROFILE and 
+                                original_img.info.get('icc_profile')):
+                                save_kwargs['icc_profile'] = original_img.info.get('icc_profile', b'')
+                        except:
+                            pass  # Ignore metadata errors
+                else:
+                    # High quality WebP
+                    save_kwargs = {
+                        'format': 'WEBP',
+                        'quality': cls.WEBP_QUALITY,
+                        'method': cls.WEBP_METHOD,
+                        'optimize': True,
+                        'save_all': True
+                    }
+                    # Add advanced quality settings if available
+                    try:
+                        if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
+                            save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                        if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
+                            save_kwargs['sharp_yuva'] = True
+                    except:
+                        pass  # Ignore if PIL version doesn't support these options
+                
+                img.save(webp_path, **save_kwargs)
                 
                 # Set proper permissions
                 os.chmod(webp_path, 0o644)
@@ -392,17 +506,52 @@ class ImageOptimizer:
     
     @classmethod
     def _create_thumbnails(cls, original_path, output_folder, base_name, image_type):
-        """Create thumbnails in different sizes"""
+        """Create thumbnails in different sizes with maximum quality preservation"""
         try:
             with Image.open(original_path) as img:
-                # Convert to RGB if necessary
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
+                # Preserve original image data and metadata
+                original_img = img.copy()
+                
+                # Handle different color modes properly (same as main image processing)
+                if img.mode in ('RGBA', 'LA'):
+                    # For images with alpha channel, preserve transparency if possible
+                    if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
+                        # Lossless WebP supports alpha channel
+                        if img.mode == 'LA':
+                            img = img.convert('RGBA')
+                        # Keep RGBA for lossless WebP
+                    else:
+                        # For quality-based WebP, create white background
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'LA':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1])
+                        img = background
+                elif img.mode == 'P':
+                    # Handle palette images properly
+                    if img.info.get('transparency') is not None:
+                        # Palette image with transparency
                         img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                    img = background
-                elif img.mode != 'RGB':
+                        if not (cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS):
+                            # Create white background for quality-based WebP
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            background.paste(img, mask=img.split()[-1])
+                            img = background
+                    else:
+                        # Palette image without transparency
+                        img = img.convert('RGB')
+                elif img.mode in ('L', 'LA'):
+                    # Grayscale images
+                    if img.mode == 'LA':
+                        img = img.convert('RGBA')
+                        if not (cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS):
+                            background = Image.new('RGB', img.size, (255, 255, 255))
+                            background.paste(img, mask=img.split()[-1])
+                            img = background
+                    else:
+                        img = img.convert('RGB')
+                elif img.mode not in ('RGB', 'RGBA'):
+                    # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
                 # Create thumbnails for each size
@@ -410,22 +559,101 @@ class ImageOptimizer:
                     if dimensions is None:  # Skip original size
                         continue
                     
-                    # Choose thumbnail creation method based on configuration
+                    # Create high-quality thumbnail
                     if cls.THUMBNAIL_METHOD == 'fit':
-                        # Original method - crops to exact size
-                        thumbnail = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
+                        # Crop to exact size using best quality method
+                        thumbnail = ImageOps.fit(
+                            img, 
+                            dimensions, 
+                            method=Image.Resampling.LANCZOS,
+                            centering=(0.5, 0.5)
+                        )
                     elif cls.THUMBNAIL_METHOD == 'padded':
                         # Method with padding to maintain dimensions
-                        thumbnail = cls._create_single_padded_thumbnail(img, dimensions)
+                        thumbnail = cls._create_high_quality_padded_thumbnail(img, dimensions)
                     else:
-                        # Default method - preserves aspect ratio (no cropping)
-                        thumbnail = img.copy()
-                        thumbnail.thumbnail(dimensions, Image.Resampling.LANCZOS)
+                        # Default method - preserves aspect ratio with highest quality
+                        # Use resize instead of thumbnail for better quality control
+                        img_ratio = img.width / img.height
+                        target_ratio = dimensions[0] / dimensions[1]
+                        
+                        if img_ratio > target_ratio:
+                            # Image is wider - scale by width
+                            new_width = dimensions[0]
+                            new_height = int(dimensions[0] / img_ratio)
+                        else:
+                            # Image is taller - scale by height
+                            new_height = dimensions[1]
+                            new_width = int(dimensions[1] * img_ratio)
+                        
+                        # Use highest quality resampling
+                        thumbnail = img.resize(
+                            (new_width, new_height), 
+                            Image.Resampling.LANCZOS
+                        )
                     
-                    # Save as WebP
+                    # Apply sharpening if enabled
+                    if (hasattr(cls, 'THUMBNAIL_SHARPENING') and cls.THUMBNAIL_SHARPENING and 
+                        size_name in ['small', 'medium']):  # Only sharpen smaller thumbnails
+                        try:
+                            from PIL import ImageFilter
+                            # Apply subtle sharpening
+                            thumbnail = thumbnail.filter(ImageFilter.UnsharpMask(radius=0.5, percent=50, threshold=0))
+                        except:
+                            pass  # Ignore sharpening errors
+                    
+                    # Save as WebP with optimal settings
                     webp_filename = f"{base_name}_{size_name}.webp"
                     webp_path = os.path.join(output_folder, webp_filename)
-                    thumbnail.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
+                    
+                    if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
+                        # Lossless WebP for maximum quality preservation
+                        save_kwargs = {
+                            'format': 'WEBP',
+                            'lossless': True,
+                            'method': cls.WEBP_METHOD,
+                            'optimize': True,
+                            'save_all': True
+                        }
+                        # Add advanced quality settings if available
+                        try:
+                            if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
+                                save_kwargs['sharp_yuva'] = True
+                        except:
+                            pass  # Ignore if PIL version doesn't support these options
+                        
+                        # Preserve metadata if possible and enabled
+                        if (hasattr(cls, 'PRESERVE_METADATA') and cls.PRESERVE_METADATA and 
+                            hasattr(original_img, 'info') and original_img.info):
+                            try:
+                                if original_img.info.get('exif'):
+                                    save_kwargs['exif'] = original_img.info.get('exif', b'')
+                                if (hasattr(cls, 'PRESERVE_ICC_PROFILE') and cls.PRESERVE_ICC_PROFILE and 
+                                    original_img.info.get('icc_profile')):
+                                    save_kwargs['icc_profile'] = original_img.info.get('icc_profile', b'')
+                            except:
+                                pass  # Ignore metadata errors
+                    else:
+                        # High quality WebP
+                        save_kwargs = {
+                            'format': 'WEBP',
+                            'quality': cls.WEBP_QUALITY,
+                            'method': cls.WEBP_METHOD,
+                            'optimize': True,
+                            'save_all': True
+                        }
+                        # Add advanced quality settings if available
+                        try:
+                            if hasattr(cls, 'ALPHA_QUALITY') and cls.ALPHA_QUALITY:
+                                save_kwargs['alpha_quality'] = cls.ALPHA_QUALITY
+                            if hasattr(cls, 'USE_SHARP_YUVA') and cls.USE_SHARP_YUVA:
+                                save_kwargs['sharp_yuva'] = True
+                        except:
+                            pass  # Ignore if PIL version doesn't support these options
+                    
+                    thumbnail.save(webp_path, **save_kwargs)
                     
                     # Set proper permissions
                     os.chmod(webp_path, 0o644)
@@ -434,9 +662,11 @@ class ImageOptimizer:
             logger.error(f"Error creating thumbnails for {original_path}: {str(e)}")
             raise
     
+
+    
     @classmethod
-    def _create_single_padded_thumbnail(cls, img, dimensions):
-        """Create a single padded thumbnail"""
+    def _create_high_quality_padded_thumbnail(cls, img, dimensions):
+        """Create a single padded thumbnail with high quality and maximum preservation"""
         # Calculate scaling factor to fit within dimensions
         img_ratio = img.width / img.height
         target_ratio = dimensions[0] / dimensions[1]
@@ -511,10 +741,17 @@ class ImageOptimizer:
                     # Paste the thumbnail onto the background
                     final_thumbnail.paste(thumbnail, (x, y))
                     
-                    # Save as WebP
+                    # Save as WebP with lossless encoding for maximum quality
                     webp_filename = f"{base_name}_{size_name}_padded.webp"
                     webp_path = os.path.join(output_folder, webp_filename)
-                    final_thumbnail.save(webp_path, 'WEBP', quality=cls.WEBP_QUALITY, method=6)
+                    
+                    if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:
+                        # Use lossless WebP for maximum quality preservation (production)
+                        final_thumbnail.save(webp_path, 'WEBP', lossless=True, method=cls.WEBP_METHOD, optimize=True)
+                    else:
+                        # Use quality-based WebP (development mode or fallback)
+                        quality = cls.WEBP_QUALITY
+                        final_thumbnail.save(webp_path, 'WEBP', quality=quality, method=cls.WEBP_METHOD, optimize=True)
                     
                     # Set proper permissions
                     os.chmod(webp_path, 0o644)
