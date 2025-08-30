@@ -974,13 +974,16 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             try:
                 # Ensure serializer has proper context for URL building
                 serializer_context = self.get_serializer_context()
+                if not serializer_context:
+                    serializer_context = {}
                 serializer_context['request'] = request  # Ensure request is set
+                
+                logger.info(f"Using serializer context: {list(serializer_context.keys())}")
                 
                 # Test serialization with a single image first to catch errors early
                 if created_images:
                     try:
-                        test_serializer = self.get_serializer([created_images[0]], many=True)
-                        test_serializer.context = serializer_context
+                        test_serializer = self.get_serializer([created_images[0]], many=True, context=serializer_context)
                         test_data = test_serializer.data
                         print(f"Test serialization successful for first image")
                     except Exception as test_error:
@@ -989,6 +992,8 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                         import traceback
                         traceback.print_exc()
                         # If test fails, return success response without serialized data
+                        elapsed_time = time.time() - start_time
+                        logger.info(f"Bulk upload completed with serialization warning in {elapsed_time:.2f}s")
                         return Response({
                             'message': f'{len(created_images)} images {action_text} successfully',
                             'images_count': len(created_images),
@@ -998,8 +1003,7 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                 
                 # If test passed, try full serialization
                 try:
-                    serializer = self.get_serializer(created_images, many=True)
-                    serializer.context = serializer_context
+                    serializer = self.get_serializer(created_images, many=True, context=serializer_context)
                     serialized_data = serializer.data
                     print(f"Full serialization successful for {len(created_images)} images")
                     
@@ -1157,13 +1161,16 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
             try:
                 # Ensure serializer has proper context for URL building
                 serializer_context = self.get_serializer_context()
+                if not serializer_context:
+                    serializer_context = {}
                 serializer_context['request'] = request  # Ensure request is set
+                
+                logger.info(f"Using serializer context for service: {list(serializer_context.keys())}")
                 
                 # Test serialization with a single image first to catch errors early
                 if created_images:
                     try:
-                        test_serializer = self.get_serializer([created_images[0]], many=True)
-                        test_serializer.context = serializer_context
+                        test_serializer = self.get_serializer([created_images[0]], many=True, context=serializer_context)
                         test_data = test_serializer.data
                         print(f"Test serialization successful for first service image")
                     except Exception as test_error:
@@ -1181,8 +1188,7 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                 
                 # If test passed, try full serialization
                 try:
-                    serializer = self.get_serializer(created_images, many=True)
-                    serializer.context = serializer_context
+                    serializer = self.get_serializer(created_images, many=True, context=serializer_context)
                     serialized_data = serializer.data
                     print(f"Full serialization successful for {len(created_images)} service images")
                     
