@@ -35,24 +35,34 @@ class ProjectImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
         try:
-            if obj.optimized_image_medium:
+            # Safely check if optimized image paths exist and are valid
+            if obj.optimized_image_medium and obj.optimized_image_medium.strip():
                 # Use the medium optimized image if available
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
-                return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-            elif obj.optimized_image:
+                    # Ensure the path is properly formatted
+                    clean_path = obj.optimized_image_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_image_medium.replace('\\', '/').strip()}"
+            elif obj.optimized_image and obj.optimized_image.strip():
                 # Fallback to default optimized image
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
-                return f"/media/{obj.optimized_image.replace('\\', '/')}"
+                    clean_path = obj.optimized_image.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_image.replace('\\', '/').strip()}"
             elif obj.image:
                 # Fallback to original if no optimized version exists
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+                except Exception:
+                    # If URL building fails, return a safe fallback
+                    return f"/media/{obj.image.name}" if obj.image.name else None
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
@@ -60,27 +70,50 @@ class ProjectImageSerializer(serializers.ModelSerializer):
             return None
     
     def to_representation(self, instance):
-        """Custom representation to include optimized image URLs automatically"""
+        """
+        Custom representation to handle edge cases and prevent serialization errors
+        """
         try:
             representation = super().to_representation(instance)
             
-            # Use optimized image URLs from database
-            if instance.optimized_image_medium:
-                representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-                representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-            elif instance.optimized_image:
-                representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-                representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-            elif instance.image:
-                representation['image'] = instance.image.url
-                representation['image_url'] = instance.image.url
-            else:
+            # Safely handle image URLs with better error handling
+            try:
+                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                    clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.optimized_image and instance.optimized_image.strip():
+                    clean_path = instance.optimized_image.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.image:
+                    try:
+                        representation['image'] = instance.image.url
+                        representation['image_url'] = instance.image.url
+                    except Exception:
+                        # Fallback to media path if URL building fails
+                        representation['image'] = f"/media/{instance.image.name}" if instance.image.name else None
+                        representation['image_url'] = f"/media/{instance.image.name}" if instance.image.name else None
+                else:
+                    representation['image'] = None
+                    representation['image_url'] = None
+            except Exception as e:
+                # If image URL handling fails, set safe defaults
+                print(f"Error handling image URLs for ProjectImage {instance.id}: {e}")
                 representation['image'] = None
                 representation['image_url'] = None
             
             return representation
         except Exception as e:
-            # If representation fails, return a safe fallback
+            # If representation fails completely, return a safe fallback
             print(f"Error in to_representation for ProjectImage {instance.id}: {e}")
             return {
                 'id': instance.id,
@@ -107,24 +140,34 @@ class ServiceImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
         try:
-            if obj.optimized_image_medium:
+            # Safely check if optimized image paths exist and are valid
+            if obj.optimized_image_medium and obj.optimized_image_medium.strip():
                 # Use the medium optimized image if available
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
-                return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-            elif obj.optimized_image:
+                    # Ensure the path is properly formatted
+                    clean_path = obj.optimized_image_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_image_medium.replace('\\', '/').strip()}"
+            elif obj.optimized_image and obj.optimized_image.strip():
                 # Fallback to default optimized image
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
-                return f"/media/{obj.optimized_image.replace('\\', '/')}"
+                    clean_path = obj.optimized_image.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_image.replace('\\', '/').strip()}"
             elif obj.image:
                 # Fallback to original if no optimized version exists
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.image.url)
-                return obj.image.url
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+                except Exception:
+                    # If URL building fails, return a safe fallback
+                    return f"/media/{obj.image.name}" if obj.image.name else None
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
@@ -132,25 +175,50 @@ class ServiceImageSerializer(serializers.ModelSerializer):
             return None
     
     def to_representation(self, instance):
-        """Custom representation to include optimized image URLs automatically"""
+        """
+        Custom representation to handle edge cases and prevent serialization errors
+        """
         try:
             representation = super().to_representation(instance)
-            # Use optimized image URLs from database
-            if instance.optimized_image_medium:
-                representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-                representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-            elif instance.optimized_image:
-                representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-                representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-            elif instance.image:
-                representation['image'] = instance.image.url
-                representation['image_url'] = instance.image.url
-            else:
+            
+            # Safely handle image URLs with better error handling
+            try:
+                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                    clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.optimized_image and instance.optimized_image.strip():
+                    clean_path = instance.optimized_image.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.image:
+                    try:
+                        representation['image'] = instance.image.url
+                        representation['image_url'] = instance.image.url
+                    except Exception:
+                        # Fallback to media path if URL building fails
+                        representation['image'] = f"/media/{instance.image.name}" if instance.image.name else None
+                        representation['image_url'] = f"/media/{instance.image.name}" if instance.image.name else None
+                else:
+                    representation['image'] = None
+                    representation['image_url'] = None
+            except Exception as e:
+                # If image URL handling fails, set safe defaults
+                print(f"Error handling image URLs for ServiceImage {instance.id}: {e}")
                 representation['image'] = None
                 representation['image_url'] = None
+            
             return representation
         except Exception as e:
-            # If representation fails, return a safe fallback
+            # If representation fails completely, return a safe fallback
             print(f"Error in to_representation for ServiceImage {instance.id}: {e}")
             return {
                 'id': instance.id,
@@ -231,32 +299,81 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_featured_album_images(self, obj):
         """Get first few album images for preview - optimized"""
-        # Use prefetched data if available to avoid N+1 queries
-        if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
-            featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
-        else:
-            featured_images = obj.album_images.all()[:6]
-        return ProjectImageSerializer(featured_images, many=True, context=self.context).data
+        try:
+            # Use prefetched data if available to avoid N+1 queries
+            if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
+                featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
+            else:
+                featured_images = obj.album_images.all()[:6]
+            
+            # Safely serialize with error handling
+            try:
+                return ProjectImageSerializer(featured_images, many=True, context=self.context).data
+            except Exception as e:
+                print(f"Error serializing featured album images for project {obj.id}: {e}")
+                # Return empty list if serialization fails
+                return []
+        except Exception as e:
+            print(f"Error getting featured album images for project {obj.id}: {e}")
+            return []
     
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs automatically"""
-        representation = super().to_representation(instance)
-        
-        # Use optimized image URLs from database
-        if instance.optimized_image_medium:
-            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-        elif instance.optimized_image:
-            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-        elif instance.image:
-            representation['image'] = instance.image.url
-            representation['image_url'] = instance.image.url
-        else:
-            representation['image'] = None
-            representation['image_url'] = None
-        
-        return representation
+        try:
+            representation = super().to_representation(instance)
+            
+            # Safely handle image URLs with better error handling
+            try:
+                if instance.optimized_image_medium and instance.optimized_image_medium.strip():
+                    clean_path = instance.optimized_image_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.optimized_image and instance.optimized_image.strip():
+                    clean_path = instance.optimized_image.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['image'] = f"/media/{clean_path}"
+                        representation['image_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['image'] = None
+                        representation['image_url'] = None
+                elif instance.image:
+                    try:
+                        representation['image'] = instance.image.url
+                        representation['image_url'] = instance.image.url
+                    except Exception:
+                        # Fallback to media path if URL building fails
+                        representation['image'] = f"/media/{instance.image.name}" if instance.image.name else None
+                        representation['image_url'] = f"/media/{instance.image.name}" if instance.image.name else None
+                else:
+                    representation['image'] = None
+                    representation['image_url'] = None
+            except Exception as e:
+                # If image URL handling fails, set safe defaults
+                print(f"Error handling image URLs for Project {instance.id}: {e}")
+                representation['image'] = None
+                representation['image_url'] = None
+            
+            return representation
+        except Exception as e:
+            # If representation fails completely, return a safe fallback
+            print(f"Error in to_representation for Project {instance.id}: {e}")
+            return {
+                'id': instance.id,
+                'title': getattr(instance, 'title', ''),
+                'description': getattr(instance, 'description', ''),
+                'image': None,
+                'image_url': None,
+                'category_names': [],
+                'subcategory_names': [],
+                'album_images_count': 0,
+                'featured_album_images': [],
+                'project_date': getattr(instance, 'project_date', None),
+                'order': getattr(instance, 'order', 0)
+            }
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -277,73 +394,154 @@ class ServiceSerializer(serializers.ModelSerializer):
     def get_icon_url(self, obj):
         """Get the optimized icon URL from the database"""
         try:
-            if obj.optimized_icon_medium:
+            # Safely check if optimized icon paths exist and are valid
+            if obj.optimized_icon_medium and obj.optimized_icon_medium.strip():
                 # Use the medium optimized icon if available
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_icon_medium.replace('\\', '/')}")
-                return f"/media/{obj.optimized_icon_medium.replace('\\', '/')}"
-            elif obj.optimized_icon:
+                    # Ensure the path is properly formatted
+                    clean_path = obj.optimized_icon_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_icon_medium.replace('\\', '/').strip()}"
+            elif obj.optimized_icon and obj.optimized_icon.strip():
                 # Fallback to default optimized icon
                 request = self.context.get('request')
                 if request:
-                    return request.build_absolute_uri(f"/media/{obj.optimized_icon.replace('\\', '/')}")
-                return f"/media/{obj.optimized_icon.replace('\\', '/')}"
+                    clean_path = obj.optimized_icon.replace('\\', '/').strip()
+                    if clean_path:
+                        return request.build_absolute_uri(f"/media/{clean_path}")
+                return f"/media/{obj.optimized_icon.replace('\\', '/').strip()}"
             elif obj.icon:
                 # Fallback to original if no optimized version exists
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(obj.icon.url)
-                return obj.icon.url
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.icon.url)
+                    return obj.icon.url
+                except Exception:
+                    # If URL building fails, return a safe fallback
+                    return f"/media/{obj.icon.name}" if obj.icon.name else None
             return None
         except Exception as e:
             # If URL building fails, return a safe fallback
             print(f"Error building icon URL for Service {obj.id}: {e}")
             return None
-    
+
     def get_category_names(self, obj):
         """Get all category names as a list"""
-        return obj.get_category_names()
+        try:
+            return obj.get_category_names()
+        except Exception as e:
+            print(f"Error getting category names for Service {obj.id}: {e}")
+            return []
 
     def get_subcategory_names(self, obj):
         """Get all subcategory names as a list"""
-        return obj.get_subcategory_names()
+        try:
+            return obj.get_subcategory_names()
+        except Exception as e:
+            print(f"Error getting subcategory names for Service {obj.id}: {e}")
+            return []
     
     def get_category_name(self, obj):
         """Get first category name for backward compatibility"""
-        return obj.get_category_name()
+        try:
+            return obj.get_category_name()
+        except Exception as e:
+            print(f"Error getting category name for Service {obj.id}: {e}")
+            return ""
     
     def get_subcategory_name(self, obj):
         """Get first subcategory name for backward compatibility"""
-        return obj.get_subcategory_name()
+        try:
+            return obj.get_subcategory_name()
+        except Exception as e:
+            print(f"Error getting subcategory name for Service {obj.id}: {e}")
+            return ""
     
     def get_album_images_count(self, obj):
         """Get the count of album images - optimized to avoid extra queries"""
-        return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
+        try:
+            return getattr(obj, 'album_images_count_annotated', obj.album_images.count())
+        except Exception as e:
+            print(f"Error getting album images count for Service {obj.id}: {e}")
+            return 0
     
     def get_featured_album_images(self, obj):
         """Get all album images for preview - optimized"""
-        # Use prefetched data if available to avoid N+1 queries
-        if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
-            featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
-        else:
-            featured_images = obj.album_images.all()[:6]
-        return ServiceImageSerializer(featured_images, many=True, context=self.context).data
+        try:
+            # Use prefetched data if available to avoid N+1 queries
+            if hasattr(obj, '_prefetched_objects_cache') and 'album_images' in obj._prefetched_objects_cache:
+                featured_images = list(obj.album_images.all()[:6])  # Limit to 6 for performance
+            else:
+                featured_images = obj.album_images.all()[:6]
+            
+            # Safely serialize with error handling
+            try:
+                return ServiceImageSerializer(featured_images, many=True, context=self.context).data
+            except Exception as e:
+                print(f"Error serializing featured album images for service {obj.id}: {e}")
+                # Return empty list if serialization fails
+                return []
+        except Exception as e:
+            print(f"Error getting featured album images for service {obj.id}: {e}")
+            return []
     
     def to_representation(self, instance):
         """Custom representation to include optimized icon URLs automatically"""
-        representation = super().to_representation(instance)
-        # Use optimized icon URLs from database
-        if instance.optimized_icon_medium:
-            representation['icon'] = f"/media/{instance.optimized_icon_medium}"
-            representation['icon_url'] = f"/media/{instance.optimized_icon_medium}"
-        elif instance.optimized_icon:
-            representation['icon'] = f"/media/{instance.optimized_icon}"
-            representation['icon_url'] = f"/media/{instance.optimized_icon}"
-        elif instance.icon:
-            representation['icon'] = instance.icon.url
-            representation['icon_url'] = instance.icon.url
-        else:
-            representation['icon'] = None
-            representation['icon_url'] = None
-        return representation
+        try:
+            representation = super().to_representation(instance)
+            
+            # Safely handle icon URLs with better error handling
+            try:
+                if instance.optimized_icon_medium and instance.optimized_icon_medium.strip():
+                    clean_path = instance.optimized_icon_medium.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['icon'] = f"/media/{clean_path}"
+                        representation['icon_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['icon'] = None
+                        representation['icon_url'] = None
+                elif instance.optimized_icon and instance.optimized_icon.strip():
+                    clean_path = instance.optimized_icon.replace('\\', '/').strip()
+                    if clean_path:
+                        representation['icon'] = f"/media/{clean_path}"
+                        representation['icon_url'] = f"/media/{clean_path}"
+                    else:
+                        representation['icon'] = None
+                        representation['icon_url'] = None
+                elif instance.icon:
+                    try:
+                        representation['icon'] = instance.icon.url
+                        representation['icon_url'] = instance.icon.url
+                    except Exception:
+                        # Fallback to media path if URL building fails
+                        representation['icon'] = f"/media/{instance.icon.name}" if instance.icon.name else None
+                        representation['icon_url'] = f"/media/{instance.icon.name}" if instance.icon.name else None
+                else:
+                    representation['icon'] = None
+                    representation['icon_url'] = None
+            except Exception as e:
+                # If icon URL handling fails, set safe defaults
+                print(f"Error handling icon URLs for Service {instance.id}: {e}")
+                representation['icon'] = None
+                representation['icon_url'] = None
+            
+            return representation
+        except Exception as e:
+            # If representation fails completely, return a safe fallback
+            print(f"Error in to_representation for Service {instance.id}: {e}")
+            return {
+                'id': instance.id,
+                'name': getattr(instance, 'name', ''),
+                'description': getattr(instance, 'description', ''),
+                'icon': None,
+                'icon_url': None,
+                'price': str(getattr(instance, 'price', 0)),
+                'category_names': [],
+                'subcategory_names': [],
+                'album_images_count': 0,
+                'featured_album_images': [],
+                'order': getattr(instance, 'order', 0)
+            }

@@ -839,6 +839,7 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                                 existing_image.image.delete(save=False)
                         existing_images.delete()
                     except Exception as e:
+                        print(f"Error deleting existing images: {e}")
                         return Response({
                             'error': f'Failed to delete existing images: {str(e)}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -862,38 +863,65 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         # Rollback transaction on any error
                         transaction.set_rollback(True)
+                        print(f"Error creating image {image.name}: {e}")
                         return Response({
                             'error': f'Failed to create image {image.name}: {str(e)}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            serializer = self.get_serializer(created_images, many=True)
+            # Try to serialize the response with better error handling
             action_text = "replaced" if replace_existing else "added to"
             
             try:
-                # Try to serialize the response
-                print(f"Attempting to serialize {len(created_images)} images...")
                 # Ensure serializer has proper context for URL building
+                serializer = self.get_serializer(created_images, many=True)
                 serializer.context = self.get_serializer_context()
+                
+                # Test serialization with a single image first to catch errors early
+                if created_images:
+                    try:
+                        test_serializer = self.get_serializer([created_images[0]], many=True)
+                        test_serializer.context = self.get_serializer_context()
+                        test_data = test_serializer.data
+                        print(f"Test serialization successful for first image")
+                    except Exception as test_error:
+                        print(f"Test serialization failed for first image: {test_error}")
+                        # If test fails, return success response without serialized data
+                        return Response({
+                            'message': f'{len(created_images)} images {action_text} successfully',
+                            'images_count': len(created_images),
+                            'warning': 'Images created but serialization failed - check server logs',
+                            'error_details': str(test_error)
+                        }, status=status.HTTP_201_CREATED)
+                
+                # If test passed, try full serialization
                 serialized_data = serializer.data
-                print(f"Serialization successful, returning response...")
+                print(f"Full serialization successful for {len(created_images)} images")
+                
                 return Response({
                     'message': f'{len(created_images)} images {action_text} successfully',
                     'images': serialized_data
                 }, status=status.HTTP_201_CREATED)
+                
             except Exception as e:
-                # If serialization fails, return a simpler response
+                # If serialization fails, return a successful response with warning
                 print(f"Serialization error in bulk upload: {e}")
                 print(f"Error type: {type(e)}")
                 import traceback
                 traceback.print_exc()
+                
                 return Response({
                     'message': f'{len(created_images)} images {action_text} successfully',
                     'images_count': len(created_images),
-                    'warning': 'Images created but serialization failed - check server logs'
+                    'warning': 'Images created but serialization failed - check server logs',
+                    'error_details': str(e)
                 }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             # Catch any other unexpected errors
+            print(f"Unexpected error in bulk upload: {e}")
+            import traceback
+            traceback.print_exc()
+            
             return Response({
                 'error': f'Unexpected error during bulk upload: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -966,6 +994,7 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                                 existing_image.image.delete(save=False)
                         existing_images.delete()
                     except Exception as e:
+                        print(f"Error deleting existing service images: {e}")
                         return Response({
                             'error': f'Failed to delete existing images: {str(e)}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -989,38 +1018,65 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         # Rollback transaction on any error
                         transaction.set_rollback(True)
+                        print(f"Error creating service image {image.name}: {e}")
                         return Response({
                             'error': f'Failed to create image {image.name}: {str(e)}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            serializer = self.get_serializer(created_images, many=True)
+            # Try to serialize the response with better error handling
             action_text = "replaced" if replace_existing else "added to"
             
             try:
-                # Try to serialize the response
-                print(f"Attempting to serialize {len(created_images)} service images...")
                 # Ensure serializer has proper context for URL building
+                serializer = self.get_serializer(created_images, many=True)
                 serializer.context = self.get_serializer_context()
+                
+                # Test serialization with a single image first to catch errors early
+                if created_images:
+                    try:
+                        test_serializer = self.get_serializer([created_images[0]], many=True)
+                        test_serializer.context = self.get_serializer_context()
+                        test_data = test_serializer.data
+                        print(f"Test serialization successful for first service image")
+                    except Exception as test_error:
+                        print(f"Test serialization failed for first service image: {test_error}")
+                        # If test fails, return success response without serialized data
+                        return Response({
+                            'message': f'{len(created_images)} images {action_text} successfully',
+                            'images_count': len(created_images),
+                            'warning': 'Images created but serialization failed - check server logs',
+                            'error_details': str(test_error)
+                        }, status=status.HTTP_201_CREATED)
+                
+                # If test passed, try full serialization
                 serialized_data = serializer.data
-                print(f"Service image serialization successful, returning response...")
+                print(f"Full serialization successful for {len(created_images)} service images")
+                
                 return Response({
                     'message': f'{len(created_images)} images {action_text} successfully',
                     'images': serialized_data
                 }, status=status.HTTP_201_CREATED)
+                
             except Exception as e:
-                # If serialization fails, return a simpler response
+                # If serialization fails, return a successful response with warning
                 print(f"Serialization error in service bulk upload: {e}")
                 print(f"Error type: {type(e)}")
                 import traceback
                 traceback.print_exc()
+                
                 return Response({
                     'message': f'{len(created_images)} images {action_text} successfully',
                     'images_count': len(created_images),
-                    'warning': 'Images created but serialization failed - check server logs'
+                    'warning': 'Images created but serialization failed - check server logs',
+                    'error_details': str(e)
                 }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             # Catch any other unexpected errors
+            print(f"Unexpected error in service bulk upload: {e}")
+            import traceback
+            traceback.print_exc()
+            
             return Response({
                 'error': f'Unexpected error during bulk upload: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1034,7 +1090,29 @@ class ProjectAlbumView(APIView):
         try:
             project = Project.objects.get(id=project_id)
             album_images = project.album_images.all()
-            serializer = ProjectImageSerializer(album_images, many=True, context={'request': request})
+            
+            try:
+                serializer = ProjectImageSerializer(album_images, many=True, context={'request': request})
+                serialized_data = serializer.data
+                print(f"Successfully serialized {len(serialized_data)} album images for project {project_id}")
+            except Exception as e:
+                print(f"Error serializing album images for project {project_id}: {e}")
+                import traceback
+                traceback.print_exc()
+                # Return a fallback response if serialization fails
+                return Response({
+                    'project': {
+                        'id': project.id,
+                        'title': project.title,
+                        'description': project.description,
+                        'image': None,
+                        'category_name': project.get_category_name() if hasattr(project, 'get_category_name') else '',
+                        'subcategory_name': project.get_subcategory_name() if hasattr(project, 'get_subcategory_name') else ''
+                    },
+                    'album_images': [],
+                    'total_images': 0,
+                    'warning': 'Album images could not be serialized - check server logs'
+                })
             
             return Response({
                 'project': {
@@ -1045,13 +1123,20 @@ class ProjectAlbumView(APIView):
                     'category_name': project.get_category_name(),
                     'subcategory_name': project.get_subcategory_name()
                 },
-                'album_images': serializer.data,
-                'total_images': len(serializer.data)
+                'album_images': serialized_data,
+                'total_images': len(serialized_data)
             })
         except Project.DoesNotExist:
             return Response({
                 'error': 'Project not found'
             }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Unexpected error in ProjectAlbumView for project {project_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'error': 'Internal server error occurred while fetching album'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ServiceAlbumView(APIView):
@@ -1062,7 +1147,30 @@ class ServiceAlbumView(APIView):
         try:
             service = Service.objects.get(id=service_id)
             album_images = service.album_images.all()
-            serializer = ServiceImageSerializer(album_images, many=True, context={'request': request})
+            
+            try:
+                serializer = ServiceImageSerializer(album_images, many=True, context={'request': request})
+                serialized_data = serializer.data
+                print(f"Successfully serialized {len(serialized_data)} album images for service {service_id}")
+            except Exception as e:
+                print(f"Error serializing album images for service {service_id}: {e}")
+                import traceback
+                traceback.print_exc()
+                # Return a fallback response if serialization fails
+                return Response({
+                    'service': {
+                        'id': service.id,
+                        'name': service.name,
+                        'description': service.description,
+                        'icon': None,
+                        'price': str(service.price) if hasattr(service, 'price') else '0',
+                        'category_name': service.get_category_name() if hasattr(service, 'get_category_name') else '',
+                        'subcategory_name': service.get_subcategory_name() if hasattr(service, 'get_subcategory_name') else ''
+                    },
+                    'album_images': [],
+                    'total_images': 0,
+                    'warning': 'Album images could not be serialized - check server logs'
+                })
             
             return Response({
                 'service': {
@@ -1074,13 +1182,20 @@ class ServiceAlbumView(APIView):
                     'category_name': service.get_category_name(),
                     'subcategory_name': service.get_subcategory_name()
                 },
-                'album_images': serializer.data,
-                'total_images': len(serializer.data)
+                'album_images': serialized_data,
+                'total_images': len(serialized_data)
             })
         except Service.DoesNotExist:
             return Response({
                 'error': 'Service not found'
             }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Unexpected error in ServiceAlbumView for service {service_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'error': 'Internal server error occurred while fetching album'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Admin-specific ViewSets without pagination for dashboard
