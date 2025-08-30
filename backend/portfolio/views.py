@@ -309,6 +309,59 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def force_optimize(self, request, pk=None):
+        """
+        DEBUG ENDPOINT: Manually trigger optimization for a specific project
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        project = self.get_object()
+        
+        try:
+            from .image_optimizer import ImageOptimizer
+            
+            # Check project state
+            has_main_image = bool(project.image)
+            has_album_images = project.album_images.exists()
+            album_count = project.album_images.count()
+            
+            logger.info(f"Force optimization requested for: {project.title}")
+            logger.info(f"  Main image: {has_main_image}")
+            logger.info(f"  Album images: {album_count}")
+            logger.info(f"  Current optimized_image: {project.optimized_image}")
+            
+            if not has_main_image and not has_album_images:
+                return Response({
+                    'error': 'Project has no images to optimize',
+                    'project': project.title,
+                    'main_image': has_main_image,
+                    'album_images': album_count
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Force optimization
+            ImageOptimizer.optimize_project_images(project)
+            
+            # Refresh project from database
+            project.refresh_from_db()
+            
+            return Response({
+                'message': 'Optimization completed successfully',
+                'project': project.title,
+                'main_image': has_main_image,
+                'album_images': album_count,
+                'optimized_image_path': project.optimized_image,
+                'optimization_status': 'completed'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in force optimization: {e}")
+            return Response({
+                'error': f'Optimization failed: {str(e)}',
+                'project': project.title
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceSerializer
@@ -981,6 +1034,10 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             # Schedule SINGLE optimization call in background thread AFTER response
             def optimize_project_once():
                 try:
+                    # Wait a moment to ensure all database transactions are complete
+                    import time
+                    time.sleep(0.5)
+                    
                     # Prevent any signal-based optimization during our manual optimization
                     from django.db.models.signals import post_save
                     from .signals import optimize_project_images_on_save
@@ -992,8 +1049,9 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     from .image_optimizer import ImageOptimizer
                     ImageOptimizer.optimize_project_images(project)
                     
-                    # TRIGGER PROJECT SAVE to update optimization status
-                    project.save(update_fields=['order'])  # Minimal save to trigger signal
+                    # FORCE PROJECT SIGNAL TRIGGER - this ensures the project gets marked as optimized
+                    post_save.connect(optimize_project_images_on_save, sender=Project)
+                    project.save(update_fields=['order'])  # Minimal save to trigger updated signal
                     
                     elapsed_time = time.time() - start_time
                     logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} images")

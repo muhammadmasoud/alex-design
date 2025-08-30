@@ -25,20 +25,39 @@ currently_optimizing = set()
 def optimize_project_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project images when a project is created or updated
+    ENHANCED: Always queues optimization check for projects, regardless of when images are added
     """
     try:
-        # FIXED: Optimize if new project has images OR if existing project has images or album images
         should_optimize = False
         
-        if created and instance.image:
-            # New project with main image
+        if created:
+            # NEW PROJECT: Always queue optimization check (images might be added via bulk upload)
             should_optimize = True
-            logger.info(f"New project with main image - queuing optimization: {instance.title}")
-        elif not created:
-            # Existing project - check if it has any images (main or album)
-            if instance.image or instance.album_images.exists():
-                should_optimize = True
-                logger.info(f"Existing project with images - queuing optimization: {instance.title}")
+            logger.info(f"New project created - queuing optimization check: {instance.title}")
+        else:
+            # EXISTING PROJECT: Check if it has any images and isn't already optimized
+            has_main_image = bool(instance.image)
+            has_album_images = instance.album_images.exists()
+            
+            if has_main_image or has_album_images:
+                # Check if optimization is needed
+                needs_optimization = False
+                
+                # Check main image optimization
+                if has_main_image and not instance.optimized_image:
+                    needs_optimization = True
+                
+                # Check album image optimization
+                if has_album_images:
+                    unoptimized_album_images = instance.album_images.filter(
+                        optimized_image__isnull=True
+                    )
+                    if unoptimized_album_images.exists():
+                        needs_optimization = True
+                
+                if needs_optimization:
+                    should_optimize = True
+                    logger.info(f"Existing project needs optimization: {instance.title}")
         
         if should_optimize:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
@@ -53,8 +72,19 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
                         currently_optimizing.add(project_key)
                     
                     try:
-                        ImageOptimizer.optimize_project_images(instance)
-                        logger.info(f"Successfully optimized images for project: {instance.title}")
+                        # Re-fetch the project to get latest state
+                        fresh_project = Project.objects.get(id=instance.id)
+                        
+                        # Check if project actually has images to optimize
+                        has_main_image = bool(fresh_project.image)
+                        has_album_images = fresh_project.album_images.exists()
+                        
+                        if has_main_image or has_album_images:
+                            ImageOptimizer.optimize_project_images(fresh_project)
+                            logger.info(f"Successfully optimized images for project: {fresh_project.title}")
+                        else:
+                            logger.info(f"Project has no images to optimize yet: {fresh_project.title}")
+                            
                     except Exception as e:
                         logger.error(f"Failed to optimize project {instance.title}: {str(e)}")
                     finally:
