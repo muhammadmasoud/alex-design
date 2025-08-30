@@ -868,10 +868,29 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             
             serializer = self.get_serializer(created_images, many=True)
             action_text = "replaced" if replace_existing else "added to"
-            return Response({
-                'message': f'{len(created_images)} images {action_text} successfully',
-                'images': serializer.data
-            }, status=status.HTTP_201_CREATED)
+            
+            try:
+                # Try to serialize the response
+                print(f"Attempting to serialize {len(created_images)} images...")
+                # Ensure serializer has proper context for URL building
+                serializer.context = self.get_serializer_context()
+                serialized_data = serializer.data
+                print(f"Serialization successful, returning response...")
+                return Response({
+                    'message': f'{len(created_images)} images {action_text} successfully',
+                    'images': serialized_data
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # If serialization fails, return a simpler response
+                print(f"Serialization error in bulk upload: {e}")
+                print(f"Error type: {type(e)}")
+                import traceback
+                traceback.print_exc()
+                return Response({
+                    'message': f'{len(created_images)} images {action_text} successfully',
+                    'images_count': len(created_images),
+                    'warning': 'Images created but serialization failed - check server logs'
+                }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             # Catch any other unexpected errors
@@ -976,10 +995,29 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
             
             serializer = self.get_serializer(created_images, many=True)
             action_text = "replaced" if replace_existing else "added to"
-            return Response({
-                'message': f'{len(created_images)} images {action_text} successfully',
-                'images': serializer.data
-            }, status=status.HTTP_201_CREATED)
+            
+            try:
+                # Try to serialize the response
+                print(f"Attempting to serialize {len(created_images)} service images...")
+                # Ensure serializer has proper context for URL building
+                serializer.context = self.get_serializer_context()
+                serialized_data = serializer.data
+                print(f"Service image serialization successful, returning response...")
+                return Response({
+                    'message': f'{len(created_images)} images {action_text} successfully',
+                    'images': serialized_data
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # If serialization fails, return a simpler response
+                print(f"Serialization error in service bulk upload: {e}")
+                print(f"Error type: {type(e)}")
+                import traceback
+                traceback.print_exc()
+                return Response({
+                    'message': f'{len(created_images)} images {action_text} successfully',
+                    'images_count': len(created_images),
+                    'warning': 'Images created but serialization failed - check server logs'
+                }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             # Catch any other unexpected errors

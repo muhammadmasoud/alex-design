@@ -219,12 +219,22 @@ if IS_PRODUCTION:
         'django.core.files.uploadhandler.TemporaryFileUploadHandler',  # Stream to disk first
         'django.core.files.uploadhandler.MemoryFileUploadHandler',     # Small files in memory
     ]
+    
+    # Production image processing settings
+    IMAGE_OPTIMIZATION_ASYNC = True
+    IMAGE_OPTIMIZATION_THREADS = 2  # Number of background threads for image processing
+    IMAGE_OPTIMIZATION_TIMEOUT = 300  # 5 minutes timeout for image processing
 else:
     # File upload handlers for development
     FILE_UPLOAD_HANDLERS = [
         'django.core.files.uploadhandler.TemporaryFileUploadHandler',
         'django.core.files.uploadhandler.MemoryFileUploadHandler',
     ]
+    
+    # Development image processing settings
+    IMAGE_OPTIMIZATION_ASYNC = False
+    IMAGE_OPTIMIZATION_THREADS = 1
+    IMAGE_OPTIMIZATION_TIMEOUT = 60
 
 # Image validation settings
 ALLOWED_IMAGE_TYPES = [

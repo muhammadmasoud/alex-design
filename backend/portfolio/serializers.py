@@ -34,45 +34,67 @@ class ProjectImageSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
-        if obj.optimized_image_medium:
-            # Use the medium optimized image if available
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-        elif obj.optimized_image:
-            # Fallback to default optimized image
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image.replace('\\', '/')}"
-        elif obj.image:
-            # Fallback to original if no optimized version exists
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return None
+        try:
+            if obj.optimized_image_medium:
+                # Use the medium optimized image if available
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+            elif obj.optimized_image:
+                # Fallback to default optimized image
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image.replace('\\', '/')}"
+            elif obj.image:
+                # Fallback to original if no optimized version exists
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            return None
+        except Exception as e:
+            # If URL building fails, return a safe fallback
+            print(f"Error building image URL for ProjectImage {obj.id}: {e}")
+            return None
     
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs automatically"""
-        representation = super().to_representation(instance)
-        
-        # Use optimized image URLs from database
-        if instance.optimized_image_medium:
-            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-        elif instance.optimized_image:
-            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-        elif instance.image:
-            representation['image'] = instance.image.url
-            representation['image_url'] = instance.image.url
-        else:
-            representation['image'] = None
-            representation['image_url'] = None
-        
-        return representation
+        try:
+            representation = super().to_representation(instance)
+            
+            # Use optimized image URLs from database
+            if instance.optimized_image_medium:
+                representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+                representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+            elif instance.optimized_image:
+                representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+                representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+            elif instance.image:
+                representation['image'] = instance.image.url
+                representation['image_url'] = instance.image.url
+            else:
+                representation['image'] = None
+                representation['image_url'] = None
+            
+            return representation
+        except Exception as e:
+            # If representation fails, return a safe fallback
+            print(f"Error in to_representation for ProjectImage {instance.id}: {e}")
+            return {
+                'id': instance.id,
+                'image': None,
+                'image_url': None,
+                'title': getattr(instance, 'title', None),
+                'description': getattr(instance, 'description', None),
+                'order': getattr(instance, 'order', 0),
+                'original_filename': getattr(instance, 'original_filename', None),
+                'optimized_image': None,
+                'optimized_image_small': None,
+                'optimized_image_medium': None,
+                'optimized_image_large': None
+            }
 
 class ServiceImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -84,43 +106,65 @@ class ServiceImageSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
-        if obj.optimized_image_medium:
-            # Use the medium optimized image if available
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-        elif obj.optimized_image:
-            # Fallback to default optimized image
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image.replace('\\', '/')}"
-        elif obj.image:
-            # Fallback to original if no optimized version exists
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return None
+        try:
+            if obj.optimized_image_medium:
+                # Use the medium optimized image if available
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+            elif obj.optimized_image:
+                # Fallback to default optimized image
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image.replace('\\', '/')}"
+            elif obj.image:
+                # Fallback to original if no optimized version exists
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            return None
+        except Exception as e:
+            # If URL building fails, return a safe fallback
+            print(f"Error building image URL for ServiceImage {obj.id}: {e}")
+            return None
     
     def to_representation(self, instance):
         """Custom representation to include optimized image URLs automatically"""
-        representation = super().to_representation(instance)
-        # Use optimized image URLs from database
-        if instance.optimized_image_medium:
-            representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
-        elif instance.optimized_image:
-            representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-            representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
-        elif instance.image:
-            representation['image'] = instance.image.url
-            representation['image_url'] = instance.image.url
-        else:
-            representation['image'] = None
-            representation['image_url'] = None
-        return representation
+        try:
+            representation = super().to_representation(instance)
+            # Use optimized image URLs from database
+            if instance.optimized_image_medium:
+                representation['image'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+                representation['image_url'] = f"/media/{instance.optimized_image_medium.replace('\\', '/')}"
+            elif instance.optimized_image:
+                representation['image'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+                representation['image_url'] = f"/media/{instance.optimized_image.replace('\\', '/')}"
+            elif instance.image:
+                representation['image'] = instance.image.url
+                representation['image_url'] = instance.image.url
+            else:
+                representation['image'] = None
+                representation['image_url'] = None
+            return representation
+        except Exception as e:
+            # If representation fails, return a safe fallback
+            print(f"Error in to_representation for ServiceImage {instance.id}: {e}")
+            return {
+                'id': instance.id,
+                'image': None,
+                'image_url': None,
+                'title': getattr(instance, 'title', None),
+                'description': getattr(instance, 'description', None),
+                'order': getattr(instance, 'order', 0),
+                'original_filename': getattr(instance, 'original_filename', None),
+                'optimized_image': None,
+                'optimized_image_small': None,
+                'optimized_image_medium': None,
+                'optimized_image_large': None
+            }
 
 class ProjectSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()  # For reading the full URL
@@ -139,25 +183,30 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
-        if obj.optimized_image_medium:
-            # Use the medium optimized image if available
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
-        elif obj.optimized_image:
-            # Fallback to default optimized image
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
-            return f"/media/{obj.optimized_image.replace('\\', '/')}"
-        elif obj.image:
-            # Fallback to original if no optimized version exists
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return None
+        try:
+            if obj.optimized_image_medium:
+                # Use the medium optimized image if available
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image_medium.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image_medium.replace('\\', '/')}"
+            elif obj.optimized_image:
+                # Fallback to default optimized image
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_image.replace('\\', '/')}")
+                return f"/media/{obj.optimized_image.replace('\\', '/')}"
+            elif obj.image:
+                # Fallback to original if no optimized version exists
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            return None
+        except Exception as e:
+            # If URL building fails, return a safe fallback
+            print(f"Error building image URL for Project {obj.id}: {e}")
+            return None
     
     def get_category_name(self, obj):
         """Get category name"""
@@ -227,25 +276,30 @@ class ServiceSerializer(serializers.ModelSerializer):
     
     def get_icon_url(self, obj):
         """Get the optimized icon URL from the database"""
-        if obj.optimized_icon_medium:
-            # Use the medium optimized icon if available
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_icon_medium.replace('\\', '/')}")
-            return f"/media/{obj.optimized_icon_medium.replace('\\', '/')}"
-        elif obj.optimized_icon:
-            # Fallback to default optimized icon
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(f"/media/{obj.optimized_icon.replace('\\', '/')}")
-            return f"/media/{obj.optimized_icon.replace('\\', '/')}"
-        elif obj.icon:
-            # Fallback to original if no optimized version exists
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.icon.url)
-            return obj.icon.url
-        return None
+        try:
+            if obj.optimized_icon_medium:
+                # Use the medium optimized icon if available
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_icon_medium.replace('\\', '/')}")
+                return f"/media/{obj.optimized_icon_medium.replace('\\', '/')}"
+            elif obj.optimized_icon:
+                # Fallback to default optimized icon
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.optimized_icon.replace('\\', '/')}")
+                return f"/media/{obj.optimized_icon.replace('\\', '/')}"
+            elif obj.icon:
+                # Fallback to original if no optimized version exists
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.icon.url)
+                return obj.icon.url
+            return None
+        except Exception as e:
+            # If URL building fails, return a safe fallback
+            print(f"Error building icon URL for Service {obj.id}: {e}")
+            return None
     
     def get_category_names(self, obj):
         """Get all category names as a list"""

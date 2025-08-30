@@ -297,9 +297,18 @@ export default function UploadProgress({
 
               {/* Completion Actions */}
               {isCompleted && !error && (
-                <div className="flex gap-2">
-                  <Button onClick={onClose} className="flex-1">
-                    Done
+                <div className="space-y-3">
+                  <div className="text-center space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Upload Complete!</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Images are being processed in the background for optimal performance
+                    </p>
+                  </div>
+                  <Button onClick={onClose} className="w-full">
+                    Continue
                   </Button>
                 </div>
               )}
