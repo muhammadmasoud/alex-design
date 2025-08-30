@@ -576,3 +576,104 @@ class ImageOptimizer:
                     logger.info(f"Cleaned up optimized images in: {old_folder_path}")
         except Exception as e:
             logger.error(f"Error cleaning up optimized images in {old_folder_path}: {str(e)}")
+
+    @classmethod
+    def delete_project_folder(cls, project):
+        """
+        Completely delete a project folder and all its contents
+        """
+        try:
+            project_folder = cls._get_project_folder(project)
+            
+            if os.path.exists(project_folder):
+                import shutil
+                shutil.rmtree(project_folder)
+                logger.info(f"Completely deleted project folder: {project_folder}")
+                return True
+            else:
+                logger.info(f"Project folder does not exist: {project_folder}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error deleting project folder for {project.title}: {str(e)}")
+            return False
+
+    @classmethod
+    def delete_service_folder(cls, service):
+        """
+        Completely delete a service folder and all its contents
+        """
+        try:
+            service_folder = cls._get_service_folder(service)
+            
+            if os.path.exists(service_folder):
+                import shutil
+                shutil.rmtree(service_folder)
+                logger.info(f"Completely deleted service folder: {service_folder}")
+                return True
+            else:
+                logger.info(f"Service folder does not exist: {service_folder}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error deleting service folder for {service.name}: {str(e)}")
+            return False
+
+    @classmethod
+    def delete_image_file(cls, image_field):
+        """
+        Delete an individual image file and its optimized versions
+        """
+        try:
+            if not image_field:
+                return False
+                
+            # Get the original image path
+            original_path = image_field.path
+            
+            if os.path.exists(original_path):
+                # Delete the original file
+                os.remove(original_path)
+                logger.info(f"Deleted original image file: {original_path}")
+                
+                # Try to delete optimized versions if they exist
+                try:
+                    # Get the directory and filename
+                    image_dir = os.path.dirname(original_path)
+                    image_filename = os.path.basename(original_path)
+                    name_without_ext = os.path.splitext(image_filename)[0]
+                    
+                    # Check for webp folder
+                    webp_folder = os.path.join(image_dir, 'webp')
+                    if os.path.exists(webp_folder):
+                        # Look for optimized versions
+                        for size_name in cls.THUMBNAIL_SIZES.keys():
+                            if size_name != 'original':
+                                webp_path = os.path.join(webp_folder, f"{name_without_ext}_{size_name}.webp")
+                                if os.path.exists(webp_path):
+                                    os.remove(webp_path)
+                                    logger.info(f"Deleted optimized image: {webp_path}")
+                                
+                                # Also check for padded versions
+                                padded_path = os.path.join(webp_folder, f"{name_without_ext}_{size_name}_padded.webp")
+                                if os.path.exists(padded_path):
+                                    os.remove(padded_path)
+                                    logger.info(f"Deleted padded image: {padded_path}")
+                        
+                        # Check for main webp version
+                        main_webp = os.path.join(webp_folder, f"{name_without_ext}.webp")
+                        if os.path.exists(main_webp):
+                            os.remove(main_webp)
+                            logger.info(f"Deleted main webp image: {main_webp}")
+                            
+                except Exception as webp_error:
+                    logger.warning(f"Error cleaning up optimized images: {str(webp_error)}")
+                
+                return True
+            else:
+                logger.info(f"Image file does not exist: {original_path}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error deleting image file: {str(e)}")
+            return False

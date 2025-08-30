@@ -7,8 +7,10 @@ from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 from django.core.cache import cache
 from django.db import transaction
+from django.conf import settings
 import os
 import logging
+import shutil
 from .models import Project, Service, ProjectImage, ServiceImage
 from .image_optimizer import ImageOptimizer
 
@@ -120,10 +122,8 @@ def handle_project_title_change(sender, instance, **kwargs):
             try:
                 old_instance = Project.objects.get(pk=instance.pk)
                 if old_instance.title != instance.title:
-                    # Get old folder path
-                    from django.utils.text import slugify
-                    old_folder_name = slugify(old_instance.title)[:50]
-                    old_folder_path = os.path.join('media', 'projects', old_folder_name)
+                    # Get old folder path using ImageOptimizer method
+                    old_folder_path = ImageOptimizer._get_project_folder(old_instance)
                     
                     # Clean up old optimized images
                     if os.path.exists(old_folder_path):
@@ -146,10 +146,8 @@ def handle_service_name_change(sender, instance, **kwargs):
             try:
                 old_instance = Service.objects.get(pk=instance.pk)
                 if old_instance.name != instance.name:
-                    # Get old folder path
-                    from django.utils.text import slugify
-                    old_folder_name = slugify(old_instance.name)[:50]
-                    old_folder_path = os.path.join('media', 'services', old_folder_name)
+                    # Get old folder path using ImageOptimizer method
+                    old_folder_path = ImageOptimizer._get_service_folder(old_instance)
                     
                     # Clean up old optimized images
                     if os.path.exists(old_folder_path):
@@ -168,19 +166,26 @@ def cleanup_project_images_on_delete(sender, instance, **kwargs):
     Clean up entire project folder when a project is deleted
     """
     try:
-        # Get project folder path
-        from django.utils.text import slugify
-        project_folder_name = slugify(instance.title)[:50]
-        project_folder_path = os.path.join(settings.MEDIA_ROOT, 'projects', project_folder_name)
+        # Use the ImageOptimizer method to delete the entire project folder
+        success = ImageOptimizer.delete_project_folder(instance)
         
-        # Delete entire project folder if it exists
-        if os.path.exists(project_folder_path):
-            import shutil
-            shutil.rmtree(project_folder_path)
-            logger.info(f"Completely deleted project folder: {project_folder_path}")
+        if success:
+            logger.info(f"Successfully deleted project folder for: {instance.title}")
+        else:
+            logger.warning(f"Project folder deletion failed or folder didn't exist for: {instance.title}")
             
     except Exception as e:
         logger.error(f"Error deleting project folder for {instance.title}: {str(e)}")
+        # Try to get basic folder path as fallback
+        try:
+            from django.utils.text import slugify
+            project_folder_name = slugify(instance.title)[:50]
+            project_folder_path = os.path.join(settings.MEDIA_ROOT, 'projects', project_folder_name)
+            if os.path.exists(project_folder_path):
+                shutil.rmtree(project_folder_path)
+                logger.info(f"Fallback deletion successful for project folder: {project_folder_path}")
+        except Exception as fallback_error:
+            logger.error(f"Fallback deletion also failed for {instance.title}: {str(fallback_error)}")
 
 @receiver(post_delete, sender=Service)
 def cleanup_service_images_on_delete(sender, instance, **kwargs):
@@ -188,19 +193,26 @@ def cleanup_service_images_on_delete(sender, instance, **kwargs):
     Clean up entire service folder when a service is deleted
     """
     try:
-        # Get service folder path
-        from django.utils.text import slugify
-        service_folder_name = slugify(instance.name)[:50]
-        service_folder_path = os.path.join(settings.MEDIA_ROOT, 'services', service_folder_name)
+        # Use the ImageOptimizer method to delete the entire service folder
+        success = ImageOptimizer.delete_service_folder(instance)
         
-        # Delete entire service folder if it exists
-        if os.path.exists(service_folder_path):
-            import shutil
-            shutil.rmtree(service_folder_path)
-            logger.info(f"Completely deleted service folder: {service_folder_path}")
+        if success:
+            logger.info(f"Successfully deleted service folder for: {instance.name}")
+        else:
+            logger.warning(f"Service folder deletion failed or folder didn't exist for: {instance.name}")
             
     except Exception as e:
         logger.error(f"Error deleting service folder for {instance.name}: {str(e)}")
+        # Try to get basic folder path as fallback
+        try:
+            from django.utils.text import slugify
+            service_folder_name = slugify(instance.name)[:50]
+            service_folder_path = os.path.join(settings.MEDIA_ROOT, 'services', service_folder_name)
+            if os.path.exists(service_folder_path):
+                shutil.rmtree(service_folder_path)
+                logger.info(f"Fallback deletion successful for service folder: {service_folder_path}")
+        except Exception as fallback_error:
+            logger.error(f"Fallback deletion also failed for {instance.name}: {str(fallback_error)}")
 
 # Individual image deletion signals
 @receiver(post_delete, sender=ProjectImage)
@@ -210,10 +222,13 @@ def cleanup_project_album_image_on_delete(sender, instance, **kwargs):
     """
     try:
         if instance.image:
-            # Delete the actual image file
-            if os.path.exists(instance.image.path):
-                os.remove(instance.image.path)
-                logger.info(f"Deleted project album image file: {instance.image.path}")
+            # Use the ImageOptimizer method to delete the image file and its optimized versions
+            success = ImageOptimizer.delete_image_file(instance.image)
+            
+            if success:
+                logger.info(f"Successfully deleted project album image file and optimized versions for: {instance.image.name}")
+            else:
+                logger.warning(f"Project album image deletion failed or file didn't exist: {instance.image.name}")
                 
     except Exception as e:
         logger.error(f"Error deleting project album image file: {str(e)}")
@@ -225,10 +240,13 @@ def cleanup_service_album_image_on_delete(sender, instance, **kwargs):
     """
     try:
         if instance.image:
-            # Delete the actual image file
-            if os.path.exists(instance.image.path):
-                os.remove(instance.image.path)
-                logger.info(f"Deleted service album image file: {instance.image.path}")
+            # Use the ImageOptimizer method to delete the image file and its optimized versions
+            success = ImageOptimizer.delete_image_file(instance.image)
+            
+            if success:
+                logger.info(f"Successfully deleted service album image file and optimized versions for: {instance.image.name}")
+            else:
+                logger.warning(f"Service album image deletion failed or file didn't exist: {instance.image.name}")
                 
     except Exception as e:
         logger.error(f"Error deleting service album image file: {str(e)}")
