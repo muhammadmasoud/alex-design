@@ -192,9 +192,33 @@ export default function About() {
       animate="visible"
     >
       <SEO 
-        title="About Us – Alexandria Design" 
-        description="Learn about Alexandria Design, our vision, our founder Muhammad Ali Aboelhamd, and our expert team of architects and designers." 
-        canonical="/about" 
+        title="About Alexandria Design | Architecture Studio in Egypt | Our Team & Vision" 
+        description="Meet the Alexandria Design team led by Muhammad Ali Aboelhamd. Professional architects specializing in modern, sustainable design with 86K+ project views and 14K+ followers. Based in Alexandria, Egypt."
+        canonical="/about"
+        keywords="Alexandria Design team, Muhammad Ali Aboelhamd architect, architecture studio Egypt, sustainable architecture, modern design team, Alexandria architects"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          "mainEntity": {
+            "@type": "Organization",
+            "name": "Alexandria Design",
+            "description": "Professional architecture studio in Alexandria, Egypt",
+            "founder": {
+              "@type": "Person",
+              "name": "Muhammad Ali Aboelhamd",
+              "jobTitle": "Founder & Lead Architect",
+              "alumniOf": [
+                "Altınbaş University, Turkey",
+                "Alexandria University"
+              ]
+            },
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Alexandria",
+              "addressCountry": "Egypt"
+            }
+          }
+        }}
       />
 
       {/* Hero Section */}

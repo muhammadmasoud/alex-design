@@ -78,7 +78,23 @@ export default function ProjectsPage() {
        initial="hidden"
        animate="visible"
      >
-       <SEO title="Projects | Studio Arc" description="Explore residential, commercial, and public architecture projects." canonical="/projects" />
+       <SEO 
+         title="Architecture Projects | Alexandria Design Portfolio | Modern Residential & Commercial" 
+         description="Explore our portfolio of modern architecture projects in Egypt. Residential homes, commercial buildings, interior design, and sustainable architecture by Alexandria Design studio."
+         canonical="/projects"
+         keywords="architecture projects Egypt, residential architecture, commercial buildings, interior design projects, modern architecture portfolio, Alexandria Design projects, sustainable buildings"
+         structuredData={{
+           "@context": "https://schema.org",
+           "@type": "CollectionPage",
+           "name": "Architecture Projects Portfolio",
+           "description": "Portfolio of architecture projects by Alexandria Design",
+           "mainEntity": {
+             "@type": "ItemList",
+             "name": "Architecture Projects",
+             "description": "Collection of residential, commercial, and sustainable architecture projects"
+           }
+         }}
+       />
        <motion.header className="mb-6" variants={itemVariants}>
          <h1 className="font-heading text-2xl sm:text-3xl">Projects</h1>
          <p className="mt-2 text-sm sm:text-base text-muted-foreground">Browse our portfolio with filters, search, and pagination.</p>

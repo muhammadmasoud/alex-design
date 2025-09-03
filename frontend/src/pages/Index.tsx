@@ -9,8 +9,6 @@ import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-
-import ImageLightbox from "@/components/ImageLightbox";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
 
 
@@ -188,7 +186,25 @@ const Index = () => {
       initial="hidden"
       animate="visible"
     >
-      <SEO title="Studio Arc — Modern Architecture" description="Minimal, elegant portfolio of modern architecture: featured projects, services, and contact." canonical="/" />
+      <SEO 
+        title="Alexandria Design | Modern Architecture Studio | Egypt" 
+        description="Professional architecture studio in Alexandria, Egypt. Specializing in modern residential, commercial, and sustainable architecture design. Expert architectural services from concept to completion."
+        canonical="/"
+        keywords="architecture Alexandria Egypt, architectural design, modern architecture, residential design, commercial architecture, interior design, sustainable design, green architecture"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Alexandria Design",
+          "alternateName": "AlxDesigns",
+          "url": "https://alxdesigns.net",
+          "description": "Professional architecture studio in Alexandria, Egypt specializing in modern residential, commercial, and sustainable architecture design",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://alxdesigns.net/projects?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
       <section className="relative overflow-hidden animate-hero-entrance">
         <div className="relative h-[45vh] sm:h-[55vh] md:h-[65vh] lg:h-[70vh] w-full">
           {/* Main hero image with Ken Burns effect */}
@@ -197,18 +213,6 @@ const Index = () => {
             alt="Modern architecture facade hero" 
             loading="eager"
             fetchPriority="high"
-            onLoadStart={() => {
-              // Mark as used as soon as loading starts
-              markAsUsed();
-            }}
-            onLoad={() => {
-              // Ensure it's marked as used when fully loaded
-              markAsUsed();
-            }}
-            onError={() => {
-              // Handle any loading errors gracefully
-              markAsUsed(); // Still mark as used to avoid preload warnings
-            }}
             className="h-full w-full object-cover animate-hero-ken-burns" 
           />
           

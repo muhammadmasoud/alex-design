@@ -147,7 +147,26 @@ export default function ContactPage() {
 
   return (
     <div className="container py-8 sm:py-10 px-4 sm:px-6 max-w-2xl">
-      <SEO title="Contact | Studio Arc" description="Get in touch with our architecture studio." canonical="/contact" />
+      <SEO 
+        title="Contact Alexandria Design | Architecture Studio in Egypt | Get Quote"
+        description="Contact Alexandria Design for architectural services in Egypt. Get quotes for residential, commercial, and interior design projects. Professional architects in Alexandria, Egypt."
+        canonical="/contact"
+        keywords="contact Alexandria Design, architecture consultation Egypt, architectural services quote, Alexandria architects contact, Egypt architecture studio"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          "mainEntity": {
+            "@type": "Organization",
+            "name": "Alexandria Design",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "Customer Service",
+              "email": "mohamedaboelhamd765@gmail.com",
+              "availableLanguage": ["English", "Arabic"]
+            }
+          }
+        }}
+      />
       <h1 className="font-heading text-2xl sm:text-3xl mb-4 sm:mb-6">Contact</h1>
       {state?.service && (
         <div className="mb-6 p-4 bg-muted rounded-lg">

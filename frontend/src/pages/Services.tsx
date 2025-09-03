@@ -74,7 +74,52 @@ export default function ServicesPage() {
         initial="hidden"
         animate="visible"
       >
-        <SEO title="Services | Studio Arc" description="Architectural design, planning, consulting, and visualization services." canonical="/services" />
+        <SEO 
+          title="Architecture Services | Alexandria Design | Egypt | Residential & Commercial Design"
+          description="Professional architectural services in Egypt: Architectural design, interior design, site supervision, green architecture, furniture manufacturing. Expert architects serving Alexandria and Egypt."
+          canonical="/services"
+          keywords="architectural services Egypt, architecture design services, interior design services, site supervision, green architecture Egypt, furniture manufacturing, Alexandria architects"
+          structuredData={{
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "serviceType": "Architectural Services",
+            "provider": {
+              "@type": "Organization",
+              "name": "Alexandria Design"
+            },
+            "areaServed": {
+              "@type": "Place",
+              "name": "Egypt"
+            },
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Architecture Services",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Architectural Design"
+                  }
+                },
+                {
+                  "@type": "Offer", 
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Interior Design"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service", 
+                    "name": "Site Supervision"
+                  }
+                }
+              ]
+            }
+          }}
+        />
         <motion.header className="mb-6" variants={itemVariants}>
           <h1 className="font-heading text-2xl sm:text-3xl">Services</h1>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground">What we offer to bring your vision to life.</p>

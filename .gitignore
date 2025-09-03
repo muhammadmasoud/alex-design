@@ -416,10 +416,11 @@ cypress/videos/
 cypress/screenshots/
 
 # ================================
-# MISC
+# keys
 # ================================
-
 alx-designs-key
+alx-designs-key.ppk
+alx-designs-key.pub
 
 # Temporary files
 *.tmp
