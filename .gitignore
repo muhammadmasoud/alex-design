@@ -419,6 +419,8 @@ cypress/screenshots/
 # MISC
 # ================================
 
+alx-designs-key
+
 # Temporary files
 *.tmp
 *.temp
