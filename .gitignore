@@ -368,7 +368,7 @@ MEDIA_FILES_TROUBLESHOOTING.md
 alex-design.service
 
 # Nginx configuration files (may contain server details)
-
+nginx.conf
 
 # Backup files
 *.bak

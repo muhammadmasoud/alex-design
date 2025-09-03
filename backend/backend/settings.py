@@ -68,12 +68,9 @@ else:
 
 # Host settings based on environment
 if IS_PRODUCTION:
-    ALLOWED_HOSTS = [
-        "52.47.162.66",
-        "2a05:d012:18a:1600:539:6792:3ed7:c389",
-        "localhost",
-        "127.0.0.1",
-    ]
+    # Read ALLOWED_HOSTS from environment variable
+    allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', '52.47.162.66,localhost,127.0.0.1')
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 else:
     ALLOWED_HOSTS = ["*"]
 
