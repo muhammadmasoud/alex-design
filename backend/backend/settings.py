@@ -48,17 +48,21 @@ DEBUG = False if IS_PRODUCTION else env.bool("DEBUG", default=True)
 
 # CSRF Configuration for Production
 if IS_PRODUCTION:
-    CSRF_COOKIE_SECURE = False  # Set to False for HTTP, True for HTTPS
+    CSRF_COOKIE_SECURE = True  # Enable secure cookies for HTTPS
     CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF token
     CSRF_USE_SESSIONS = False
     CSRF_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_DOMAIN = None
     CSRF_COOKIE_PATH = '/'
     CSRF_TRUSTED_ORIGINS = [
+        "https://alxdesigns.net",
+        "https://www.alxdesigns.net",
         "http://52.47.162.66",
         "https://52.47.162.66", 
         "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
         "https://2a05:d012:18a:1600:539:6792:3ed7:c389",
+        "http://72.60.81.174",
+        "https://72.60.81.174",
     ]
 else:
     CSRF_COOKIE_SECURE = False
@@ -69,7 +73,7 @@ else:
 # Host settings based on environment
 if IS_PRODUCTION:
     # Read ALLOWED_HOSTS from environment variable
-    allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', '52.47.162.66,localhost,127.0.0.1')
+    allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'alxdesigns.net,www.alxdesigns.net,52.47.162.66,72.60.81.174,localhost,127.0.0.1')
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 else:
     ALLOWED_HOSTS = ["*"]
@@ -260,14 +264,17 @@ AUTH_USER_MODEL = 'portfolio.User'
 if IS_PRODUCTION:
     # Production CORS settings
     CORS_ALLOWED_ORIGINS = [
+        "https://alxdesigns.net",
+        "https://www.alxdesigns.net",
         "http://52.47.162.66",
         "http://2a05:d012:18a:1600:539:6792:3ed7:c389",
+        "http://72.60.81.174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
     
     # Production session settings
-    SESSION_COOKIE_SECURE = False  # Set to False for HTTP, True for HTTPS
+    SESSION_COOKIE_SECURE = True  # Enable secure cookies for HTTPS
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
@@ -282,7 +289,7 @@ if IS_PRODUCTION:
     
     # Additional security headers for production
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    # SECURE_SSL_REDIRECT = True  # Uncomment when HTTPS is properly configured
+    SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
 else:
     # Local development CORS settings
     CORS_ALLOWED_ORIGINS = [
