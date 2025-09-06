@@ -1,10 +1,11 @@
 import hero from "@/assets/hero-architecture.jpg";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import BookConsultantButton from "@/components/consultation/BookConsultantButton";
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Play, Pause, Eye, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, Eye } from "lucide-react";
 import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -28,10 +29,6 @@ const Index = () => {
   const [currentInteriorSlide, setCurrentInteriorSlide] = useState(0);
   const [isInteriorPlaying, setIsInteriorPlaying] = useState(true);
   const [interiorError, setInteriorError] = useState<string | null>(null);
-
-  // Lightbox state
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
 
 
 
@@ -133,17 +130,6 @@ const Index = () => {
 
     fetchArchitectureProjects();
   }, []);
-
-  // Lightbox handlers
-  const openLightbox = (src: string, alt: string, title: string) => {
-    setLightboxImage({ src, alt, title });
-    setLightboxOpen(true);
-  };
-
-  const closeLightbox = () => {
-    setLightboxOpen(false);
-    setLightboxImage(null);
-  };
 
   // Fetch interior design projects
   useEffect(() => {
@@ -303,11 +289,7 @@ const Index = () => {
                         alt={architectureProjects[currentSlide].title}
                         className="h-full w-full object-cover cursor-pointer"
                         onClick={() => {
-                          openLightbox(
-                            architectureProjects[currentSlide].image || "/placeholder.svg",
-                            architectureProjects[currentSlide].title,
-                            architectureProjects[currentSlide].title
-                          );
+                          navigate('/projects');
                         }}
                       />
                       
@@ -624,11 +606,7 @@ const Index = () => {
                         alt={interiorProjects[currentInteriorSlide].title}
                         className="h-full w-full object-cover cursor-pointer"
                         onClick={() => {
-                          openLightbox(
-                            interiorProjects[currentInteriorSlide].image || "/placeholder.svg",
-                            interiorProjects[currentInteriorSlide].title,
-                            interiorProjects[currentInteriorSlide].title
-                          );
+                          navigate('/projects');
                         }}
                       />
                       
@@ -925,6 +903,11 @@ const Index = () => {
                 Work With Us
               </Link>
             </Button>
+            <BookConsultantButton 
+              variant="outline" 
+              size="lg" 
+              className="w-full sm:w-auto"
+            />
           </motion.div>
         </div>
       </motion.section>

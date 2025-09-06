@@ -938,3 +938,300 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+# Consultation Booking Models
+class ConsultationSettings(models.Model):
+    """
+    Model for storing consultation settings like meeting duration and working hours
+    """
+    # Meeting configuration
+    meeting_duration_minutes = models.PositiveIntegerField(
+        default=45,
+        help_text="Duration of each consultation meeting in minutes"
+    )
+    buffer_time_minutes = models.PositiveIntegerField(
+        default=15,
+        help_text="Buffer time between meetings in minutes"
+    )
+    
+    # Working hours for each day (stored as time strings: "09:00-17:00" or empty for day off)
+    monday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Monday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    tuesday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Tuesday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    wednesday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Wednesday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    thursday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Thursday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    friday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Friday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    saturday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Saturday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    sunday_hours = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="Working hours for Sunday (e.g., '09:00-17:00') or leave empty for day off"
+    )
+    
+    # Other settings
+    booking_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable consultation bookings globally"
+    )
+    advance_booking_days = models.PositiveIntegerField(
+        default=30,
+        help_text="How many days in advance clients can book consultations"
+    )
+    minimum_notice_hours = models.PositiveIntegerField(
+        default=24,
+        help_text="Minimum hours notice required for booking a consultation"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Consultation Settings"
+        verbose_name_plural = "Consultation Settings"
+    
+    def __str__(self):
+        return f"Consultation Settings (Duration: {self.meeting_duration_minutes}min)"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one settings instance exists
+        if not self.pk and ConsultationSettings.objects.exists():
+            # Update existing instance instead of creating new one
+            existing = ConsultationSettings.objects.first()
+            for field in self._meta.fields:
+                if field.name not in ['id', 'created_at']:
+                    setattr(existing, field.name, getattr(self, field.name))
+            existing.save()
+            return existing
+        return super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_settings(cls):
+        """Get the consultation settings instance (creates default if none exists)"""
+        settings, created = cls.objects.get_or_create(
+            pk=1,
+            defaults={
+                'meeting_duration_minutes': 45,
+                'buffer_time_minutes': 15,
+                'monday_hours': '09:00-17:00',
+                'tuesday_hours': '09:00-17:00',
+                'wednesday_hours': '09:00-17:00',
+                'thursday_hours': '09:00-17:00',
+                'friday_hours': '09:00-17:00',
+                'saturday_hours': '',
+                'sunday_hours': '',
+                'booking_enabled': True,
+                'advance_booking_days': 30,
+                'minimum_notice_hours': 24,
+            }
+        )
+        return settings
+    
+    def get_working_hours_for_day(self, weekday):
+        """Get working hours for a specific weekday (0=Monday, 6=Sunday)"""
+        day_fields = [
+            'monday_hours', 'tuesday_hours', 'wednesday_hours', 
+            'thursday_hours', 'friday_hours', 'saturday_hours', 'sunday_hours'
+        ]
+        if 0 <= weekday <= 6:
+            return getattr(self, day_fields[weekday]) or ''
+        return ''
+    
+    def is_working_day(self, weekday):
+        """Check if a specific weekday is a working day"""
+        hours = self.get_working_hours_for_day(weekday)
+        return bool(hours and hours.strip())
+
+
+class DayOff(models.Model):
+    """
+    Model for storing specific days that are blocked for consultations
+    """
+    date = models.DateField(
+        unique=True,
+        help_text="Date to block for consultations"
+    )
+    reason = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Optional reason for the day off (e.g., 'Holiday', 'Personal')"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Day Off"
+        verbose_name_plural = "Days Off"
+        ordering = ['date']
+    
+    def __str__(self):
+        reason_text = f" ({self.reason})" if self.reason else ""
+        return f"Day Off: {self.date}{reason_text}"
+
+
+class Booking(models.Model):
+    """
+    Model for storing consultation bookings
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('cancelled', 'Cancelled'),
+        ('completed', 'Completed'),
+        ('no_show', 'No Show'),
+    ]
+    
+    # Client information
+    client_name = models.CharField(
+        max_length=100,
+        help_text="Full name of the client"
+    )
+    client_email = models.EmailField(
+        help_text="Email address of the client"
+    )
+    client_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Phone number of the client (optional)"
+    )
+    
+    # Booking details
+    date = models.DateField(
+        help_text="Date of the consultation"
+    )
+    time = models.TimeField(
+        help_text="Start time of the consultation"
+    )
+    duration_minutes = models.PositiveIntegerField(
+        help_text="Duration of the consultation in minutes"
+    )
+    
+    # Additional information
+    project_details = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Details about the client's project or consultation needs"
+    )
+    message = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional message from the client"
+    )
+    
+    # Status and admin notes
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="Current status of the booking"
+    )
+    admin_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Internal notes for admin use"
+    )
+    cancellation_reason = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Reason provided when cancelling the consultation"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Consultation Booking"
+        verbose_name_plural = "Consultation Bookings"
+        ordering = ['-date', '-time']
+        unique_together = ['date', 'time']  # Prevent double booking same time slot
+        indexes = [
+            models.Index(fields=['date', 'time']),
+            models.Index(fields=['status']),
+            models.Index(fields=['client_email']),
+        ]
+    
+    def __str__(self):
+        return f"{self.client_name} - {self.date} {self.time} ({self.status})"
+    
+    def get_end_time(self):
+        """Calculate the end time of the consultation"""
+        from datetime import datetime, timedelta
+        start_datetime = datetime.combine(self.date, self.time)
+        end_datetime = start_datetime + timedelta(minutes=self.duration_minutes)
+        return end_datetime.time()
+    
+    def is_past(self):
+        """Check if the consultation date is in the past"""
+        from datetime import date
+        return self.date < date.today()
+    
+    @classmethod
+    def has_monthly_booking(cls, client_email, target_date):
+        """Check if client already has a booking in the same month"""
+        from datetime import date, timedelta
+        
+        # Get the first and last day of the target month
+        first_day = target_date.replace(day=1)
+        if target_date.month == 12:
+            last_day = target_date.replace(year=target_date.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            last_day = target_date.replace(month=target_date.month + 1, day=1) - timedelta(days=1)
+        
+        # Check for existing bookings in that month (excluding cancelled ones)
+        existing_bookings = cls.objects.filter(
+            client_email=client_email,
+            date__gte=first_day,
+            date__lte=last_day,
+            status__in=['pending', 'confirmed', 'completed']  # Exclude cancelled and no_show
+        )
+        
+        return existing_bookings.exists()
+    
+    def get_datetime_range(self):
+        """Get the full datetime range of the consultation"""
+        from datetime import datetime, timedelta
+        start_datetime = datetime.combine(self.date, self.time)
+        end_datetime = start_datetime + timedelta(minutes=self.duration_minutes)
+        return start_datetime, end_datetime
+    
+    def is_past(self):
+        """Check if the consultation is in the past"""
+        from datetime import datetime
+        consultation_datetime = datetime.combine(self.date, self.time)
+        return consultation_datetime < datetime.now()
+    
+    def can_be_cancelled(self):
+        """Check if the booking can still be cancelled (not in the past and not already cancelled/completed)"""
+        return not self.is_past() and self.status not in ['cancelled', 'completed', 'no_show']

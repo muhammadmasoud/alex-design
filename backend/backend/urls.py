@@ -12,6 +12,11 @@ from portfolio.category_views import (
     ProjectCategoryViewSet, ProjectSubcategoryViewSet,
     ServiceCategoryViewSet, ServiceSubcategoryViewSet, PublicCategoryView
 )
+from portfolio.consultation_views import (
+    ConsultationSettingsViewSet, DayOffViewSet, BookingViewSet,
+    PublicBookingView, AvailableTimeSlotsView, ConsultationSettingsPublicView,
+    PublicDaysOffView, CheckMonthlyBookingView
+)
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
@@ -29,6 +34,11 @@ router.register(r'admin/project-subcategories', ProjectSubcategoryViewSet)
 router.register(r'admin/service-categories', ServiceCategoryViewSet)
 router.register(r'admin/service-subcategories', ServiceSubcategoryViewSet)
 
+# Consultation booking system routes
+router.register(r'admin/consultation-settings', ConsultationSettingsViewSet, basename='consultation-settings')
+router.register(r'admin/days-off', DayOffViewSet, basename='days-off')
+router.register(r'admin/bookings', BookingViewSet, basename='bookings')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
@@ -43,6 +53,13 @@ urlpatterns = [
     path('api/contact/', csrf_exempt(ContactView.as_view()), name='contact'),
     path('api/projects/<int:project_id>/album/', ProjectAlbumView.as_view(), name='project-album'),
     path('api/services/<int:service_id>/album/', ServiceAlbumView.as_view(), name='service-album'),
+    
+    # Consultation booking system endpoints
+    path('api/consultations/book/', csrf_exempt(PublicBookingView.as_view()), name='public-booking'),
+    path('api/consultations/available-slots/', AvailableTimeSlotsView.as_view(), name='available-slots'),
+    path('api/consultations/settings/', ConsultationSettingsPublicView.as_view(), name='consultation-settings-public'),
+    path('api/consultations/days-off/', PublicDaysOffView.as_view(), name='public-days-off'),
+    path('api/consultations/check-monthly/', CheckMonthlyBookingView.as_view(), name='check-monthly-booking'),
 ]
 
 # Enhanced media file serving for better image loading

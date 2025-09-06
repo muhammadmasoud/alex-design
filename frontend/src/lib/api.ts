@@ -95,10 +95,20 @@ export const endpoints = {
     projectSubcategories: "/admin/project-subcategories/",
     serviceCategories: "/admin/service-categories/",
     serviceSubcategories: "/admin/service-subcategories/",
+    consultationSettings: "/admin/consultation-settings/",
+    daysOff: "/admin/days-off/",
+    bookings: "/admin/bookings/",
   },
   contact: "/contact/",
   categories: {
     subcategories: "/categories/subcategories/",
+  },
+  consultations: {
+    book: "/consultations/book/",
+    availableSlots: "/consultations/available-slots/",
+    settings: "/consultations/settings/",
+    daysOff: "/consultations/days-off/",
+    checkMonthly: "/consultations/check-monthly/",
   },
 };
 

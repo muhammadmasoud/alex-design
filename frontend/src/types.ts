@@ -68,3 +68,81 @@ export interface ServiceAlbumResponse {
   album_images: AlbumImage[];
   total_images: number;
 }
+
+// Consultation Booking Types
+export interface ConsultationSettings {
+  id?: number;
+  meeting_duration_minutes: number;
+  buffer_time_minutes: number;
+  monday_hours: string;
+  tuesday_hours: string;
+  wednesday_hours: string;
+  thursday_hours: string;
+  friday_hours: string;
+  saturday_hours: string;
+  sunday_hours: string;
+  booking_enabled: boolean;
+  advance_booking_days: number;
+  minimum_notice_hours: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PublicConsultationSettings {
+  booking_enabled: boolean;
+  meeting_duration_minutes: number;
+  advance_booking_days: number;
+  minimum_notice_hours: number;
+  working_hours: {
+    monday: string;
+    tuesday: string;
+    wednesday: string;
+    thursday: string;
+    friday: string;
+    saturday: string;
+    sunday: string;
+  };
+}
+
+export interface DayOff {
+  id?: number;
+  date: string;
+  reason?: string;
+  created_at?: string;
+}
+
+export interface Booking {
+  id?: number;
+  client_name: string;
+  client_email: string;
+  client_phone?: string;
+  date: string;
+  time: string;
+  end_time?: string;
+  duration_minutes: number;
+  project_details?: string;
+  message?: string;
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  admin_notes?: string;
+  is_past?: boolean;
+  can_be_cancelled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PublicBookingData {
+  client_name: string;
+  client_email: string;
+  client_phone?: string;
+  date: string;
+  time: string;
+  duration_minutes?: number;
+  project_details?: string;
+  message?: string;
+}
+
+export interface AvailableSlots {
+  date: string;
+  available_slots: string[];
+  total_slots: number;
+}

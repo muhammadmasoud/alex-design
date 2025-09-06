@@ -2,10 +2,9 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, BarChart3, Settings, ImageIcon, FileText, FolderOpen } from "lucide-react";
+import { ImageIcon, FileText, FolderOpen, Calendar } from "lucide-react";
 import SEO from "@/components/SEO";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const ProjectManagement = lazy(() => import("@/components/admin/ProjectManagement"));
 const ServiceManagement = lazy(() => import("@/components/admin/ServiceManagement"));
 const CategoryManagement = lazy(() => import("@/components/admin/CategoryManagement"));
+const ConsultationManagement = lazy(() => import("@/components/admin/ConsultationManagement"));
 const AdminStats = lazy(() => import("@/components/admin/AdminStats"));
 
 interface DashboardData {
@@ -226,7 +226,7 @@ export default function AdminDashboard() {
         </Suspense>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <ImageIcon className="h-4 w-4" />
               Projects
@@ -234,6 +234,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="services" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Services
+            </TabsTrigger>
+            <TabsTrigger value="consultations" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Consultations
             </TabsTrigger>
             <TabsTrigger value="categories" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
@@ -283,6 +287,28 @@ export default function AdminDashboard() {
               <ServiceManagement 
                 onUpdate={handleDataUpdate}
                 onStorageUpdate={handleStorageUpdate}
+              />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="consultations" className="mt-6">
+            <Suspense fallback={
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            }>
+              <ConsultationManagement 
+                onUpdate={handleDataUpdate}
               />
             </Suspense>
           </TabsContent>

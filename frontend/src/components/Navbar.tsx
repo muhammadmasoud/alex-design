@@ -2,17 +2,24 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
-import { Menu, User } from "lucide-react";
+import { Menu, User, CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import BookingModal from "@/components/consultation/BookingModal";
 import logoImage from "@/assets/images/logo.png";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const handleBookingClick = () => {
+    setIsBookingModalOpen(true);
   };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -39,7 +46,22 @@ export default function Navbar() {
             <NavLink to="/admin-dashboard" className={linkClass}>Admin</NavLink>
           )}
         </nav>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 md:gap-3">
+          {/* Desktop Book Consultant Button */}
+          <Button 
+            onClick={handleBookingClick}
+            className="hidden sm:flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg transform transition-all duration-300 hover:scale-[1.05] hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] relative overflow-hidden group px-3 sm:px-4"
+            size="sm"
+          >
+            {/* Animated background shimmer effect */}
+            <div className="absolute inset-0 -top-2 -left-2 bg-gradient-to-r from-transparent via-white/20 to-transparent rotate-12 w-6 h-full transition-transform duration-700 transform -translate-x-full group-hover:translate-x-full"></div>
+            <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:rotate-12" />
+            <span className="font-medium text-xs sm:text-sm">
+              <span className="hidden md:inline">Book Consultation</span>
+              <span className="md:hidden">Book</span>
+            </span>
+          </Button>
+
           {/* Mobile menu trigger */}
           <Sheet>
             <SheetTrigger asChild>
@@ -67,6 +89,18 @@ export default function Navbar() {
                 {isAdmin && (
                   <SheetClose asChild><NavLink to="/admin-dashboard" className="block px-4 py-3 rounded-lg text-base font-medium hover:bg-accent/60 transition-colors">Admin</NavLink></SheetClose>
                 )}
+                
+                {/* Mobile Book Consultant Button */}
+                <SheetClose asChild>
+                  <Button 
+                    onClick={handleBookingClick}
+                    className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                    size="lg"
+                  >
+                    <CalendarIcon className="h-5 w-5 mr-2" />
+                    Book Consultation
+                  </Button>
+                </SheetClose>
               </nav>
               <div className="mt-8 pt-6 border-t border-border">
                 {!isAuthenticated ? (
@@ -107,6 +141,12 @@ export default function Navbar() {
           <ThemeToggle />
         </div>
       </div>
+      
+      {/* Booking Modal */}
+      <BookingModal 
+        open={isBookingModalOpen} 
+        onOpenChange={setIsBookingModalOpen} 
+      />
     </header>
   );
 }

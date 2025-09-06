@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import BookConsultantButton from "@/components/consultation/BookConsultantButton";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
@@ -199,6 +200,7 @@ export default function ContactPage() {
           <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
             {isSubmitting ? "Sending..." : "Send message"}
           </Button>
+          <BookConsultantButton variant="outline" size="lg" className="w-full" />
           <Button 
             type="button" 
             onClick={handleWhatsAppRedirect}

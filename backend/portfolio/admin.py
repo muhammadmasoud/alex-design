@@ -5,7 +5,8 @@ from .models import (
     Project, Service, User, 
     ProjectCategory, ProjectSubcategory, 
     ServiceCategory, ServiceSubcategory,
-    ProjectImage, ServiceImage
+    ProjectImage, ServiceImage,
+    ConsultationSettings, DayOff, Booking
 )
 
 class ProjectImageInline(admin.TabularInline):
@@ -613,3 +614,156 @@ class ServiceImageAdmin(admin.ModelAdmin):
             )
         return "No image"
     optimized_paths.short_description = "Image Paths"
+
+
+# Consultation Booking System Admin
+@admin.register(ConsultationSettings)
+class ConsultationSettingsAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'booking_enabled', 'meeting_duration_minutes', 'buffer_time_minutes', 'advance_booking_days', 'minimum_notice_hours', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Meeting Configuration', {
+            'fields': ('booking_enabled', 'meeting_duration_minutes', 'buffer_time_minutes'),
+            'description': 'Basic settings for consultation meetings.'
+        }),
+        ('Working Hours', {
+            'fields': (
+                'monday_hours', 'tuesday_hours', 'wednesday_hours', 
+                'thursday_hours', 'friday_hours', 'saturday_hours', 'sunday_hours'
+            ),
+            'description': 'Set working hours for each day (e.g., "09:00-17:00") or leave empty for days off.'
+        }),
+        ('Booking Rules', {
+            'fields': ('advance_booking_days', 'minimum_notice_hours'),
+            'description': 'Rules for when clients can book consultations.'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Only allow one settings instance"""
+        return not ConsultationSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        """Prevent deletion of settings"""
+        return False
+
+
+@admin.register(DayOff)
+class DayOffAdmin(admin.ModelAdmin):
+    list_display = ('date', 'reason', 'created_at')
+    list_filter = ('date', 'created_at')
+    search_fields = ('reason',)
+    readonly_fields = ('created_at',)
+    ordering = ('-date',)
+    date_hierarchy = 'date'
+    
+    fieldsets = (
+        ('Day Off Information', {
+            'fields': ('date', 'reason')
+        }),
+        ('Metadata', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Show future and recent days off"""
+        from datetime import date, timedelta
+        # Show days off from 30 days ago onwards
+        cutoff_date = date.today() - timedelta(days=30)
+        return super().get_queryset(request).filter(date__gte=cutoff_date)
+
+
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    list_display = ('client_name', 'client_email', 'date', 'time', 'duration_minutes', 'status', 'created_at', 'is_past_due')
+    list_filter = ('status', 'date', 'created_at', 'duration_minutes')
+    search_fields = ('client_name', 'client_email', 'project_details', 'message')
+    readonly_fields = ('created_at', 'updated_at', 'is_past_due', 'get_end_time', 'get_datetime_range')
+    ordering = ('-date', '-time')
+    date_hierarchy = 'date'
+    
+    fieldsets = (
+        ('Client Information', {
+            'fields': ('client_name', 'client_email', 'client_phone')
+        }),
+        ('Booking Details', {
+            'fields': ('date', 'time', 'duration_minutes', 'get_end_time', 'status')
+        }),
+        ('Project Information', {
+            'fields': ('project_details', 'message'),
+            'classes': ('collapse',)
+        }),
+        ('Admin Management', {
+            'fields': ('admin_notes', 'cancellation_reason'),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at', 'is_past_due', 'get_datetime_range'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['mark_confirmed', 'mark_cancelled', 'mark_completed', 'mark_no_show']
+    
+    def is_past_due(self, obj):
+        """Show if the booking is in the past"""
+        past = obj.is_past()
+        if past:
+            return format_html('<span style="color: red;">✗ Past</span>')
+        return format_html('<span style="color: green;">✓ Future</span>')
+    is_past_due.short_description = "Status"
+    is_past_due.admin_order_field = 'date'
+    
+    def get_end_time(self, obj):
+        """Show the end time of the consultation"""
+        return obj.get_end_time()
+    get_end_time.short_description = "End Time"
+    
+    def get_datetime_range(self, obj):
+        """Show the full datetime range"""
+        start_dt, end_dt = obj.get_datetime_range()
+        return format_html(
+            '<strong>Start:</strong> {}<br><strong>End:</strong> {}',
+            start_dt.strftime('%Y-%m-%d %H:%M'),
+            end_dt.strftime('%Y-%m-%d %H:%M')
+        )
+    get_datetime_range.short_description = "Full Schedule"
+    
+    # Custom actions
+    def mark_confirmed(self, request, queryset):
+        """Mark selected bookings as confirmed"""
+        updated = queryset.update(status='confirmed')
+        self.message_user(request, f'{updated} booking(s) marked as confirmed.')
+    mark_confirmed.short_description = "Mark selected bookings as confirmed"
+    
+    def mark_cancelled(self, request, queryset):
+        """Mark selected bookings as cancelled"""
+        updated = queryset.update(status='cancelled')
+        self.message_user(request, f'{updated} booking(s) marked as cancelled.')
+    mark_cancelled.short_description = "Mark selected bookings as cancelled"
+    
+    def mark_completed(self, request, queryset):
+        """Mark selected bookings as completed"""
+        updated = queryset.update(status='completed')
+        self.message_user(request, f'{updated} booking(s) marked as completed.')
+    mark_completed.short_description = "Mark selected bookings as completed"
+    
+    def mark_no_show(self, request, queryset):
+        """Mark selected bookings as no show"""
+        updated = queryset.update(status='no_show')
+        self.message_user(request, f'{updated} booking(s) marked as no show.')
+    mark_no_show.short_description = "Mark selected bookings as no show"
+    
+    def get_queryset(self, request):
+        """Optimize queries and show recent bookings"""
+        from datetime import date, timedelta
+        # Show bookings from 90 days ago onwards to keep admin manageable
+        cutoff_date = date.today() - timedelta(days=90)
+        return super().get_queryset(request).filter(date__gte=cutoff_date)

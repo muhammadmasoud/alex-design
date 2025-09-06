@@ -447,3 +447,7 @@ temp/
 backend/projects/
 backend/services/
 backend/media/
+
+
+full_backup_20250903_104716.json
+media_backup_20250903_104653.tar.gz
