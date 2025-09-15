@@ -1,5 +1,8 @@
 from django.db import models
 import os
+import uuid
+import shutil
+import logging
 from django.utils.text import slugify
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import AbstractUser
@@ -571,6 +574,82 @@ class Project(models.Model):
         except Exception as e:
             return False, f"Optimization failed: {str(e)}"
 
+    def delete(self, *args, **kwargs):
+        """
+        Custom delete method to ensure complete cleanup of project and all related files
+        """
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Store project info before deletion for logging
+            project_title = self.title
+            project_id = self.pk
+            
+            logger.info(f"Starting deletion process for project: {project_title} (ID: {project_id})")
+            
+            # 1. Delete the main project image and its optimized versions
+            if self.image:
+                try:
+                    from .image_optimizer import ImageOptimizer
+                    ImageOptimizer.delete_image_file(self.image)
+                    logger.info(f"Deleted main project image for: {project_title}")
+                except Exception as e:
+                    logger.error(f"Error deleting main project image for {project_title}: {str(e)}")
+            
+            # 2. Delete all project album images (this should cascade automatically via foreign key)
+            album_images_count = self.album_images.count()
+            if album_images_count > 0:
+                logger.info(f"Found {album_images_count} album images for project: {project_title}")
+                # The album images will be deleted automatically due to CASCADE foreign key
+                # and their signals will handle file cleanup
+            
+            # 3. Delete the entire project folder using ImageOptimizer
+            try:
+                # Longer delay to allow file handles to close, especially for optimized images
+                import time
+                import gc
+                gc.collect()
+                time.sleep(1.0)
+                gc.collect()
+                time.sleep(1.0)
+                
+                from .image_optimizer import ImageOptimizer
+                folder_deleted = ImageOptimizer.delete_project_folder(self)
+                if folder_deleted:
+                    logger.info(f"Successfully deleted project folder for: {project_title}")
+                else:
+                    logger.warning(f"Project folder deletion returned False for: {project_title}")
+            except Exception as e:
+                logger.error(f"Error deleting project folder for {project_title}: {str(e)}")
+                
+                # Fallback: Try to delete folder manually
+                try:
+                    from django.conf import settings
+                    project_folder_name = slugify(project_title)[:50]
+                    if project_folder_name:
+                        project_folder_path = os.path.join(settings.MEDIA_ROOT, 'projects', project_folder_name)
+                        if os.path.exists(project_folder_path):
+                            shutil.rmtree(project_folder_path)
+                            logger.info(f"Fallback deletion successful for project folder: {project_folder_path}")
+                        else:
+                            logger.info(f"Project folder not found during fallback: {project_folder_path}")
+                except Exception as fallback_error:
+                    logger.error(f"Fallback folder deletion also failed for {project_title}: {str(fallback_error)}")
+            
+            # 4. Perform the actual model deletion
+            super().delete(*args, **kwargs)
+            logger.info(f"Successfully completed deletion of project: {project_title} (ID: {project_id})")
+            
+        except Exception as e:
+            logger.error(f"Critical error during project deletion for {project_title}: {str(e)}")
+            # Still attempt to delete the model to avoid leaving orphaned records
+            try:
+                super().delete(*args, **kwargs)
+                logger.info(f"Model deletion succeeded despite cleanup errors for: {project_title}")
+            except Exception as model_delete_error:
+                logger.error(f"Model deletion also failed for {project_title}: {str(model_delete_error)}")
+                raise model_delete_error
+
 
 class Service(models.Model):
     name = models.CharField(max_length=100)
@@ -841,6 +920,74 @@ class Service(models.Model):
         except Exception as e:
             return False, f"Optimization failed: {str(e)}"
 
+    def delete(self, *args, **kwargs):
+        """
+        Custom delete method to ensure complete cleanup of service and all related files
+        """
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Store service info before deletion for logging
+            service_name = self.name
+            service_id = self.pk
+            
+            logger.info(f"Starting deletion process for service: {service_name} (ID: {service_id})")
+            
+            # 1. Delete the service icon and its optimized versions
+            if self.icon:
+                try:
+                    from .image_optimizer import ImageOptimizer
+                    ImageOptimizer.delete_image_file(self.icon)
+                    logger.info(f"Deleted service icon for: {service_name}")
+                except Exception as e:
+                    logger.error(f"Error deleting service icon for {service_name}: {str(e)}")
+            
+            # 2. Delete all service album images (this should cascade automatically via foreign key)
+            album_images_count = self.album_images.count()
+            if album_images_count > 0:
+                logger.info(f"Found {album_images_count} album images for service: {service_name}")
+                # The album images will be deleted automatically due to CASCADE foreign key
+                # and their signals will handle file cleanup
+            
+            # 3. Delete the entire service folder using ImageOptimizer
+            try:
+                from .image_optimizer import ImageOptimizer
+                folder_deleted = ImageOptimizer.delete_service_folder(self)
+                if folder_deleted:
+                    logger.info(f"Successfully deleted service folder for: {service_name}")
+                else:
+                    logger.warning(f"Service folder deletion returned False for: {service_name}")
+            except Exception as e:
+                logger.error(f"Error deleting service folder for {service_name}: {str(e)}")
+                
+                # Fallback: Try to delete folder manually
+                try:
+                    from django.conf import settings
+                    service_folder_name = slugify(service_name)[:50]
+                    if service_folder_name:
+                        service_folder_path = os.path.join(settings.MEDIA_ROOT, 'services', service_folder_name)
+                        if os.path.exists(service_folder_path):
+                            shutil.rmtree(service_folder_path)
+                            logger.info(f"Fallback deletion successful for service folder: {service_folder_path}")
+                        else:
+                            logger.info(f"Service folder not found during fallback: {service_folder_path}")
+                except Exception as fallback_error:
+                    logger.error(f"Fallback folder deletion also failed for {service_name}: {str(fallback_error)}")
+            
+            # 4. Perform the actual model deletion
+            super().delete(*args, **kwargs)
+            logger.info(f"Successfully completed deletion of service: {service_name} (ID: {service_id})")
+            
+        except Exception as e:
+            logger.error(f"Critical error during service deletion for {service_name}: {str(e)}")
+            # Still attempt to delete the model to avoid leaving orphaned records
+            try:
+                super().delete(*args, **kwargs)
+                logger.info(f"Model deletion succeeded despite cleanup errors for: {service_name}")
+            except Exception as model_delete_error:
+                logger.error(f"Model deletion also failed for {service_name}: {str(model_delete_error)}")
+                raise model_delete_error
+
 
 class ProjectImage(models.Model):
     """
@@ -1034,9 +1181,14 @@ class ServiceImage(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Delete the image file when deleting the model instance
+        # Delete the image file and all its optimized versions when deleting the model instance
         if self.image:
-            self.image.delete(save=False)
+            try:
+                from .image_optimizer import ImageOptimizer
+                ImageOptimizer.delete_image_file(self.image)
+            except Exception as e:
+                # Fallback to basic deletion if ImageOptimizer fails
+                self.image.delete(save=False)
         super().delete(*args, **kwargs)
 
 

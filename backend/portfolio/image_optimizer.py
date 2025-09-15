@@ -5,6 +5,9 @@ Handles automatic image optimization while maintaining quality and organizing fi
 
 import os
 import logging
+import time
+import gc
+import shutil
 from PIL import Image, ImageOps
 from django.conf import settings
 from django.core.files import File
@@ -924,15 +927,20 @@ class ImageOptimizer:
     def delete_project_folder(cls, project):
         """
         Completely delete a project folder and all its contents
+        Windows-compatible with retry logic for file locking issues
         """
         try:
             project_folder = cls._get_project_folder(project)
             
             if os.path.exists(project_folder):
-                import shutil
-                shutil.rmtree(project_folder)
-                logger.info(f"Completely deleted project folder: {project_folder}")
-                return True
+                # Use Windows-compatible folder deletion with retry logic
+                success = cls._force_delete_folder(project_folder)
+                if success:
+                    logger.info(f"Completely deleted project folder: {project_folder}")
+                    return True
+                else:
+                    logger.warning(f"Could not fully delete project folder: {project_folder}")
+                    return False
             else:
                 logger.info(f"Project folder does not exist: {project_folder}")
                 return False
@@ -945,15 +953,20 @@ class ImageOptimizer:
     def delete_service_folder(cls, service):
         """
         Completely delete a service folder and all its contents
+        Windows-compatible with retry logic for file locking issues
         """
         try:
             service_folder = cls._get_service_folder(service)
             
             if os.path.exists(service_folder):
-                import shutil
-                shutil.rmtree(service_folder)
-                logger.info(f"Completely deleted service folder: {service_folder}")
-                return True
+                # Use Windows-compatible folder deletion with retry logic
+                success = cls._force_delete_folder(service_folder)
+                if success:
+                    logger.info(f"Completely deleted service folder: {service_folder}")
+                    return True
+                else:
+                    logger.warning(f"Could not fully delete service folder: {service_folder}")
+                    return False
             else:
                 logger.info(f"Service folder does not exist: {service_folder}")
                 return False
@@ -963,9 +976,110 @@ class ImageOptimizer:
             return False
 
     @classmethod
+    def _force_delete_folder(cls, folder_path, max_retries=5):
+        """
+        Force delete a folder with Windows-compatible retry logic for file locking issues
+        """
+        
+        for attempt in range(max_retries):
+            try:
+                # Force garbage collection to close any lingering file handles
+                gc.collect()
+                
+                # On Windows, try to handle file locking issues
+                if os.name == 'nt':  # Windows
+                    # Try to make all files writable first
+                    try:
+                        for root, dirs, files in os.walk(folder_path):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                try:
+                                    os.chmod(file_path, 0o777)
+                                except:
+                                    pass  # Continue even if chmod fails
+                    except:
+                        pass
+                
+                # Attempt to delete the folder
+                shutil.rmtree(folder_path, ignore_errors=False)
+                
+                # Check if deletion was successful
+                if not os.path.exists(folder_path):
+                    logger.info(f"Successfully deleted folder: {folder_path} (attempt {attempt + 1})")
+                    return True
+                    
+            except PermissionError as e:
+                logger.warning(f"Permission error deleting folder {folder_path} (attempt {attempt + 1}): {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(1.5)  # Longer wait for locked files
+                    gc.collect()
+                    continue
+                
+            except OSError as e:
+                logger.warning(f"OS error deleting folder {folder_path} (attempt {attempt + 1}): {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(1.5)  # Longer wait for locked files
+                    gc.collect()
+                    continue
+                    
+            except Exception as e:
+                logger.error(f"Unexpected error deleting folder {folder_path} (attempt {attempt + 1}): {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(0.5)  # Wait before retry
+                    continue
+        
+        # If we get here, all attempts failed
+        logger.error(f"Failed to delete folder after {max_retries} attempts: {folder_path}")
+        
+        # Try one more approach - delete files individually
+        try:
+            logger.info(f"Attempting individual file deletion for: {folder_path}")
+            deleted_count = 0
+            total_count = 0
+            
+            # Walk through and delete files individually
+            for root, dirs, files in os.walk(folder_path, topdown=False):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    total_count += 1
+                    try:
+                        if os.name == 'nt':  # Windows
+                            os.chmod(file_path, 0o777)
+                        os.remove(file_path)
+                        deleted_count += 1
+                    except Exception as file_e:
+                        logger.warning(f"Could not delete file {file_path}: {str(file_e)}")
+                
+                # Try to remove empty directories
+                for dir in dirs:
+                    dir_path = os.path.join(root, dir)
+                    try:
+                        os.rmdir(dir_path)
+                    except Exception as dir_e:
+                        logger.warning(f"Could not delete directory {dir_path}: {str(dir_e)}")
+            
+            # Try to remove the root folder
+            try:
+                os.rmdir(folder_path)
+                deleted_count += 1
+            except Exception as root_e:
+                logger.warning(f"Could not delete root folder {folder_path}: {str(root_e)}")
+            
+            success_rate = (deleted_count / max(total_count, 1)) * 100
+            logger.info(f"Individual file deletion completed: {deleted_count}/{total_count} files deleted ({success_rate:.1f}%)")
+            
+            # Return success if we deleted most files or the folder no longer exists
+            return not os.path.exists(folder_path) or success_rate >= 80
+            
+        except Exception as cleanup_e:
+            logger.error(f"Individual file cleanup also failed for {folder_path}: {str(cleanup_e)}")
+            return False
+
+    @classmethod
     def delete_image_file(cls, image_field):
         """
         Delete an individual image file and its optimized versions
+        Windows-compatible with retry logic for file locking issues
         """
         try:
             if not image_field:
@@ -975,9 +1089,10 @@ class ImageOptimizer:
             original_path = image_field.path
             
             if os.path.exists(original_path):
-                # Delete the original file
-                os.remove(original_path)
-                logger.info(f"Deleted original image file: {original_path}")
+                # Delete the original file with retry logic
+                success = cls._force_delete_file(original_path)
+                if success:
+                    logger.info(f"Deleted original image file: {original_path}")
                 
                 # Try to delete optimized versions if they exist
                 try:
@@ -994,25 +1109,25 @@ class ImageOptimizer:
                             if size_name != 'original':
                                 webp_path = os.path.join(webp_folder, f"{name_without_ext}_{size_name}.webp")
                                 if os.path.exists(webp_path):
-                                    os.remove(webp_path)
+                                    cls._force_delete_file(webp_path)
                                     logger.info(f"Deleted optimized image: {webp_path}")
                                 
                                 # Also check for padded versions
                                 padded_path = os.path.join(webp_folder, f"{name_without_ext}_{size_name}_padded.webp")
                                 if os.path.exists(padded_path):
-                                    os.remove(padded_path)
+                                    cls._force_delete_file(padded_path)
                                     logger.info(f"Deleted padded image: {padded_path}")
                         
                         # Check for main webp version
                         main_webp = os.path.join(webp_folder, f"{name_without_ext}.webp")
                         if os.path.exists(main_webp):
-                            os.remove(main_webp)
+                            cls._force_delete_file(main_webp)
                             logger.info(f"Deleted main webp image: {main_webp}")
                             
                 except Exception as webp_error:
                     logger.warning(f"Error cleaning up optimized images: {str(webp_error)}")
                 
-                return True
+                return success
             else:
                 logger.info(f"Image file does not exist: {original_path}")
                 return False
@@ -1020,3 +1135,53 @@ class ImageOptimizer:
         except Exception as e:
             logger.error(f"Error deleting image file: {str(e)}")
             return False
+
+    @classmethod
+    def _force_delete_file(cls, file_path, max_retries=5):
+        """
+        Force delete a file with Windows-compatible retry logic for file locking issues
+        """
+        
+        for attempt in range(max_retries):
+            try:
+                # Force garbage collection to close any lingering file handles
+                gc.collect()
+                
+                # On Windows, try to handle file locking issues
+                if os.name == 'nt':  # Windows
+                    try:
+                        os.chmod(file_path, 0o777)
+                    except:
+                        pass  # Continue even if chmod fails
+                
+                # Attempt to delete the file
+                os.remove(file_path)
+                
+                # Check if deletion was successful
+                if not os.path.exists(file_path):
+                    return True
+                    
+            except PermissionError as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1.0)  # Longer wait for locked files
+                    gc.collect()
+                    continue
+                logger.warning(f"Permission error deleting file {file_path}: {str(e)}")
+                
+            except OSError as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1.0)  # Longer wait for locked files  
+                    gc.collect()
+                    continue
+                logger.warning(f"OS error deleting file {file_path}: {str(e)}")
+                    
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1.0)  # Longer wait for locked files
+                    gc.collect()
+                    continue
+                logger.error(f"Unexpected error deleting file {file_path}: {str(e)}")
+        
+        # If we get here, all attempts failed
+        logger.error(f"Failed to delete file after {max_retries} attempts: {file_path}")
+        return False
