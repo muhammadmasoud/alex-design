@@ -331,13 +331,55 @@ class Project(models.Model):
                     # Move files to new folder structure
                     self._move_files_to_new_folder(old_instance.title, self.title)
                 
-                # Handle image deletion logic
-                if (old_instance.image and 
-                    hasattr(self.image, 'file') and 
-                    self.image.file and 
-                    old_instance.image.name != self.image.name):
-                    # Delete the old image file
-                    old_instance.image.delete(save=False)
+                # Handle image deletion logic - delete old image and optimized versions
+                if old_instance.image:
+                    # Check if image has changed (different scenarios)
+                    image_changed = False
+                    change_reason = ""
+                    
+                    if not self.image:
+                        # Image was removed
+                        image_changed = True
+                        change_reason = "image_removed"
+                    elif hasattr(self.image, 'name') and old_instance.image.name != self.image.name:
+                        # Image file name changed (new upload)
+                        image_changed = True
+                        change_reason = f"name_changed: {old_instance.image.name} -> {self.image.name}"
+                    elif hasattr(self.image, '_file') and self.image._file:
+                        # New image file uploaded (Django admin scenario)
+                        image_changed = True
+                        change_reason = "new_file_uploaded_admin"
+                    elif hasattr(self.image, 'file') and self.image.file:
+                        # Another way new image can be detected
+                        image_changed = True
+                        change_reason = "new_file_uploaded_api"
+                    
+                    if image_changed:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Project {self.title}: Deleting old image due to {change_reason}")
+                        
+                        # Delete the old image file AND its optimized versions
+                        from .image_optimizer import ImageOptimizer
+                        ImageOptimizer.delete_image_file(old_instance.image)
+                        
+                        # Also clear the optimized path fields for the old image
+                        old_instance.optimized_image = None
+                        old_instance.optimized_image_small = None
+                        old_instance.optimized_image_medium = None
+                        old_instance.optimized_image_large = None
+                        
+                        # Clear the current instance's optimized paths so they get regenerated
+                        self.optimized_image = None
+                        self.optimized_image_small = None
+                        self.optimized_image_medium = None
+                        self.optimized_image_large = None
+                        
+                        logger.info(f"Project {self.title}: Old image cleanup completed")
+                    else:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Project {self.title}: No image change detected")
             except Project.DoesNotExist:
                 pass
         
@@ -580,13 +622,40 @@ class Service(models.Model):
                     # Move files to new folder structure
                     self._move_files_to_new_folder(old_instance.name, self.name)
                 
-                # Handle icon deletion logic
-                if (old_instance.icon and 
-                    hasattr(self.icon, 'file') and 
-                    self.icon.file and 
-                    old_instance.icon.name != self.icon.name):
-                    # Delete the old icon file
-                    old_instance.icon.delete(save=False)
+                # Handle icon deletion logic - delete old icon and optimized versions
+                if old_instance.icon:
+                    # Check if icon has changed (different scenarios)
+                    icon_changed = False
+                    
+                    if not self.icon:
+                        # Icon was removed
+                        icon_changed = True
+                    elif hasattr(self.icon, 'name') and old_instance.icon.name != self.icon.name:
+                        # Icon file name changed (new upload)
+                        icon_changed = True
+                    elif hasattr(self.icon, '_file') and self.icon._file:
+                        # New icon file uploaded (Django admin scenario)
+                        icon_changed = True
+                    elif hasattr(self.icon, 'file') and self.icon.file:
+                        # Another way new icon can be detected
+                        icon_changed = True
+                    
+                    if icon_changed:
+                        # Delete the old icon file AND its optimized versions
+                        from .image_optimizer import ImageOptimizer
+                        ImageOptimizer.delete_image_file(old_instance.icon)
+                        
+                        # Also clear the optimized path fields for the old icon
+                        old_instance.optimized_icon = None
+                        old_instance.optimized_icon_small = None
+                        old_instance.optimized_icon_medium = None
+                        old_instance.optimized_icon_large = None
+                        
+                        # Clear the current instance's optimized paths so they get regenerated
+                        self.optimized_icon = None
+                        self.optimized_icon_small = None
+                        self.optimized_icon_medium = None
+                        self.optimized_icon_large = None
             except Service.DoesNotExist:
                 pass
         
@@ -828,12 +897,39 @@ class ProjectImage(models.Model):
             try:
                 old_instance = ProjectImage.objects.get(pk=self.pk)
                 # Check if image field has changed and old image exists
-                if (old_instance.image and 
-                    hasattr(self.image, 'file') and 
-                    self.image.file and 
-                    old_instance.image.name != self.image.name):
-                    # Delete the old image file
-                    old_instance.image.delete(save=False)
+                if old_instance.image:
+                    # Check if image has changed (different scenarios)
+                    image_changed = False
+                    
+                    if not self.image:
+                        # Image was removed
+                        image_changed = True
+                    elif hasattr(self.image, 'name') and old_instance.image.name != self.image.name:
+                        # Image file name changed (new upload)
+                        image_changed = True
+                    elif hasattr(self.image, '_file') and self.image._file:
+                        # New image file uploaded (Django admin scenario)
+                        image_changed = True
+                    elif hasattr(self.image, 'file') and self.image.file:
+                        # Another way new image can be detected
+                        image_changed = True
+                    
+                    if image_changed:
+                        # Delete the old image file AND its optimized versions
+                        from .image_optimizer import ImageOptimizer
+                        ImageOptimizer.delete_image_file(old_instance.image)
+                        
+                        # Also clear the optimized path fields for the old image
+                        old_instance.optimized_image = None
+                        old_instance.optimized_image_small = None
+                        old_instance.optimized_image_medium = None
+                        old_instance.optimized_image_large = None
+                        
+                        # Clear the current instance's optimized paths so they get regenerated
+                        self.optimized_image = None
+                        self.optimized_image_small = None
+                        self.optimized_image_medium = None
+                        self.optimized_image_large = None
             except ProjectImage.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
@@ -900,12 +996,39 @@ class ServiceImage(models.Model):
             try:
                 old_instance = ServiceImage.objects.get(pk=self.pk)
                 # Check if image field has changed and old image exists
-                if (old_instance.image and 
-                    hasattr(self.image, 'file') and 
-                    self.image.file and 
-                    old_instance.image.name != self.image.name):
-                    # Delete the old image file
-                    old_instance.image.delete(save=False)
+                if old_instance.image:
+                    # Check if image has changed (different scenarios)
+                    image_changed = False
+                    
+                    if not self.image:
+                        # Image was removed
+                        image_changed = True
+                    elif hasattr(self.image, 'name') and old_instance.image.name != self.image.name:
+                        # Image file name changed (new upload)
+                        image_changed = True
+                    elif hasattr(self.image, '_file') and self.image._file:
+                        # New image file uploaded (Django admin scenario)
+                        image_changed = True
+                    elif hasattr(self.image, 'file') and self.image.file:
+                        # Another way new image can be detected
+                        image_changed = True
+                    
+                    if image_changed:
+                        # Delete the old image file AND its optimized versions
+                        from .image_optimizer import ImageOptimizer
+                        ImageOptimizer.delete_image_file(old_instance.image)
+                        
+                        # Also clear the optimized path fields for the old image
+                        old_instance.optimized_image = None
+                        old_instance.optimized_image_small = None
+                        old_instance.optimized_image_medium = None
+                        old_instance.optimized_image_large = None
+                        
+                        # Clear the current instance's optimized paths so they get regenerated
+                        self.optimized_image = None
+                        self.optimized_image_small = None
+                        self.optimized_image_medium = None
+                        self.optimized_image_large = None
             except ServiceImage.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
