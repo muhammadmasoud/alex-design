@@ -51,6 +51,7 @@ backend/.env.*
 *.pub
 alex-design-key.pem
 *.ppk
+id_ed25519
 
 # Secrets and sensitive files
 *secret*

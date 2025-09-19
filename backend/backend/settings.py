@@ -330,6 +330,13 @@ if IS_PRODUCTION:
         'x-requested-with',
     ]
 
+# Cache Configuration - Using dummy cache instead of Redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
