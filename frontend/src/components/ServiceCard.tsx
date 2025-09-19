@@ -5,6 +5,7 @@ import { ServiceItem } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Eye, DollarSign, Tag } from "lucide-react";
 import { motion } from "framer-motion";
+import ProgressiveImage from "./ProgressiveImage";
 
 
 interface Props {
@@ -49,10 +50,13 @@ export default function ServiceCard({ item }: Props) {
       >
         <CardHeader className="p-0 relative">
           <div className="relative overflow-hidden h-44">
-            <img
-              src={item.icon || '/placeholder.svg'}
+            <ProgressiveImage
+              src={item.original_icon_url || item.icon || '/placeholder.svg'}
+              optimizedSrc={item.icon}
               alt={`${item.name} architectural service`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              loading="lazy"
+              showQualityIndicator={false}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

@@ -10,6 +10,7 @@ import { api, endpoints, PaginatedResponse } from "@/lib/api";
 import { Project } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import ProgressiveImage from "@/components/ProgressiveImage";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
 
 
@@ -284,10 +285,13 @@ const Index = () => {
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                       className="absolute inset-0"
                     >
-                      <img
-                        src={architectureProjects[currentSlide].image || "/placeholder.svg"}
+                      <ProgressiveImage
+                        src={architectureProjects[currentSlide].original_image_url || architectureProjects[currentSlide].image || "/placeholder.svg"}
+                        optimizedSrc={architectureProjects[currentSlide].image}
                         alt={architectureProjects[currentSlide].title}
                         className="h-full w-full object-cover cursor-pointer"
+                        loading="eager"
+                        showQualityIndicator={true}
                         onClick={() => {
                           navigate('/projects');
                         }}
@@ -601,10 +605,13 @@ const Index = () => {
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                       className="absolute inset-0"
                     >
-                      <img
-                        src={interiorProjects[currentInteriorSlide].image || "/placeholder.svg"}
+                      <ProgressiveImage
+                        src={interiorProjects[currentInteriorSlide].original_image_url || interiorProjects[currentInteriorSlide].image || "/placeholder.svg"}
+                        optimizedSrc={interiorProjects[currentInteriorSlide].image}
                         alt={interiorProjects[currentInteriorSlide].title}
                         className="h-full w-full object-cover cursor-pointer"
+                        loading="eager"
+                        showQualityIndicator={true}
                         onClick={() => {
                           navigate('/projects');
                         }}

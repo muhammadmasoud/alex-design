@@ -15,6 +15,7 @@ import PaginationControls from "@/components/Pagination";
 
 import ImageLightbox from "@/components/ImageLightbox";
 import { useOriginalImagePreloader } from "@/hooks/useImagePreloader";
+import ProgressiveImage from "@/components/ProgressiveImage";
 import { cn } from "@/lib/utils";
 
 const albumGridVariants = {
@@ -281,11 +282,14 @@ export default function ProjectAlbum() {
                 className="relative cursor-pointer group"
                 onClick={() => handleImageClick(image, actualIndex)}
               >
-                <img
-                  src={image.image}
+                <ProgressiveImage
+                  src={image.original_image_url || image.image}
+                  optimizedSrc={image.image}
                   alt={image.title || `${project.title} - Image ${actualIndex + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={() => handleImageError(image)}
+                  loading="lazy"
+                  showQualityIndicator={false}
+                  onLoadComplete={() => {}}
                 />
 
                 {image.title && (

@@ -14,6 +14,7 @@ import EmptyState from "@/components/EmptyState";
 import PaginationControls from "@/components/Pagination";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useOriginalImagePreloader } from "@/hooks/useImagePreloader";
+import ProgressiveImage from "@/components/ProgressiveImage";
 
 const albumGridVariants = {
   hidden: { opacity: 0 },
@@ -98,10 +99,6 @@ export default function ServiceAlbum() {
     }, 300);
   };
 
-  const handleImageError = (image: AlbumImage) => {
-    console.warn('Image failed to load:', image.image);
-    // You could implement additional error handling here
-  };
 
   if (loading) {
     return (
@@ -276,11 +273,14 @@ export default function ServiceAlbum() {
                 className="relative cursor-pointer group"
                 onClick={() => handleImageClick(image, actualIndex)}
               >
-                <img
-                  src={image.image}
+                <ProgressiveImage
+                  src={image.original_image_url || image.image}
+                  optimizedSrc={image.image}
                   alt={image.title || `${service.name} - Image ${actualIndex + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={() => handleImageError(image)}
+                  loading="lazy"
+                  showQualityIndicator={false}
+                  onLoadComplete={() => {}}
                 />
 
                 {image.title && (

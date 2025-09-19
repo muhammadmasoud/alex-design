@@ -33,6 +33,7 @@ export interface ServiceItem {
   description: string;
   icon: string; // This will contain the full URL from the backend
   original_image_url?: string; // Original unoptimized icon URL for lightbox
+  original_icon_url?: string; // Alternative field name for original icon
   price: number;
   categories?: number[]; // Array of category IDs for form submission
   subcategories?: number[]; // Array of subcategory IDs for form submission
