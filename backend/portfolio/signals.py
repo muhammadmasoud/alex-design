@@ -25,41 +25,41 @@ currently_optimizing = set()
 def optimize_project_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project images when a project is created or updated
-    OPTIMIZED: Only trigger optimization when there are actually images to optimize
+    OPTIMIZED: Only trigger optimization when images are actually changed or new images are added
     """
     try:
-        should_optimize = False
+        # Skip optimization entirely if this is just a text-only update
+        # Check if this save was triggered by updating optimized image fields (avoid infinite loop)
+        update_fields = kwargs.get('update_fields')
+        if update_fields and all(field.startswith('optimized_') for field in update_fields):
+            logger.debug(f"Skipping optimization - optimized fields update for project: {instance.title}")
+            return
         
-        # Check if project has any images to optimize
-        has_main_image = bool(instance.image)
-        has_album_images = instance.album_images.exists()
-        
-        if has_main_image or has_album_images:
-            # Check if optimization is needed
-            needs_optimization = False
+        # Fast path: For existing projects, only optimize if new images were uploaded
+        if not created:
+            # Check if any image files were actually changed in this update
+            image_changed = False
             
-            # Check main image optimization
-            if has_main_image and not instance.optimized_image:
-                needs_optimization = True
-            
-            # Check album image optimization
-            if has_album_images:
-                unoptimized_album_images = instance.album_images.filter(
-                    optimized_image__isnull=True
-                )
-                if unoptimized_album_images.exists():
-                    needs_optimization = True
-            
-            if needs_optimization:
-                should_optimize = True
-                if created:
-                    logger.info(f"New project created with images - queuing optimization: {instance.title}")
-                else:
-                    logger.info(f"Existing project needs optimization: {instance.title}")
+            # Check if this is an API update with new files
+            if hasattr(instance, '_image_files_changed') and instance._image_files_changed:
+                image_changed = True
+                logger.info(f"Project has new image files - will optimize: {instance.title}")
+            else:
+                # For existing projects without new files, skip optimization entirely
+                logger.debug(f"Skipping optimization - no new image files for existing project: {instance.title}")
+                return
         else:
-            # No images to optimize - skip processing
-            if created:
-                logger.info(f"New project created without images - skipping optimization: {instance.title}")
+            # For new projects, check if they have images to optimize
+            has_main_image = bool(instance.image)
+            if not has_main_image:
+                # Album images will be handled by ProjectImage signals
+                logger.debug(f"New project created without main image - skipping optimization: {instance.title}")
+                return
+            
+            logger.info(f"New project created with main image - queuing optimization: {instance.title}")
+        
+        # Only proceed with optimization if we've determined it's needed
+        should_optimize = True
         
         if should_optimize:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
@@ -102,9 +102,9 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
             transaction.on_commit(delayed_optimization)
             logger.info(f"Queued image optimization for project: {instance.title}")
             
-        # Clear cache for this project
-        cache_key = f"project_{instance.id}_images"
-        cache.delete(cache_key)
+            # Clear cache since we're processing image optimization
+            cache_key = f"project_{instance.id}_images"
+            cache.delete(cache_key)
         
     except Exception as e:
         logger.error(f"Error in project image optimization signal: {str(e)}")
@@ -113,10 +113,43 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
 def optimize_service_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize service images when a service is created or updated
+    OPTIMIZED: Only trigger optimization when images are actually changed or new images are added
     """
     try:
-        # Only optimize if this is a new service or if icon has changed
-        if created or instance.icon:
+        # Skip optimization entirely if this is just a text-only update
+        # Check if this save was triggered by updating optimized image fields (avoid infinite loop)
+        update_fields = kwargs.get('update_fields')
+        if update_fields and all(field.startswith('optimized_') for field in update_fields):
+            logger.debug(f"Skipping optimization - optimized fields update for service: {instance.name}")
+            return
+        
+        # Fast path: For existing services, only optimize if new images were uploaded
+        if not created:
+            # Check if any image files were actually changed in this update
+            image_changed = False
+            
+            # Check if this is an API update with new files
+            if hasattr(instance, '_image_files_changed') and instance._image_files_changed:
+                image_changed = True
+                logger.info(f"Service has new image files - will optimize: {instance.name}")
+            else:
+                # For existing services without new files, skip optimization entirely
+                logger.debug(f"Skipping optimization - no new image files for existing service: {instance.name}")
+                return
+        else:
+            # For new services, check if they have images to optimize
+            has_icon = bool(instance.icon)
+            if not has_icon:
+                # Album images will be handled by ServiceImage signals
+                logger.debug(f"New service created without icon - skipping optimization: {instance.name}")
+                return
+            
+            logger.info(f"New service created with icon - queuing optimization: {instance.name}")
+        
+        # Only proceed with optimization if we've determined it's needed
+        should_optimize = True
+        
+        if should_optimize:
             # Use transaction.on_commit to ensure optimization happens after the transaction is committed
             def delayed_optimization():
                 def run_optimization():
@@ -146,9 +179,9 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
             transaction.on_commit(delayed_optimization)
             logger.info(f"Queued image optimization for service: {instance.name}")
             
-        # Clear cache for this service
-        cache_key = f"service_id_images"
-        cache.delete(cache_key)
+            # Clear cache since we're processing image optimization
+            cache_key = f"service_{instance.id}_images"
+            cache.delete(cache_key)
         
     except Exception as e:
         logger.error(f"Error in service image optimization signal: {str(e)}")

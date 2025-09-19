@@ -222,7 +222,16 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       if (editingProject) {
         await api.patch(`${endpoints.admin.projects}${editingProject.id}/`, formData);
         if (!hasAlbumImages) {
-          toast({ title: "Project updated successfully!" });
+          // Text-only update or main image change - should be fast now
+          const hasMainImageUpdate = data.image && data.image[0];
+          if (hasMainImageUpdate) {
+            toast({ 
+              title: "Project updated successfully!", 
+              description: "Main image is being optimized in the background." 
+            });
+          } else {
+            toast({ title: "Project updated successfully!" });
+          }
         }
       } else {
         const response = await api.post(endpoints.admin.projects, formData);

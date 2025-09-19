@@ -187,6 +187,9 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       if (data.price !== undefined) formData.append("price", data.price.toString());
       formData.append("order", data.order?.toString() || "0");
       
+      // Track if we're uploading new images for better user feedback
+      const hasNewImages = (data.icon && data.icon[0]) || (data.album_images && data.album_images.length > 0);
+      
       // Append multiple categories
       if (data.categories) {
         data.categories.forEach(categoryId => {
@@ -213,7 +216,16 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       if (editingService) {
         await api.patch(`${endpoints.admin.services}${editingService.id}/`, formData);
         if (!hasAlbumImages) {
-          toast({ title: "Service updated successfully!" });
+          // Text-only update or icon change - should be fast now
+          const hasIconUpdate = data.icon && data.icon[0];
+          if (hasIconUpdate) {
+            toast({ 
+              title: "Service updated successfully!", 
+              description: "Icon is being optimized in the background." 
+            });
+          } else {
+            toast({ title: "Service updated successfully!" });
+          }
         }
       } else {
         const response = await api.post(endpoints.admin.services, formData);

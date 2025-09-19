@@ -167,10 +167,17 @@ class ProjectViewSet(viewsets.ModelViewSet):
         try:
             # Capture original filename from uploaded image if a new one is provided
             image_file = self.request.FILES.get('image')
+            album_images = self.request.FILES.getlist('album_images')
+            
+            # Mark instance if new image files were uploaded
+            instance = serializer.save()
+            if image_file or album_images:
+                instance._image_files_changed = True
+                
+            # Save with original filename if main image provided
             if image_file:
-                serializer.save(original_filename=image_file.name)
-            else:
-                serializer.save()
+                instance.original_filename = image_file.name
+                instance.save(update_fields=['original_filename'])
         except Exception as e:
             logger.error(f"Error in perform_update: {e}")
             logger.error(f"Error type: {type(e)}")
@@ -431,10 +438,17 @@ class ServiceViewSet(viewsets.ModelViewSet):
         try:
             # Capture original filename from uploaded icon if a new one is provided
             icon_file = self.request.FILES.get('icon')
+            album_images = self.request.FILES.getlist('album_images')
+            
+            # Mark instance if new image files were uploaded
+            instance = serializer.save()
+            if icon_file or album_images:
+                instance._image_files_changed = True
+                
+            # Save with original filename if icon provided
             if icon_file:
-                serializer.save(original_filename=icon_file.name)
-            else:
-                serializer.save()
+                instance.original_filename = icon_file.name
+                instance.save(update_fields=['original_filename'])
         except Exception as e:
             print(f"Error in service perform_update: {e}")
             print(f"Error type: {type(e)}")
@@ -1456,10 +1470,17 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # Capture original filename from uploaded image if a new one is provided
         image_file = self.request.FILES.get('image')
+        album_images = self.request.FILES.getlist('album_images')
+        
+        # Mark instance if new image files were uploaded
+        instance = serializer.save()
+        if image_file or album_images:
+            instance._image_files_changed = True
+            
+        # Save with original filename if main image provided
         if image_file:
-            serializer.save(original_filename=image_file.name)
-        else:
-            serializer.save()
+            instance.original_filename = image_file.name
+            instance.save(update_fields=['original_filename'])
 
     def perform_destroy(self, instance):
         """
@@ -1596,10 +1617,17 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # Capture original filename from uploaded icon if a new one is provided
         icon_file = self.request.FILES.get('icon')
+        album_images = self.request.FILES.getlist('album_images')
+        
+        # Mark instance if new image files were uploaded
+        instance = serializer.save()
+        if icon_file or album_images:
+            instance._image_files_changed = True
+            
+        # Save with original filename if icon provided
         if icon_file:
-            serializer.save(original_filename=icon_file.name)
-        else:
-            serializer.save()
+            instance.original_filename = icon_file.name
+            instance.save(update_fields=['original_filename'])
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reorder(self, request, pk=None):
