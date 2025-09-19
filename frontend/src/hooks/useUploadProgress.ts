@@ -118,7 +118,7 @@ export function useUploadProgress() {
       // Configure axios for progress tracking with better error handling
       const response = await api.post(endpoint, uploadFormData, {
         signal: abortControllerRef.current.signal,
-        timeout: 600000, // 10 minutes timeout specifically for large uploads
+        timeout: 1200000, // 20 minutes timeout specifically for large uploads
         headers: {
           'Content-Type': 'multipart/form-data',
         },
