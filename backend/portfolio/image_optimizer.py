@@ -111,7 +111,18 @@ class ImageOptimizer:
         Optimize all images for a project (main image + album images)
         Creates organized folder structure with optimized versions
         """
+        import signal
+        from django.conf import settings
+        
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Image optimization timed out")
+        
         try:
+            # Set timeout for image optimization
+            timeout_seconds = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout_seconds)
+            
             project_folder = cls._get_project_folder(project)
             
             # Optimize main image if exists
@@ -124,9 +135,16 @@ class ImageOptimizer:
                 
             logger.info(f"Successfully optimized all images for project: {project.title}")
             
+        except TimeoutError:
+            logger.error(f"Image optimization timed out for project: {project.title}")
         except Exception as e:
             logger.error(f"Error optimizing project images for {project.title}: {str(e)}")
             # Don't fail the project creation if optimization fails
+        finally:
+            # Reset timeout
+            signal.alarm(0)
+            if 'old_handler' in locals():
+                signal.signal(signal.SIGALRM, old_handler)
     
     @classmethod
     def optimize_service_images(cls, service):
@@ -484,9 +502,9 @@ class ImageOptimizer:
                     # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
-                # PERFORMANCE: Use faster quality for development
-                webp_quality = cls.WEBP_QUALITY if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 85)
-                webp_method = cls.WEBP_METHOD if cls.PRODUCTION_MODE else min(cls.WEBP_METHOD, 4)
+                # PERFORMANCE: Use faster quality for development and reduce processing time
+                webp_quality = cls.WEBP_QUALITY if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 80)
+                webp_method = cls.WEBP_METHOD if cls.PRODUCTION_MODE else min(cls.WEBP_METHOD, 3)
                 
                 # Save as WebP with optimal settings and AWS compatibility
                 if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:

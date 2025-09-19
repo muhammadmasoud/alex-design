@@ -142,6 +142,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'admin' if not IS_PRODUCTION else ''),
         'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 60,  # 60 seconds connection timeout
+            'options': '-c statement_timeout=3600000'  # 1 hour statement timeout for large operations
+        }
     }
 }
 
@@ -205,8 +209,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024   # 1GB - increased for large p
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Allow more album images and fields
 
 # Request timeout settings for long-running operations like bulk uploads
-REQUEST_TIMEOUT = 600  # 10 minutes for request processing (increased for large uploads)
-UPLOAD_TIMEOUT = 600   # 10 minutes for file uploads (increased for large uploads)
+REQUEST_TIMEOUT = 3600  # 1 hour for request processing (increased for very large uploads)
+UPLOAD_TIMEOUT = 3600   # 1 hour for file uploads (increased for very large uploads)
 
 ALLOWED_UPLOAD_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp',
@@ -232,7 +236,7 @@ if IS_PRODUCTION:
     # Production image processing settings
     IMAGE_OPTIMIZATION_ASYNC = True
     IMAGE_OPTIMIZATION_THREADS = 2  # Number of background threads for image processing
-    IMAGE_OPTIMIZATION_TIMEOUT = 300  # 5 minutes timeout for image processing
+    IMAGE_OPTIMIZATION_TIMEOUT = 1800  # 30 minutes timeout for image processing (increased for large uploads)
 else:
     # File upload handlers for development
     FILE_UPLOAD_HANDLERS = [
@@ -243,7 +247,7 @@ else:
     # Development image processing settings
     IMAGE_OPTIMIZATION_ASYNC = False
     IMAGE_OPTIMIZATION_THREADS = 1
-    IMAGE_OPTIMIZATION_TIMEOUT = 60
+    IMAGE_OPTIMIZATION_TIMEOUT = 1800  # 30 minutes timeout for image processing (increased for large uploads)
 
 # Image validation settings - INCREASED FOR HIGH-RESOLUTION PORTFOLIO IMAGES
 ALLOWED_IMAGE_TYPES = [

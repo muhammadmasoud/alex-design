@@ -17,9 +17,9 @@ max_requests_jitter = 50
 preload_app = True
 
 # Timeout settings - INCREASED FOR LARGE PORTFOLIO UPLOADS
-timeout = 600  # Increased to 10 minutes for large file uploads
+timeout = 3600  # Increased to 1 hour for very large file uploads
 keepalive = 2
-graceful_timeout = 600  # Increased to 10 minutes for large uploads
+graceful_timeout = 3600  # Increased to 1 hour for very large uploads
 
 # Logging
 accesslog = "-"

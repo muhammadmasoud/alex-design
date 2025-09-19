@@ -1027,7 +1027,13 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
             response_data = {
                 'message': f'{len(created_images)} images uploaded successfully',
                 'images': [{'id': img.id, 'name': img.original_filename} for img in created_images],
-                'processing_status': 'Image optimization will continue in background'
+                'processing_status': 'Image optimization will continue in background',
+                'upload_time': time.time() - start_time,
+                'timeout_settings': {
+                    'request_timeout': getattr(settings, 'REQUEST_TIMEOUT', 3600),
+                    'upload_timeout': getattr(settings, 'UPLOAD_TIMEOUT', 3600),
+                    'optimization_timeout': getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
+                }
             }
             
             # Schedule SINGLE optimization call in background thread AFTER response
@@ -1044,9 +1050,21 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     # Ensure no signals interfere
                     post_save.disconnect(optimize_project_images_on_save, sender=Project)
                     
-                    # Single optimization call for entire project
+                    # Single optimization call for entire project with timeout handling
                     from .image_optimizer import ImageOptimizer
-                    ImageOptimizer.optimize_project_images(project)
+                    from django.conf import settings
+                    
+                    # Set a reasonable timeout for optimization
+                    optimization_timeout = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
+                    start_opt_time = time.time()
+                    
+                    try:
+                        ImageOptimizer.optimize_project_images(project)
+                        opt_elapsed = time.time() - start_opt_time
+                        logger.info(f"Image optimization completed in {opt_elapsed:.2f}s")
+                    except Exception as opt_error:
+                        logger.error(f"Image optimization failed: {opt_error}")
+                        # Continue even if optimization fails
                     
                     # FORCE PROJECT SIGNAL TRIGGER - this ensures the project gets marked as optimized
                     post_save.connect(optimize_project_images_on_save, sender=Project)

@@ -125,6 +125,8 @@ export function useUploadProgress() {
         // Add retry logic for network issues
         validateStatus: (status) => status < 500, // Don't retry on server errors
         maxRedirects: 0, // Don't follow redirects
+        // Add timeout handling
+        timeoutErrorMessage: 'Upload request timed out after 1 hour',
         onUploadProgress: (progressEvent) => {
           if (isPausedRef.current) return;
 
@@ -241,8 +243,15 @@ export function useUploadProgress() {
         
         onError?.(errorMessage);
       } else {
-        // Other error
-        const errorMessage = error.message || 'Upload failed';
+        // Check for timeout errors
+        let errorMessage = error.message || 'Upload failed';
+        
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('timed out')) {
+          errorMessage = 'Upload timed out after 1 hour. Please try again with smaller files or better connection.';
+        } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        }
+        
         setUploadState(prev => ({
           ...prev,
           isUploading: false,

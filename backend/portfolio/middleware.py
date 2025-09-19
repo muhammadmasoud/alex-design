@@ -20,27 +20,20 @@ class RequestTimeoutMiddleware:
     
     def __init__(self, get_response):
         self.get_response = get_response
-        self.timeout = getattr(settings, 'REQUEST_TIMEOUT', 300)  # Default 5 minutes
+        self.timeout = getattr(settings, 'REQUEST_TIMEOUT', 3600)  # Default 1 hour
 
     def __call__(self, request):
         # Set a timeout for the request
         if request.path.endswith('/bulk_upload/'):
             # Increase timeout for bulk upload operations
-            request_timeout = getattr(settings, 'UPLOAD_TIMEOUT', 300)
+            request_timeout = getattr(settings, 'UPLOAD_TIMEOUT', 3600)
         else:
             request_timeout = self.timeout
         
-        # Start a timer thread
-        timer = threading.Timer(request_timeout, self._timeout_handler, args=[request])
-        timer.start()
-        
-        try:
-            response = self.get_response(request)
-            timer.cancel()  # Cancel timer if request completes
-            return response
-        except Exception as e:
-            timer.cancel()
-            raise e
+        # Add timeout header to response for debugging
+        response = self.get_response(request)
+        response['X-Request-Timeout'] = str(request_timeout)
+        return response
     
     def _timeout_handler(self, request):
         """Handle request timeout"""
