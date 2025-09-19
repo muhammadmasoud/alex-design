@@ -990,11 +990,11 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
         if not images:
             return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate image files before processing
+        # Validate image files before processing - INCREASED FOR HIGH-RESOLUTION IMAGES
         for image in images:
-            if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+            if hasattr(image, 'size') and image.size > 50 * 1024 * 1024:  # 50MB limit (increased from 25MB)
                 return Response({
-                    'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                    'error': f'Image {image.name} is too large. Maximum size is 50MB.'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
@@ -1161,10 +1161,10 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                 # Create new images
                 for i, image in enumerate(images):
                     try:
-                        # Validate image before creating
-                        if hasattr(image, 'size') and image.size > 25 * 1024 * 1024:  # 25MB limit
+                        # Validate image before creating - INCREASED FOR HIGH-RESOLUTION IMAGES
+                        if hasattr(image, 'size') and image.size > 50 * 1024 * 1024:  # 50MB limit (increased from 25MB)
                             return Response({
-                                'error': f'Image {image.name} is too large. Maximum size is 25MB.'
+                                'error': f'Image {image.name} is too large. Maximum size is 50MB.'
                             }, status=status.HTTP_400_BAD_REQUEST)
                         
                         service_image = ServiceImage.objects.create(

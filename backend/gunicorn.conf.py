@@ -16,10 +16,10 @@ max_requests = 1000
 max_requests_jitter = 50
 preload_app = True
 
-# Timeout settings
-timeout = 300  # Increased from 30 to 5 minutes for large file uploads
+# Timeout settings - INCREASED FOR LARGE PORTFOLIO UPLOADS
+timeout = 600  # Increased to 10 minutes for large file uploads
 keepalive = 2
-graceful_timeout = 300  # Increased from 30 to 5 minutes
+graceful_timeout = 600  # Increased to 10 minutes for large uploads
 
 # Logging
 accesslog = "-"
@@ -30,10 +30,10 @@ access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
 # Process naming
 proc_name = "alex-design-gunicorn"
 
-# Security
-limit_request_line = 4094
-limit_request_fields = 100
-limit_request_field_size = 8190
+# Security - INCREASED FOR LARGE UPLOADS
+limit_request_line = 8192      # Increased for larger requests
+limit_request_fields = 1000    # Increased for bulk uploads with many files
+limit_request_field_size = 16384  # Increased field size limit
 
 # Performance
 sendfile = True

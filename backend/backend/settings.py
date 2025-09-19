@@ -199,14 +199,14 @@ else:
 #     os.path.join(BASE_DIR, 'static'),
 # ]
 
-# File upload settings for large architecture images - Production Optimized
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB - increased for large file uploads
-DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024   # 200MB - increased for large album uploads
+# File upload settings for large architecture images - ENHANCED FOR PORTFOLIO PROJECTS
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024   # 100MB - increased for large high-resolution images
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024   # 1GB - increased for large portfolio uploads (22 images x 22MB)
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Allow more album images and fields
 
 # Request timeout settings for long-running operations like bulk uploads
-REQUEST_TIMEOUT = 300  # 5 minutes for request processing
-UPLOAD_TIMEOUT = 300   # 5 minutes for file uploads
+REQUEST_TIMEOUT = 600  # 10 minutes for request processing (increased for large uploads)
+UPLOAD_TIMEOUT = 600   # 10 minutes for file uploads (increased for large uploads)
 
 ALLOWED_UPLOAD_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp',
@@ -245,12 +245,12 @@ else:
     IMAGE_OPTIMIZATION_THREADS = 1
     IMAGE_OPTIMIZATION_TIMEOUT = 60
 
-# Image validation settings
+# Image validation settings - INCREASED FOR HIGH-RESOLUTION PORTFOLIO IMAGES
 ALLOWED_IMAGE_TYPES = [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
     'image/bmp', 'image/webp', 'image/tiff'
 ]
-MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25MB
+MAX_IMAGE_SIZE = 50 * 1024 * 1024  # 50MB - increased from 25MB for high-resolution images
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -106,7 +106,7 @@ export function useUploadProgress() {
       }
 
       // Add all files
-      files.forEach((fileObj, index) => {
+      files.forEach((fileObj) => {
         uploadFormData.append('images', fileObj.file);
       });
 
@@ -118,7 +118,7 @@ export function useUploadProgress() {
       // Configure axios for progress tracking with better error handling
       const response = await api.post(endpoint, uploadFormData, {
         signal: abortControllerRef.current.signal,
-        timeout: 300000, // 5 minutes timeout specifically for uploads
+        timeout: 600000, // 10 minutes timeout specifically for large uploads
         headers: {
           'Content-Type': 'multipart/form-data',
         },

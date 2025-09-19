@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ImageIcon, Upload, Tag, Layers, ChevronUp, ChevronDown, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ImageIcon, Tag, Layers, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { api, endpoints } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import UploadProgress from "@/components/UploadProgress";
-import FileUpload from "@/components/FileUpload";
+
 import { useUploadProgress } from "@/hooks/useUploadProgress";
 
 const projectSchema = z.object({
@@ -148,6 +148,48 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
+      // CLIENT-SIDE VALIDATION FOR LARGE UPLOADS
+      const albumFiles = data.album_images ? Array.from(data.album_images as FileList) : [];
+      const mainImageFile = data.image?.[0] as File | undefined;
+      
+      // Validate individual file sizes (50MB limit per file)
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      const oversizedFiles: string[] = [];
+      
+      if (mainImageFile && mainImageFile.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(`${mainImageFile.name} (${(mainImageFile.size / 1024 / 1024).toFixed(1)}MB)`);
+      }
+      
+      albumFiles.forEach((file) => {
+        const fileObj = file as File;
+        if (fileObj.size > MAX_FILE_SIZE) {
+          oversizedFiles.push(`${fileObj.name} (${(fileObj.size / 1024 / 1024).toFixed(1)}MB)`);
+        }
+      });
+      
+      if (oversizedFiles.length > 0) {
+        toast({
+          title: "Files Too Large",
+          description: `The following files exceed the 50MB limit: ${oversizedFiles.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate total upload size (warn if over 500MB)
+      const totalSize = (mainImageFile?.size || 0) + albumFiles.reduce((sum: number, file) => {
+        const fileObj = file as File;
+        return sum + fileObj.size;
+      }, 0);
+      const WARN_SIZE_THRESHOLD = 500 * 1024 * 1024; // 500MB
+      
+      if (totalSize > WARN_SIZE_THRESHOLD) {
+        const confirmed = window.confirm(
+          `This upload is ${(totalSize / 1024 / 1024).toFixed(0)}MB total. Large uploads may take several minutes. Continue?`
+        );
+        if (!confirmed) return;
+      }
+
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("description", data.description);
@@ -195,10 +237,10 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
         // Close the dialog immediately and show progress bar
         setIsDialogOpen(false);
         
-        const albumFiles = Array.from(data.album_images).map((file: File) => ({
-          file,
-          name: file.name,
-          size: file.size
+        const albumFiles = Array.from(data.album_images as FileList).map((file) => ({
+          file: file as File,
+          name: (file as File).name,
+          size: (file as File).size
         }));
 
         console.log('Starting album upload for project:', projectId, 'with files:', albumFiles);
@@ -581,7 +623,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                           ) : (
                             <div className="text-center py-8">
                               <p className="text-base text-muted-foreground">
-                                {form.watch("categories")?.length > 0 
+                                {(form.watch("categories") || []).length > 0 
                                   ? "No subcategories for selected categories" 
                                   : "Select categories to see subcategories"
                                 }
@@ -931,7 +973,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
       totalBytes={uploadState.totalBytes}
       uploadedBytes={uploadState.uploadedBytes}
       remainingBytes={uploadState.remainingBytes}
-      error={uploadState.error}
+      error={uploadState.error || undefined}
       isCompleted={uploadState.isCompleted}
       isPaused={uploadState.isPaused}
       onPause={pauseUpload}
