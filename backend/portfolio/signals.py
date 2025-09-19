@@ -14,10 +14,11 @@ import shutil
 import threading
 from .models import Project, Service, ProjectImage, ServiceImage
 from .image_optimizer import ImageOptimizer
+from .async_optimizer import AsyncImageOptimizer
 
 logger = logging.getLogger(__name__)
 
-# Thread lock to prevent duplicate optimizations
+# Thread lock to prevent duplicate optimizations (legacy, but kept for safety)
 optimization_lock = threading.Lock()
 currently_optimizing = set()
 
@@ -25,7 +26,7 @@ currently_optimizing = set()
 def optimize_project_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project images when a project is created or updated
-    OPTIMIZED: Only trigger optimization when images are actually changed or new images are added
+    OPTIMIZED: Uses async queue system to prevent blocking HTTP responses
     """
     try:
         # Skip optimization entirely if this is just a text-only update
@@ -46,7 +47,7 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
                 logger.info(f"Project has new image files - will optimize: {instance.title}")
             else:
                 # For existing projects without new files, skip optimization entirely
-                logger.debug(f"Skipping optimization - no new image files for existing project: {instance.title}")
+                logger.info(f"FAST PATH: Skipping optimization - no new image files for existing project: {instance.title}")
                 return
         else:
             # For new projects, check if they have images to optimize
@@ -58,53 +59,15 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
             
             logger.info(f"New project created with main image - queuing optimization: {instance.title}")
         
-        # Only proceed with optimization if we've determined it's needed
-        should_optimize = True
+        # Queue optimization asynchronously - this is instantaneous and non-blocking
+        AsyncImageOptimizer.queue_project_optimization(
+            project_id=instance.id,
+            operation_type='create' if created else 'update'
+        )
         
-        if should_optimize:
-            # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            def delayed_optimization():
-                def run_optimization():
-                    # Prevent duplicate optimization with lock
-                    with optimization_lock:
-                        project_key = f"project_{instance.id}"
-                        if project_key in currently_optimizing:
-                            logger.info(f"Skipping project optimization - already in progress for: {instance.title}")
-                            return
-                        currently_optimizing.add(project_key)
-                    
-                    try:
-                        # Re-fetch the project to get latest state
-                        fresh_project = Project.objects.get(id=instance.id)
-                        
-                        # Double-check if project still has images to optimize
-                        has_main_image = bool(fresh_project.image)
-                        has_album_images = fresh_project.album_images.exists()
-                        
-                        if has_main_image or has_album_images:
-                            ImageOptimizer.optimize_project_images(fresh_project)
-                            logger.info(f"Successfully optimized images for project: {fresh_project.title}")
-                        else:
-                            logger.info(f"Project has no images to optimize yet: {fresh_project.title}")
-                            
-                    except Exception as e:
-                        logger.error(f"Failed to optimize project {instance.title}: {str(e)}")
-                    finally:
-                        # Remove from optimization set
-                        with optimization_lock:
-                            currently_optimizing.discard(project_key)
-                
-                # Run optimization in background thread to avoid blocking
-                thread = threading.Thread(target=run_optimization)
-                thread.daemon = True
-                thread.start()
-            
-            transaction.on_commit(delayed_optimization)
-            logger.info(f"Queued image optimization for project: {instance.title}")
-            
-            # Clear cache since we're processing image optimization
-            cache_key = f"project_{instance.id}_images"
-            cache.delete(cache_key)
+        # Clear cache since we're processing image optimization
+        cache_key = f"project_{instance.id}_images"
+        cache.delete(cache_key)
         
     except Exception as e:
         logger.error(f"Error in project image optimization signal: {str(e)}")
@@ -113,7 +76,7 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
 def optimize_service_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize service images when a service is created or updated
-    OPTIMIZED: Only trigger optimization when images are actually changed or new images are added
+    OPTIMIZED: Uses async queue system to prevent blocking HTTP responses
     """
     try:
         # Skip optimization entirely if this is just a text-only update
@@ -134,7 +97,7 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
                 logger.info(f"Service has new image files - will optimize: {instance.name}")
             else:
                 # For existing services without new files, skip optimization entirely
-                logger.debug(f"Skipping optimization - no new image files for existing service: {instance.name}")
+                logger.info(f"FAST PATH: Skipping optimization - no new image files for existing service: {instance.name}")
                 return
         else:
             # For new services, check if they have images to optimize
@@ -146,42 +109,15 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
             
             logger.info(f"New service created with icon - queuing optimization: {instance.name}")
         
-        # Only proceed with optimization if we've determined it's needed
-        should_optimize = True
+        # Queue optimization asynchronously - this is instantaneous and non-blocking
+        AsyncImageOptimizer.queue_service_optimization(
+            service_id=instance.id,
+            operation_type='create' if created else 'update'
+        )
         
-        if should_optimize:
-            # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            def delayed_optimization():
-                def run_optimization():
-                    # Prevent duplicate optimization with lock
-                    with optimization_lock:
-                        service_key = f"service_{instance.id}"
-                        if service_key in currently_optimizing:
-                            logger.info(f"Skipping service optimization - already in progress for: {instance.name}")
-                            return
-                        currently_optimizing.add(service_key)
-                    
-                    try:
-                        ImageOptimizer.optimize_service_images(instance)
-                        logger.info(f"Successfully optimized images for service: {instance.name}")
-                    except Exception as e:
-                        logger.error(f"Failed to optimize service {instance.name}: {str(e)}")
-                    finally:
-                        # Remove from optimization set
-                        with optimization_lock:
-                            currently_optimizing.discard(service_key)
-                
-                # Run optimization in background thread to avoid blocking
-                thread = threading.Thread(target=run_optimization)
-                thread.daemon = True
-                thread.start()
-            
-            transaction.on_commit(delayed_optimization)
-            logger.info(f"Queued image optimization for service: {instance.name}")
-            
-            # Clear cache since we're processing image optimization
-            cache_key = f"service_{instance.id}_images"
-            cache.delete(cache_key)
+        # Clear cache since we're processing image optimization
+        cache_key = f"service_{instance.id}_images"
+        cache.delete(cache_key)
         
     except Exception as e:
         logger.error(f"Error in service image optimization signal: {str(e)}")
@@ -190,7 +126,7 @@ def optimize_service_images_on_save(sender, instance, created, **kwargs):
 def optimize_project_album_image_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project album images when they are created or updated
-    OPTIMIZED: Only trigger for single image uploads, not bulk uploads, with duplicate prevention
+    OPTIMIZED: Uses async queue system, only triggers for single uploads
     """
     try:
         if created and instance.project:
@@ -211,33 +147,11 @@ def optimize_project_album_image_on_save(sender, instance, created, **kwargs):
                 logger.info(f"Skipping individual optimization for album image {instance.id} - appears to be bulk upload")
                 return
             
-            # Single image upload - optimize immediately
-            def delayed_optimization():
-                def run_optimization():
-                    # Double-check lock before proceeding
-                    with optimization_lock:
-                        project_key = f"project_{instance.project.id}"
-                        if project_key in currently_optimizing:
-                            logger.info(f"Skipping single album optimization - project already optimizing: {instance.project.title}")
-                            return
-                        currently_optimizing.add(project_key)
-                    
-                    try:
-                        ImageOptimizer.optimize_project_images(instance.project)
-                        logger.info(f"Successfully optimized single album image for project: {instance.project.title}")
-                    except Exception as e:
-                        logger.error(f"Failed to optimize single album image for project {instance.project.title}: {str(e)}")
-                    finally:
-                        # Remove from optimization set
-                        with optimization_lock:
-                            currently_optimizing.discard(project_key)
-                
-                # Run optimization in background thread to avoid blocking
-                thread = threading.Thread(target=run_optimization)
-                thread.daemon = True
-                thread.start()
-            
-            transaction.on_commit(delayed_optimization)
+            # Single image upload - queue optimization asynchronously
+            AsyncImageOptimizer.queue_project_optimization(
+                project_id=instance.project.id,
+                operation_type='album_image_create'
+            )
             logger.info(f"Queued single album image optimization for project: {instance.project.title}")
             
         # Clear cache for the parent project
@@ -252,7 +166,7 @@ def optimize_project_album_image_on_save(sender, instance, created, **kwargs):
 def optimize_service_album_image_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize service album images when they are created or updated
-    OPTIMIZED: Only trigger for single image uploads, not bulk uploads, with duplicate prevention
+    OPTIMIZED: Uses async queue system, only triggers for single uploads
     """
     try:
         if created and instance.service:
@@ -273,33 +187,11 @@ def optimize_service_album_image_on_save(sender, instance, created, **kwargs):
                 logger.info(f"Skipping individual optimization for album image {instance.id} - appears to be bulk upload")
                 return
             
-            # Single image upload - optimize immediately
-            def delayed_optimization():
-                def run_optimization():
-                    # Double-check lock before proceeding
-                    with optimization_lock:
-                        service_key = f"service_{instance.service.id}"
-                        if service_key in currently_optimizing:
-                            logger.info(f"Skipping single album optimization - service already optimizing: {instance.service.name}")
-                            return
-                        currently_optimizing.add(service_key)
-                    
-                    try:
-                        ImageOptimizer.optimize_service_images(instance.service)
-                        logger.info(f"Successfully optimized single album image for service: {instance.service.name}")
-                    except Exception as e:
-                        logger.error(f"Failed to optimize single album image for service {instance.service.name}: {str(e)}")
-                    finally:
-                        # Remove from optimization set
-                        with optimization_lock:
-                            currently_optimizing.discard(service_key)
-                
-                # Run optimization in background thread to avoid blocking
-                thread = threading.Thread(target=run_optimization)
-                thread.daemon = True
-                thread.start()
-            
-            transaction.on_commit(delayed_optimization)
+            # Single image upload - queue optimization asynchronously
+            AsyncImageOptimizer.queue_service_optimization(
+                service_id=instance.service.id,
+                operation_type='album_image_create'
+            )
             logger.info(f"Queued single album image optimization for service: {instance.service.name}")
             
         # Clear cache for the parent service

@@ -331,8 +331,15 @@ class Project(models.Model):
         
         # Set default order to next available position if not set
         if not self.order or self.order == 0:
-            max_order = Project.objects.aggregate(models.Max('order'))['order__max']
-            self.order = (max_order or 0) + 1
+            # Use a more efficient approach to avoid aggregate on every save
+            try:
+                # Get the last project by order (most efficient query)
+                last_project = Project.objects.only('order').order_by('-order').first()
+                self.order = (last_project.order if last_project else 0) + 1
+            except:
+                # Fallback to aggregate if the above fails
+                max_order = Project.objects.aggregate(models.Max('order'))['order__max']
+                self.order = (max_order or 0) + 1
         
         # Handle title change and file reorganization
         if self.pk:
@@ -362,25 +369,23 @@ class Project(models.Model):
                         # New image file uploaded (Django admin scenario)
                         image_changed = True
                         change_reason = "new_file_uploaded_admin"
-                    elif hasattr(self.image, 'file') and self.image.file:
-                        # Another way new image can be detected
-                        image_changed = True
-                        change_reason = "new_file_uploaded_api"
+                    elif hasattr(self.image, 'file'):
+                        # Another way new image can be detected - handle missing files gracefully
+                        try:
+                            if self.image.file:
+                                image_changed = True
+                                change_reason = "new_file_uploaded_api"
+                        except (FileNotFoundError, ValueError):
+                            # File doesn't exist, no need to check
+                            pass
                     
                     if image_changed:
                         import logging
                         logger = logging.getLogger(__name__)
-                        logger.info(f"Project {self.title}: Deleting old image due to {change_reason}")
+                        logger.info(f"Project {self.title}: Will clean up old image asynchronously: {change_reason}")
                         
-                        # Delete the old image file AND its optimized versions
-                        from .image_optimizer import ImageOptimizer
-                        ImageOptimizer.delete_image_file(old_instance.image)
-                        
-                        # Also clear the optimized path fields for the old image
-                        old_instance.optimized_image = None
-                        old_instance.optimized_image_small = None
-                        old_instance.optimized_image_medium = None
-                        old_instance.optimized_image_large = None
+                        # Store old image path for async cleanup
+                        old_image_path = old_instance.image.name if old_instance.image else None
                         
                         # Clear the current instance's optimized paths so they get regenerated
                         self.optimized_image = None
@@ -388,7 +393,20 @@ class Project(models.Model):
                         self.optimized_image_medium = None
                         self.optimized_image_large = None
                         
-                        logger.info(f"Project {self.title}: Old image cleanup completed")
+                        # Queue async cleanup after save completes
+                        if old_image_path:
+                            from django.db import transaction
+                            def queue_cleanup():
+                                try:
+                                    from .async_optimizer import AsyncImageOptimizer
+                                    # We'll add a cleanup method to AsyncImageOptimizer
+                                    AsyncImageOptimizer.queue_file_cleanup('project', self.id, old_image_path)
+                                except Exception as e:
+                                    logger.error(f"Failed to queue cleanup for {old_image_path}: {e}")
+                            
+                            transaction.on_commit(queue_cleanup)
+                        
+                        logger.info(f"Project {self.title}: Queued async cleanup for old image")
                     else:
                         import logging
                         logger = logging.getLogger(__name__)
@@ -708,8 +726,15 @@ class Service(models.Model):
         
         # Set default order to next available position if not set
         if not self.order or self.order == 0:
-            max_order = Service.objects.aggregate(models.Max('order'))['order__max']
-            self.order = (max_order or 0) + 1
+            # Use a more efficient approach to avoid aggregate on every save
+            try:
+                # Get the last service by order (most efficient query)
+                last_service = Service.objects.only('order').order_by('-order').first()
+                self.order = (last_service.order if last_service else 0) + 1
+            except:
+                # Fallback to aggregate if the above fails
+                max_order = Service.objects.aggregate(models.Max('order'))['order__max']
+                self.order = (max_order or 0) + 1
         
         # Handle name change and file reorganization
         if self.pk:
@@ -726,35 +751,59 @@ class Service(models.Model):
                     # Check if icon has changed (different scenarios)
                     icon_changed = False
                     
-                    if not self.icon:
-                        # Icon was removed
-                        icon_changed = True
-                    elif hasattr(self.icon, 'name') and old_instance.icon.name != self.icon.name:
-                        # Icon file name changed (new upload)
-                        icon_changed = True
-                    elif hasattr(self.icon, '_file') and self.icon._file:
-                        # New icon file uploaded (Django admin scenario)
-                        icon_changed = True
-                    elif hasattr(self.icon, 'file') and self.icon.file:
-                        # Another way new icon can be detected
-                        icon_changed = True
+                    # Safely check for icon changes
+                    try:
+                        if not self.icon:
+                            # Icon was removed
+                            icon_changed = True
+                        elif hasattr(self.icon, 'name') and old_instance.icon.name != self.icon.name:
+                            # Icon file name changed (new upload)
+                            icon_changed = True
+                        elif hasattr(self.icon, '_file') and self.icon._file:
+                            # New icon file uploaded (Django admin scenario)
+                            icon_changed = True
+                        elif hasattr(self.icon, 'file'):
+                            # Another way new icon can be detected - handle missing files gracefully
+                            try:
+                                if self.icon.file:
+                                    icon_changed = True
+                            except (FileNotFoundError, ValueError, OSError):
+                                # File doesn't exist, no need to check
+                                pass
+                    except (FileNotFoundError, ValueError, OSError) as e:
+                        # Handle any file-related errors gracefully
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Service {self.name}: File error during save check: {e}")
+                        pass
                     
                     if icon_changed:
-                        # Delete the old icon file AND its optimized versions
-                        from .image_optimizer import ImageOptimizer
-                        ImageOptimizer.delete_image_file(old_instance.icon)
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Service {self.name}: Will clean up old icon asynchronously")
                         
-                        # Also clear the optimized path fields for the old icon
-                        old_instance.optimized_icon = None
-                        old_instance.optimized_icon_small = None
-                        old_instance.optimized_icon_medium = None
-                        old_instance.optimized_icon_large = None
+                        # Store old icon path for async cleanup
+                        old_icon_path = old_instance.icon.name if old_instance.icon else None
                         
                         # Clear the current instance's optimized paths so they get regenerated
                         self.optimized_icon = None
                         self.optimized_icon_small = None
                         self.optimized_icon_medium = None
                         self.optimized_icon_large = None
+                        
+                        # Queue async cleanup after save completes
+                        if old_icon_path:
+                            from django.db import transaction
+                            def queue_cleanup():
+                                try:
+                                    from .async_optimizer import AsyncImageOptimizer
+                                    AsyncImageOptimizer.queue_file_cleanup('service', self.id, old_icon_path)
+                                except Exception as e:
+                                    logger.error(f"Failed to queue cleanup for {old_icon_path}: {e}")
+                            
+                            transaction.on_commit(queue_cleanup)
+                        
+                        logger.info(f"Service {self.name}: Queued async cleanup for old icon")
             except Service.DoesNotExist:
                 pass
         
