@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
+import PaginationControls from "@/components/Pagination";
 
 import ImageLightbox from "@/components/ImageLightbox";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,8 @@ export default function ProjectAlbum() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState<AlbumImage | null>(null);
   const [lightboxLoading, setLightboxLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const imagesPerPage = 4;
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -147,6 +150,22 @@ export default function ProjectAlbum() {
 
   const { project, album_images, total_images } = albumData;
 
+  // Calculate pagination
+  const totalPages = Math.ceil(album_images.length / imagesPerPage);
+  const startIndex = (currentPage - 1) * imagesPerPage;
+  const endIndex = startIndex + imagesPerPage;
+  const currentImages = album_images.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of album grid when page changes
+    const albumGrid = document.querySelector('[data-album-grid]');
+    if (albumGrid) {
+      albumGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   if (total_images === 0) {
     return (
       <motion.div
@@ -242,8 +261,12 @@ export default function ProjectAlbum() {
         variants={albumGridVariants}
         initial="hidden"
         animate="visible"
+        data-album-grid
       >
-        {album_images.map((image: AlbumImage, index: number) => (
+        {currentImages.map((image: AlbumImage, index: number) => {
+          // Calculate the actual index in the full album for lightbox navigation
+          const actualIndex = startIndex + index;
+          return (
           <motion.div
             key={image.id}
             variants={albumItemVariants}
@@ -252,11 +275,11 @@ export default function ProjectAlbum() {
             <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]">
               <div 
                 className="relative cursor-pointer group"
-                onClick={() => handleImageClick(image, index)}
+                onClick={() => handleImageClick(image, actualIndex)}
               >
                 <img
                   src={image.image}
-                  alt={image.title || `${project.title} - Image ${index + 1}`}
+                  alt={image.title || `${project.title} - Image ${actualIndex + 1}`}
                   className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={() => handleImageError(image)}
                 />
@@ -278,8 +301,23 @@ export default function ProjectAlbum() {
               )}
             </Card>
           </motion.div>
-        ))}
+        );
+        })}
       </motion.div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <motion.div
+          variants={itemVariants}
+          className="mt-8 flex justify-center"
+        >
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </motion.div>
+      )}
 
       {/* Navigation Footer */}
       <motion.div
