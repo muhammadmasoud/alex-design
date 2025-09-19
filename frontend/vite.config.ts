@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => ({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
-        timeout: 1200000, // 20 minutes for large uploads
-        proxyTimeout: 1200000, // 20 minutes for large uploads
+        timeout: 3600000, // 1 hour for large uploads
+        proxyTimeout: 3600000, // 1 hour for large uploads
       },
       '/media': {
         target: 'http://127.0.0.1:8000',
