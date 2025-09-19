@@ -26,11 +26,12 @@ class ServiceSubcategorySimpleSerializer(serializers.ModelSerializer):
 
 class ProjectImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    original_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename', 
-                 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
+        fields = ['id', 'image', 'image_url', 'original_image_url', 'title', 'description', 'order', 'original_filename', 
+                 'original_file_path', 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
     
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
@@ -67,6 +68,29 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         except Exception as e:
             # If URL building fails, return a safe fallback
             print(f"Error building image URL for ProjectImage {getattr(obj, 'id', 'unknown')}: {e}")
+            return None
+    
+    def get_original_image_url(self, obj):
+        """Get the original unoptimized image URL for lightbox display"""
+        try:
+            # Use original file path if available
+            if hasattr(obj, 'original_file_path') and obj.original_file_path and obj.original_file_path.strip():
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.original_file_path.replace('\\', '/').strip()}")
+                return f"/media/{obj.original_file_path.replace('\\', '/').strip()}"
+            elif hasattr(obj, 'image') and obj.image:
+                # Fallback to original image field
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+                except Exception:
+                    return f"/media/{obj.image.name}" if obj.image.name else None
+            return None
+        except Exception as e:
+            print(f"Error building original image URL for ProjectImage {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def to_representation(self, instance):
@@ -131,11 +155,12 @@ class ProjectImageSerializer(serializers.ModelSerializer):
 
 class ServiceImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    original_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ServiceImage
-        fields = ['id', 'image', 'image_url', 'title', 'description', 'order', 'original_filename',
-                 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
+        fields = ['id', 'image', 'image_url', 'original_image_url', 'title', 'description', 'order', 'original_filename',
+                 'original_file_path', 'optimized_image', 'optimized_image_small', 'optimized_image_medium', 'optimized_image_large']
     
     def get_image_url(self, obj):
         """Get the optimized image URL from the database"""
@@ -172,6 +197,29 @@ class ServiceImageSerializer(serializers.ModelSerializer):
         except Exception as e:
             # If URL building fails, return a safe fallback
             print(f"Error building image URL for ServiceImage {getattr(obj, 'id', 'unknown')}: {e}")
+            return None
+    
+    def get_original_image_url(self, obj):
+        """Get the original unoptimized image URL for lightbox display"""
+        try:
+            # Use original file path if available
+            if hasattr(obj, 'original_file_path') and obj.original_file_path and obj.original_file_path.strip():
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.original_file_path.replace('\\', '/').strip()}")
+                return f"/media/{obj.original_file_path.replace('\\', '/').strip()}"
+            elif hasattr(obj, 'image') and obj.image:
+                # Fallback to original image field
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+                except Exception:
+                    return f"/media/{obj.image.name}" if obj.image.name else None
+            return None
+        except Exception as e:
+            print(f"Error building original image URL for ServiceImage {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def to_representation(self, instance):
@@ -236,6 +284,7 @@ class ServiceImageSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()  # For reading the full URL
+    original_image_url = serializers.SerializerMethodField()  # For original unoptimized image URL
     category_names = serializers.SerializerMethodField()
     subcategory_names = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()  # For backward compatibility
@@ -274,6 +323,29 @@ class ProjectSerializer(serializers.ModelSerializer):
         except Exception as e:
             # If URL building fails, return a safe fallback
             print(f"Error building image URL for Project {getattr(obj, 'id', 'unknown')}: {e}")
+            return None
+    
+    def get_original_image_url(self, obj):
+        """Get the original unoptimized image URL for lightbox display"""
+        try:
+            # Use original file path if available
+            if hasattr(obj, 'original_file_path') and obj.original_file_path and obj.original_file_path.strip():
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.original_file_path.replace('\\', '/').strip()}")
+                return f"/media/{obj.original_file_path.replace('\\', '/').strip()}"
+            elif hasattr(obj, 'image') and obj.image:
+                # Fallback to original image field
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.image.url)
+                    return obj.image.url
+                except Exception:
+                    return f"/media/{obj.image.name}" if obj.image.name else None
+            return None
+        except Exception as e:
+            print(f"Error building original image URL for Project {getattr(obj, 'id', 'unknown')}: {e}")
             return None
     
     def get_category_name(self, obj):
@@ -398,6 +470,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class ServiceSerializer(serializers.ModelSerializer):
     icon_url = serializers.SerializerMethodField()
+    original_image_url = serializers.SerializerMethodField()  # For original unoptimized icon URL
     category_names = serializers.SerializerMethodField()
     subcategory_names = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()  # For backward compatibility
@@ -446,6 +519,29 @@ class ServiceSerializer(serializers.ModelSerializer):
         except Exception as e:
             # If URL building fails, return a safe fallback
             print(f"Error building icon URL for Service {getattr(obj, 'id', 'unknown')}: {e}")
+            return None
+
+    def get_original_image_url(self, obj):
+        """Get the original unoptimized icon URL for lightbox display"""
+        try:
+            # Use original file path if available
+            if hasattr(obj, 'original_file_path') and obj.original_file_path and obj.original_file_path.strip():
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(f"/media/{obj.original_file_path.replace('\\', '/').strip()}")
+                return f"/media/{obj.original_file_path.replace('\\', '/').strip()}"
+            elif hasattr(obj, 'icon') and obj.icon:
+                # Fallback to original icon field
+                try:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(obj.icon.url)
+                    return obj.icon.url
+                except Exception:
+                    return f"/media/{obj.icon.name}" if obj.icon.name else None
+            return None
+        except Exception as e:
+            print(f"Error building original icon URL for Service {getattr(obj, 'id', 'unknown')}: {e}")
             return None
 
     def get_category_names(self, obj):

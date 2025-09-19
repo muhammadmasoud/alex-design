@@ -1141,143 +1141,142 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
     def bulk_upload(self, request):
         """
         Bulk upload multiple images for a service
+        OPTIMIZED: Sends response immediately, processes images efficiently with single optimization call
         """
+        import logging
+        import threading
+        from django.db.models.signals import post_save
+        from .signals import optimize_service_album_image_on_save
+        
+        logger = logging.getLogger(__name__)
+        start_time = time.time()
+
+        # Validate inputs first
+        service_id = request.data.get('service_id')
+        if not service_id:
+            return Response({'error': 'service_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            service_id = request.data.get('service_id')
-            if not service_id:
-                return Response({'error': 'service_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            try:
-                service = Service.objects.get(id=service_id)
-            except Service.DoesNotExist:
-                return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-            images = request.FILES.getlist('images')
-            if not images:
-                return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Check if we should replace existing images
-            replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
-            
-            created_images = []
-            with transaction.atomic():
-                # If replacing, delete all existing images first
-                if replace_existing:
-                    try:
-                        existing_images = ServiceImage.objects.filter(service=service)
-                        for existing_image in existing_images:
-                            # Delete the image file from storage
-                            if existing_image.image:
-                                existing_image.image.delete(save=False)
-                        existing_images.delete()
-                    except Exception as e:
-                        print(f"Error deleting existing service images: {e}")
-                        return Response({
-                            'error': f'Failed to delete existing images: {str(e)}'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                # Create new images
-                for i, image in enumerate(images):
-                    try:
-                        # Validate image before creating - INCREASED FOR HIGH-RESOLUTION IMAGES
-                        if hasattr(image, 'size') and image.size > 50 * 1024 * 1024:  # 50MB limit (increased from 25MB)
-                            return Response({
-                                'error': f'Image {image.name} is too large. Maximum size is 50MB.'
-                            }, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        service_image = ServiceImage.objects.create(
-                            service=service,
-                            image=image,
-                            original_filename=image.name,
-                            order=i
-                        )
-                        created_images.append(service_image)
-                    except Exception as e:
-                        # Rollback transaction on any error
-                        transaction.set_rollback(True)
-                        print(f"Error creating service image {image.name}: {e}")
-                        return Response({
-                            'error': f'Failed to create image {image.name}: {str(e)}'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            # Try to serialize the response with better error handling
-            action_text = "replaced" if replace_existing else "added to"
-            
-            try:
-                # Ensure serializer has proper context for URL building
-                serializer_context = self.get_serializer_context()
-                if not serializer_context:
-                    serializer_context = {}
-                serializer_context['request'] = request  # Ensure request is set
-                
-                logger.info(f"Using serializer context for service: {list(serializer_context.keys())}")
-                
-                # Test serialization with a single image first to catch errors early
-                if created_images:
-                    try:
-                        test_serializer = self.get_serializer([created_images[0]], many=True, context=serializer_context)
-                        test_data = test_serializer.data
-                        print(f"Test serialization successful for first service image")
-                    except Exception as test_error:
-                        print(f"Test serialization failed for first service image: {test_error}")
-                        print(f"Error type: {type(test_error)}")
-                        import traceback
-                        traceback.print_exc()
-                        # If test fails, return success response without serialized data
-                        return Response({
-                            'message': f'{len(created_images)} images {action_text} successfully',
-                            'images_count': len(created_images),
-                            'warning': 'Images created but serialization failed - check server logs',
-                            'error_details': str(test_error)
-                        }, status=status.HTTP_201_CREATED)
-                
-                # If test passed, try full serialization
-                try:
-                    serializer = self.get_serializer(created_images, many=True, context=serializer_context)
-                    serialized_data = serializer.data
-                    print(f"Full serialization successful for {len(created_images)} service images")
-                    
-                    return Response({
-                        'message': f'{len(created_images)} images {action_text} successfully',
-                        'images': serialized_data
-                    }, status=status.HTTP_201_CREATED)
-                except Exception as serialization_error:
-                    print(f"Full serialization failed: {serialization_error}")
-                    print(f"Error type: {type(serialization_error)}")
-                    import traceback
-                    traceback.print_exc()
-                    
-                    # Return success response without serialized data
-                    return Response({
-                        'message': f'{len(created_images)} images {action_text} successfully',
-                        'images_count': len(created_images),
-                        'warning': 'Images created but serialization failed - check server logs',
-                        'error_details': str(serialization_error)
-                    }, status=status.HTTP_201_CREATED)
-                
-            except Exception as e:
-                # If serialization fails, return a successful response with warning
-                print(f"Serialization error in service bulk upload: {e}")
-                print(f"Error type: {type(e)}")
-                import traceback
-                traceback.print_exc()
-                
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        images = request.FILES.getlist('images')
+        if not images:
+            return Response({'error': 'No images provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate image files before processing - INCREASED FOR HIGH-RESOLUTION IMAGES
+        for image in images:
+            if hasattr(image, 'size') and image.size > 50 * 1024 * 1024:  # 50MB limit (increased from 25MB)
                 return Response({
-                    'message': f'{len(created_images)} images {action_text} successfully',
-                    'images_count': len(created_images),
-                    'warning': 'Images created but serialization failed - check server logs',
-                    'error_details': str(e)
-                }, status=status.HTTP_201_CREATED)
+                    'error': f'Image {image.name} is too large. Maximum size is 50MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
+
+        # CRITICAL FIX: Disconnect optimization signals during bulk upload
+        post_save.disconnect(optimize_service_album_image_on_save, sender=ServiceImage)
+        
+        try:
+            # Fast database operations only
+            with transaction.atomic():
+                if replace_existing:
+                    existing_images = ServiceImage.objects.filter(service=service)
+                    for existing_image in existing_images:
+                        if existing_image.image:
+                            existing_image.image.delete(save=False)
+                    existing_images.delete()
+
+                # Create image records without triggering signals
+                created_images = []
+                for i, image in enumerate(images):
+                    service_image = ServiceImage.objects.create(
+                        service=service,
+                        image=image,
+                        original_filename=image.name,
+                        order=i
+                    )
+                    created_images.append(service_image)
+
+            # SEND RESPONSE IMMEDIATELY - before optimization
+            response_data = {
+                'message': f'{len(created_images)} images uploaded successfully',
+                'images': [{'id': img.id, 'name': img.original_filename} for img in created_images],
+                'processing_status': 'Image optimization will continue in background',
+                'upload_time': time.time() - start_time,
+                'timeout_settings': {
+                    'request_timeout': getattr(settings, 'REQUEST_TIMEOUT', 3600),
+                    'upload_timeout': getattr(settings, 'UPLOAD_TIMEOUT', 3600),
+                    'optimization_timeout': getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
+                }
+            }
+            
+            # Schedule SINGLE optimization call in background thread AFTER response
+            def optimize_service_once():
+                try:
+                    # Wait a moment to ensure all database transactions are complete
+                    import time
+                    time.sleep(0.5)
+                    
+                    # Prevent any signal-based optimization during our manual optimization
+                    from django.db.models.signals import post_save
+                    from .signals import optimize_service_images_on_save
+                    
+                    # Ensure no signals interfere
+                    post_save.disconnect(optimize_service_images_on_save, sender=Service)
+                    
+                    # Single optimization call for entire service with timeout handling
+                    from .image_optimizer import ImageOptimizer
+                    from django.conf import settings
+                    
+                    # Set a reasonable timeout for optimization
+                    optimization_timeout = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
+                    start_opt_time = time.time()
+                    
+                    try:
+                        ImageOptimizer.optimize_service_images(service)
+                        opt_elapsed = time.time() - start_opt_time
+                        logger.info(f"Service image optimization completed in {opt_elapsed:.2f}s")
+                    except Exception as opt_error:
+                        logger.error(f"Service image optimization failed: {opt_error}")
+                        # Continue even if optimization fails
+                    
+                    # FORCE SERVICE SIGNAL TRIGGER - this ensures the service gets marked as optimized
+                    post_save.connect(optimize_service_images_on_save, sender=Service)
+                    service.save(update_fields=['order'])  # Minimal save to trigger updated signal
+                    
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} service images")
+                    
+                except Exception as e:
+                    logger.error(f"Error in single background service optimization: {e}")
+                finally:
+                    # Re-enable signals after optimization is complete
+                    try:
+                        post_save.connect(optimize_service_images_on_save, sender=Service)
+                        post_save.connect(optimize_service_album_image_on_save, sender=ServiceImage)
+                    except:
+                        pass  # Already connected
+
+            # Start SINGLE background processing thread
+            optimization_thread = threading.Thread(target=optimize_service_once)
+            optimization_thread.daemon = True
+            optimization_thread.start()
+            
+            logger.info(f"Immediate service bulk upload response sent in {time.time() - start_time:.2f}s, single optimization running in background")
+            return Response(response_data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            # Catch any other unexpected errors
-            print(f"Unexpected error in service bulk upload: {e}")
-            import traceback
-            traceback.print_exc()
-            
+            logger.error(f"Error in service bulk upload: {e}")
             return Response({
-                'error': f'Unexpected error during bulk upload: {str(e)}'
+                'error': f'Failed during bulk upload: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # Always reconnect the signal if not handled by thread
+            try:
+                post_save.connect(optimize_service_album_image_on_save, sender=ServiceImage)
+            except:
+                pass  # Already connected
 
 
 class ProjectAlbumView(APIView):

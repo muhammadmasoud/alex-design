@@ -134,7 +134,6 @@ export function useUploadProgress() {
           if (!total) return;
 
           const currentProgress = (loaded / total) * 100;
-          const overallProgress = currentProgress;
           const elapsedTime = Date.now() - startTimeRef.current;
           const speed = calculateSpeed(loaded, elapsedTime);
           const remainingBytes = total - loaded;
@@ -143,6 +142,11 @@ export function useUploadProgress() {
           // Estimate current file (approximate)
           const estimatedCurrentFile = Math.floor((loaded / total) * files.length);
           const currentFileName = files[Math.min(estimatedCurrentFile, files.length - 1)]?.name || '';
+          
+          // Calculate overall progress more accurately
+          // For bulk uploads, we can't track individual file completion, so we use the upload progress
+          // But we need to be more careful about the file count display
+          const overallProgress = currentProgress;
 
           setUploadState(prev => ({
             ...prev,
@@ -154,6 +158,9 @@ export function useUploadProgress() {
             totalBytes: total,
             uploadedBytes: loaded,
             remainingBytes: Math.max(0, total - loaded),
+            // For bulk uploads, we can't accurately track individual file completion
+            // So we'll show the estimated progress instead
+            uploadedFiles: Math.min(Math.floor((loaded / total) * files.length), files.length),
           }));
         },
       });
@@ -177,6 +184,7 @@ export function useUploadProgress() {
           currentFileProgress: 100,
           uploadedBytes: prev.totalBytes,
           remainingBytes: 0,
+          currentFileName: '', // Clear current file name on completion
         }));
 
         // Call onSuccess callback if provided

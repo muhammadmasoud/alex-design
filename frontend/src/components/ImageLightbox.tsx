@@ -10,9 +10,10 @@ interface ImageLightboxProps {
   src: string;
   alt: string;
   title?: string;
+  loading?: boolean;
 }
 
-export default function ImageLightbox({ isOpen, onClose, src, alt, title }: ImageLightboxProps) {
+export default function ImageLightbox({ isOpen, onClose, src, alt, title, loading = false }: ImageLightboxProps) {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -329,30 +330,37 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title }: Imag
           onClick={onClose}
           ref={imageContainerRef}
         >
-          <motion.img
-            src={src}
-            alt={alt}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className={`max-w-full max-h-full object-contain select-none ${
-              scale > 1 ? 'cursor-grab' : 'cursor-zoom-in'
-            } ${isDragging ? 'cursor-grabbing' : ''}`}
-            style={{
-              transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px) rotate(${rotation}deg)`,
-              transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-              touchAction: 'none', // Prevent default touch actions
-              userSelect: 'none'   // Prevent text selection
-            }}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onClick={(e) => {
-              e.stopPropagation();
-              // Only zoom in if we're not dragging and scale is 1
-              if (scale === 1 && !isDragging) handleZoomIn();
-            }}
-            draggable={false}
-          />
+          {loading ? (
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              <p className="text-white text-sm">Loading original image...</p>
+            </div>
+          ) : (
+            <motion.img
+              src={src}
+              alt={alt}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className={`max-w-full max-h-full object-contain select-none ${
+                scale > 1 ? 'cursor-grab' : 'cursor-zoom-in'
+              } ${isDragging ? 'cursor-grabbing' : ''}`}
+              style={{
+                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px) rotate(${rotation}deg)`,
+                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                touchAction: 'none', // Prevent default touch actions
+                userSelect: 'none'   // Prevent text selection
+              }}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Only zoom in if we're not dragging and scale is 1
+                if (scale === 1 && !isDragging) handleZoomIn();
+              }}
+              draggable={false}
+            />
+          )}
         </div>
 
         {/* Instructions */}

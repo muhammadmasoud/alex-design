@@ -27,6 +27,7 @@ export default function ProjectDetail() {
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; title: string } | null>(null);
+  const [lightboxLoading, setLightboxLoading] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -59,13 +60,30 @@ export default function ProjectDetail() {
 
   // Lightbox handlers
   const openLightbox = (src: string, alt: string, title: string) => {
-    setLightboxImage({ src, alt, title });
+    // Use original image URL for lightbox if available, otherwise fallback to optimized
+    const imageUrl = project?.original_image_url || src;
+    
+    if (!imageUrl || imageUrl.includes('placeholder')) {
+      console.warn('Cannot open lightbox: invalid image URL', imageUrl);
+      return;
+    }
+    
+    // Show loading state for lightbox
+    setLightboxLoading(true);
+    
+    setLightboxImage({ src: imageUrl, alt, title });
     setLightboxOpen(true);
+    
+    // Simulate loading time for better UX
+    setTimeout(() => {
+      setLightboxLoading(false);
+    }, 300);
   };
 
   const closeLightbox = () => {
     setLightboxOpen(false);
     setLightboxImage(null);
+    setLightboxLoading(false);
   };
 
   if (loading) {
@@ -372,6 +390,7 @@ export default function ProjectDetail() {
           src={lightboxImage.src}
           alt={lightboxImage.alt}
           title={lightboxImage.title}
+          loading={lightboxLoading}
         />
       )}
     </motion.div>

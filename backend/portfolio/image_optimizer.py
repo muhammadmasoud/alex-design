@@ -111,18 +111,9 @@ class ImageOptimizer:
         Optimize all images for a project (main image + album images)
         Creates organized folder structure with optimized versions
         """
-        import signal
         from django.conf import settings
         
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Image optimization timed out")
-        
         try:
-            # Set timeout for image optimization
-            timeout_seconds = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
-            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout_seconds)
-            
             project_folder = cls._get_project_folder(project)
             
             # Optimize main image if exists
@@ -135,16 +126,9 @@ class ImageOptimizer:
                 
             logger.info(f"Successfully optimized all images for project: {project.title}")
             
-        except TimeoutError:
-            logger.error(f"Image optimization timed out for project: {project.title}")
         except Exception as e:
             logger.error(f"Error optimizing project images for {project.title}: {str(e)}")
             # Don't fail the project creation if optimization fails
-        finally:
-            # Reset timeout
-            signal.alarm(0)
-            if 'old_handler' in locals():
-                signal.signal(signal.SIGALRM, old_handler)
     
     @classmethod
     def optimize_service_images(cls, service):
@@ -219,7 +203,11 @@ class ImageOptimizer:
             
             # Get relative paths for database storage
             media_root = settings.MEDIA_ROOT
-            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            webp_folder_rel = os.path.relpath(webp_folder, media_root).replace('\\', '/')
+            
+            # Store original file path
+            if project.image:
+                project.original_file_path = project.image.name
             
             # Update the project model fields - main images are in webp/ folder
             project.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
@@ -234,7 +222,7 @@ class ImageOptimizer:
             
             try:
                 project.save(update_fields=[
-                    'optimized_image', 'optimized_image_small', 
+                    'original_file_path', 'optimized_image', 'optimized_image_small', 
                     'optimized_image_medium', 'optimized_image_large'
                 ])
             finally:
@@ -282,7 +270,11 @@ class ImageOptimizer:
             
             # Get relative paths for database storage
             media_root = settings.MEDIA_ROOT
-            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            webp_folder_rel = os.path.relpath(webp_folder, media_root).replace('\\', '/')
+            
+            # Store original file path
+            if album_image.image:
+                album_image.original_file_path = album_image.image.name
             
             # Update the album image model fields - album images are in webp/album/ folder
             album_image.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
@@ -297,7 +289,7 @@ class ImageOptimizer:
             
             try:
                 album_image.save(update_fields=[
-                    'optimized_image', 'optimized_image_small', 
+                    'original_file_path', 'optimized_image', 'optimized_image_small', 
                     'optimized_image_medium', 'optimized_image_large'
                 ])
             finally:
@@ -345,7 +337,11 @@ class ImageOptimizer:
             
             # Get relative paths for database storage
             media_root = settings.MEDIA_ROOT
-            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            webp_folder_rel = os.path.relpath(webp_folder, media_root).replace('\\', '/')
+            
+            # Store original file path
+            if service.icon:
+                service.original_file_path = service.icon.name
             
             # Update the service model fields
             service.optimized_icon = f"{webp_folder_rel}/{base_name}.webp"
@@ -360,7 +356,7 @@ class ImageOptimizer:
             
             try:
                 service.save(update_fields=[
-                    'optimized_icon', 'optimized_icon_small', 
+                    'original_file_path', 'optimized_icon', 'optimized_icon_small', 
                     'optimized_icon_medium', 'optimized_icon_large'
                 ])
             finally:
@@ -408,7 +404,11 @@ class ImageOptimizer:
             
             # Get relative paths for database storage
             media_root = settings.MEDIA_ROOT
-            webp_folder_rel = os.path.relpath(webp_folder, media_root)
+            webp_folder_rel = os.path.relpath(webp_folder, media_root).replace('\\', '/')
+            
+            # Store original file path
+            if album_image.image:
+                album_image.original_file_path = album_image.image.name
             
             # Update the album image model fields - service album images are in webp/album/ folder
             album_image.optimized_image = f"{webp_folder_rel}/{base_name}.webp"
@@ -423,7 +423,7 @@ class ImageOptimizer:
             
             try:
                 album_image.save(update_fields=[
-                    'optimized_image', 'optimized_image_small', 
+                    'original_file_path', 'optimized_image', 'optimized_image_small', 
                     'optimized_image_medium', 'optimized_image_large'
                 ])
             finally:

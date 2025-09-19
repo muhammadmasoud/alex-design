@@ -2,6 +2,7 @@ export interface AlbumImage {
   id: number;
   image: string;
   image_url: string;
+  original_image_url?: string;
   title?: string;
   description?: string;
   order: number;
@@ -13,6 +14,7 @@ export interface Project {
   title: string;
   description: string;
   image: string; // This will contain the full URL from the backend
+  original_image_url?: string; // Original unoptimized image URL for lightbox
   project_date: string; // The manually entered project date
   categories?: number[]; // Array of category IDs for form submission
   subcategories?: number[]; // Array of subcategory IDs for form submission
@@ -30,6 +32,7 @@ export interface ServiceItem {
   name: string;
   description: string;
   icon: string; // This will contain the full URL from the backend
+  original_image_url?: string; // Original unoptimized icon URL for lightbox
   price: number;
   categories?: number[]; // Array of category IDs for form submission
   subcategories?: number[]; // Array of subcategory IDs for form submission

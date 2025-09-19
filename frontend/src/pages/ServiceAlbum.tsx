@@ -43,6 +43,7 @@ export default function ServiceAlbum() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState<AlbumImage | null>(null);
+  const [lightboxLoading, setLightboxLoading] = useState(false);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -65,15 +66,31 @@ export default function ServiceAlbum() {
   }, [id]);
 
   const handleImageClick = (image: AlbumImage, index: number) => {
-    // Ensure we have a valid image URL before opening lightbox
-    if (!image.image || image.image.includes('placeholder')) {
-      console.warn('Cannot open lightbox: invalid image URL', image.image);
+    // Use original image URL for lightbox if available, otherwise fallback to optimized
+    const imageUrl = image.original_image_url || image.image;
+    
+    if (!imageUrl || imageUrl.includes('placeholder')) {
+      console.warn('Cannot open lightbox: invalid image URL', imageUrl);
       return;
     }
     
-    setCurrentImage(image);
+    // Show loading state for lightbox
+    setLightboxLoading(true);
+    
+    // Create a modified image object with the original URL for lightbox
+    const lightboxImage = {
+      ...image,
+      image: imageUrl
+    };
+    
+    setCurrentImage(lightboxImage);
     setCurrentImageIndex(index);
     setLightboxOpen(true);
+    
+    // Simulate loading time for better UX
+    setTimeout(() => {
+      setLightboxLoading(false);
+    }, 300);
   };
 
   const handleImageError = (image: AlbumImage) => {
@@ -298,10 +315,14 @@ export default function ServiceAlbum() {
       {currentImage && (
         <ImageLightbox
           isOpen={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
+          onClose={() => {
+            setLightboxOpen(false);
+            setLightboxLoading(false);
+          }}
           src={currentImage.image}
           alt={currentImage.title || `${service.name} - Image ${currentImageIndex + 1}`}
           title={currentImage.title || `${service.name} - Image ${currentImageIndex + 1}`}
+          loading={lightboxLoading}
         />
       )}
     </motion.div>

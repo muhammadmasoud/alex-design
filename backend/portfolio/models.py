@@ -286,6 +286,9 @@ class Project(models.Model):
     image = models.ImageField(upload_to=project_image_upload_path, null=True, blank=True, validators=[validate_image])
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
+    # Original file path - store the original unoptimized file path
+    original_file_path = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the original unoptimized file")
+    
     # Optimized image paths - store the .webp paths instead of original
     optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the main image")
     optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
@@ -319,6 +322,13 @@ class Project(models.Model):
     )
     
     def save(self, *args, **kwargs):
+        # Check if we're only updating optimized fields (skip cleanup logic)
+        update_fields = kwargs.get('update_fields', [])
+        if update_fields and all(field.startswith('optimized_') or field == 'original_file_path' for field in update_fields):
+            # Only updating optimized fields, skip cleanup logic
+            super().save(*args, **kwargs)
+            return
+        
         # Set default order to next available position if not set
         if not self.order or self.order == 0:
             max_order = Project.objects.aggregate(models.Max('order'))['order__max']
@@ -657,6 +667,9 @@ class Service(models.Model):
     icon = models.ImageField(upload_to=service_icon_upload_path, null=True, blank=True, validators=[validate_image])
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
+    # Original file path - store the original unoptimized file path
+    original_file_path = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the original unoptimized file")
+    
     # Optimized icon paths - store the .webp paths instead of original
     optimized_icon = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the icon")
     optimized_icon_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
@@ -686,6 +699,13 @@ class Service(models.Model):
     )
     
     def save(self, *args, **kwargs):
+        # Check if we're only updating optimized fields (skip cleanup logic)
+        update_fields = kwargs.get('update_fields', [])
+        if update_fields and all(field.startswith('optimized_') or field == 'original_file_path' for field in update_fields):
+            # Only updating optimized fields, skip cleanup logic
+            super().save(*args, **kwargs)
+            return
+        
         # Set default order to next available position if not set
         if not self.order or self.order == 0:
             max_order = Service.objects.aggregate(models.Max('order'))['order__max']
@@ -1006,6 +1026,9 @@ class ProjectImage(models.Model):
     )
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
+    # Original file path - store the original unoptimized file path
+    original_file_path = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the original unoptimized file")
+    
     # Optimized image paths - store the .webp paths instead of original
     optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the album image")
     optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
@@ -1039,6 +1062,13 @@ class ProjectImage(models.Model):
         return f"{self.project.title} - Image {self.pk}"
     
     def save(self, *args, **kwargs):
+        # Check if we're only updating optimized fields (skip cleanup logic)
+        update_fields = kwargs.get('update_fields', [])
+        if update_fields and all(field.startswith('optimized_') or field == 'original_file_path' for field in update_fields):
+            # Only updating optimized fields, skip cleanup logic
+            super().save(*args, **kwargs)
+            return
+        
         # Delete old image if updating and a new image is provided
         if self.pk:
             try:
@@ -1105,6 +1135,9 @@ class ServiceImage(models.Model):
     )
     original_filename = models.CharField(max_length=255, blank=True, null=True, help_text="Original filename when uploaded")
     
+    # Original file path - store the original unoptimized file path
+    original_file_path = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the original unoptimized file")
+    
     # Optimized image paths - store the .webp paths instead of original
     optimized_image = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the optimized .webp version of the album image")
     optimized_image_small = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the small optimized .webp version")
@@ -1138,6 +1171,13 @@ class ServiceImage(models.Model):
         return f"{self.service.name} - Image {self.pk}"
     
     def save(self, *args, **kwargs):
+        # Check if we're only updating optimized fields (skip cleanup logic)
+        update_fields = kwargs.get('update_fields', [])
+        if update_fields and all(field.startswith('optimized_') or field == 'original_file_path' for field in update_fields):
+            # Only updating optimized fields, skip cleanup logic
+            super().save(*args, **kwargs)
+            return
+        
         # Delete old image if updating and a new image is provided
         if self.pk:
             try:

@@ -217,12 +217,55 @@ def optimize_project_album_image_on_save(sender, instance, created, **kwargs):
 def optimize_service_album_image_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize service album images when they are created or updated
+    OPTIMIZED: Only trigger for single image uploads, not bulk uploads, with duplicate prevention
     """
     try:
         if created and instance.service:
-            # Use transaction.on_commit to ensure optimization happens after the transaction is committed
-            transaction.on_commit(lambda: ImageOptimizer.optimize_service_images(instance.service))
-            logger.info(f"Queued album image optimization for service: {instance.service.name}")
+            # Prevent duplicate optimization with lock
+            with optimization_lock:
+                service_key = f"service_{instance.service.id}"
+                if service_key in currently_optimizing:
+                    logger.info(f"Skipping album image optimization - service already optimizing: {instance.service.name}")
+                    return
+            
+            # Check if this is part of a bulk upload (multiple images created rapidly)
+            recent_images = ServiceImage.objects.filter(
+                service=instance.service,
+                id__gte=instance.id - 10  # Check last 10 IDs
+            ).count()
+            
+            if recent_images > 3:  # Likely bulk upload, skip individual optimization
+                logger.info(f"Skipping individual optimization for album image {instance.id} - appears to be bulk upload")
+                return
+            
+            # Single image upload - optimize immediately
+            def delayed_optimization():
+                def run_optimization():
+                    # Double-check lock before proceeding
+                    with optimization_lock:
+                        service_key = f"service_{instance.service.id}"
+                        if service_key in currently_optimizing:
+                            logger.info(f"Skipping single album optimization - service already optimizing: {instance.service.name}")
+                            return
+                        currently_optimizing.add(service_key)
+                    
+                    try:
+                        ImageOptimizer.optimize_service_images(instance.service)
+                        logger.info(f"Successfully optimized single album image for service: {instance.service.name}")
+                    except Exception as e:
+                        logger.error(f"Failed to optimize single album image for service {instance.service.name}: {str(e)}")
+                    finally:
+                        # Remove from optimization set
+                        with optimization_lock:
+                            currently_optimizing.discard(service_key)
+                
+                # Run optimization in background thread to avoid blocking
+                thread = threading.Thread(target=run_optimization)
+                thread.daemon = True
+                thread.start()
+            
+            transaction.on_commit(delayed_optimization)
+            logger.info(f"Queued single album image optimization for service: {instance.service.name}")
             
         # Clear cache for the parent service
         if instance.service:
