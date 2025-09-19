@@ -143,10 +143,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 # If an order is specified, shift existing projects to make room
                 if order is not None and order >= 1:
-                    # Shift all projects with order >= new_order by +1
-                    Project.objects.filter(order__gte=order).update(
-                        order=models.F('order') + 1
-                    )
+                    # Only shift if there are actually projects with order >= new_order
+                    # This avoids unnecessary database operations
+                    existing_count = Project.objects.filter(order__gte=order).count()
+                    if existing_count > 0:
+                        Project.objects.filter(order__gte=order).update(
+                            order=models.F('order') + 1
+                        )
                 
                 # Save the project with the image filename if provided
                 if image_file:
@@ -1436,10 +1439,13 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             # If an order is specified, shift existing projects to make room
             if order is not None and order >= 1:
-                # Shift all projects with order >= new_order by +1
-                Project.objects.filter(order__gte=order).update(
-                    order=models.F('order') + 1
-                )
+                # Only shift if there are actually projects with order >= new_order
+                # This avoids unnecessary database operations
+                existing_count = Project.objects.filter(order__gte=order).count()
+                if existing_count > 0:
+                    Project.objects.filter(order__gte=order).update(
+                        order=models.F('order') + 1
+                    )
             
             # Save the project with the image filename if provided
             if image_file:
