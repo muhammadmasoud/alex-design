@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Tag, Layers, ImageIcon, DollarSign, Expand } from "lucide-react";
+import { ChevronLeft, Tag, Layers, ImageIcon, DollarSign } from "lucide-react";
 import SEO from "@/components/SEO";
 import { containerVariants, itemVariants } from "@/components/PageTransition";
 import { api, endpoints } from "@/lib/api";
@@ -13,8 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/EmptyState";
 import PaginationControls from "@/components/Pagination";
 import ImageLightbox from "@/components/ImageLightbox";
-
-import { cn } from "@/lib/utils";
+import { useOriginalImagePreloader } from "@/hooks/useImagePreloader";
 
 const albumGridVariants = {
   hidden: { opacity: 0 },
@@ -47,6 +46,9 @@ export default function ServiceAlbum() {
   const [lightboxLoading, setLightboxLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const imagesPerPage = 4;
+
+  // Aggressively preload original images in background for instant lightbox
+  useOriginalImagePreloader(albumData?.album_images || []);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -358,6 +360,7 @@ export default function ServiceAlbum() {
             setLightboxLoading(false);
           }}
           src={currentImage.image}
+          optimizedSrc={albumData?.album_images.find(img => img.id === currentImage.id)?.image_url}
           alt={currentImage.title || `${service.name} - Image ${currentImageIndex + 1}`}
           title={currentImage.title || `${service.name} - Image ${currentImageIndex + 1}`}
           loading={lightboxLoading}

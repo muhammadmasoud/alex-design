@@ -66,14 +66,17 @@ class ImageServingMiddleware:
                     for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff']))
     
     def _add_image_cache_headers(self, response):
-        """Add appropriate caching headers for images"""
-        # Cache images for 30 days
-        patch_cache_control(response, max_age=86400 * 30, public=True)
+        """Add appropriate caching headers for images with aggressive optimization"""
+        # Cache images for 1 year (they're immutable with unique names)
+        patch_cache_control(response, max_age=31536000, public=True, immutable=True)
         
         # Add CORS headers for images
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
         response['Access-Control-Allow-Headers'] = 'Accept, Accept-Encoding, Range'
+        
+        # Enable HTTP/2 Server Push hints for browsers
+        response['Link'] = '<{}>; rel=preload; as=image'.format(response.get('X-Original-URL', ''))
         
         # Add content type headers if missing
         if 'Content-Type' not in response:
@@ -82,3 +85,7 @@ class ImageServingMiddleware:
                 content_type, _ = mimetypes.guess_type(path)
                 if content_type:
                     response['Content-Type'] = content_type
+        
+        # Add performance headers for faster loading
+        response['X-Content-Type-Options'] = 'nosniff'
+        response['Accept-Ranges'] = 'bytes'  # Enable range requests for large images

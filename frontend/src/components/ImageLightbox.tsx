@@ -11,16 +11,44 @@ interface ImageLightboxProps {
   alt: string;
   title?: string;
   loading?: boolean;
+  optimizedSrc?: string; // Show optimized first, then swap to original
 }
 
-export default function ImageLightbox({ isOpen, onClose, src, alt, title, loading = false }: ImageLightboxProps) {
+export default function ImageLightbox({ isOpen, onClose, src, alt, title, loading = false, optimizedSrc }: ImageLightboxProps) {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const [currentSrc, setCurrentSrc] = useState(optimizedSrc || src);
+  const [originalLoaded, setOriginalLoaded] = useState(false);
+  const [showingOptimized, setShowingOptimized] = useState(!!optimizedSrc);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  // Progressive loading: start with optimized, load original in background
+  useEffect(() => {
+    if (isOpen && optimizedSrc && optimizedSrc !== src) {
+      setCurrentSrc(optimizedSrc);
+      setShowingOptimized(true);
+      setOriginalLoaded(false);
+      
+      // Preload original image in background
+      const img = new Image();
+      img.onload = () => {
+        setOriginalLoaded(true);
+        // Auto-swap to original after it loads
+        setTimeout(() => {
+          setCurrentSrc(src);
+          setShowingOptimized(false);
+        }, 100);
+      };
+      img.src = src;
+    } else {
+      setCurrentSrc(src);
+      setShowingOptimized(false);
+    }
+  }, [isOpen, src, optimizedSrc]);
 
   // Reset state when lightbox opens/closes and handle body scroll
   useEffect(() => {
@@ -336,30 +364,50 @@ export default function ImageLightbox({ isOpen, onClose, src, alt, title, loadin
               <p className="text-white text-sm">Loading original image...</p>
             </div>
           ) : (
-            <motion.img
-              src={src}
-              alt={alt}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className={`max-w-full max-h-full object-contain select-none ${
-                scale > 1 ? 'cursor-grab' : 'cursor-zoom-in'
-              } ${isDragging ? 'cursor-grabbing' : ''}`}
-              style={{
-                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px) rotate(${rotation}deg)`,
-                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-                touchAction: 'none', // Prevent default touch actions
-                userSelect: 'none'   // Prevent text selection
-              }}
-              onMouseDown={handleMouseDown}
-              onTouchStart={handleTouchStart}
-              onClick={(e) => {
-                e.stopPropagation();
-                // Only zoom in if we're not dragging and scale is 1
-                if (scale === 1 && !isDragging) handleZoomIn();
-              }}
-              draggable={false}
-            />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <motion.img
+                src={currentSrc}
+                alt={alt}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className={`max-w-full max-h-full object-contain select-none ${
+                  scale > 1 ? 'cursor-grab' : 'cursor-zoom-in'
+                } ${isDragging ? 'cursor-grabbing' : ''}`}
+                style={{
+                  transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px) rotate(${rotation}deg)`,
+                  transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                  touchAction: 'none', // Prevent default touch actions
+                  userSelect: 'none'   // Prevent text selection
+                }}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Only zoom in if we're not dragging and scale is 1
+                  if (scale === 1 && !isDragging) handleZoomIn();
+                }}
+                draggable={false}
+              />
+              
+              {/* Quality indicator */}
+              {showingOptimized && originalLoaded && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute bottom-4 right-4 bg-green-500/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm"
+                >
+                  Upgraded to original quality ✨
+                </motion.div>
+              )}
+              
+              {showingOptimized && !originalLoaded && (
+                <div className="absolute bottom-4 right-4 bg-blue-500/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                  Loading full quality...
+                </div>
+              )}
+            </div>
           )}
         </div>
 

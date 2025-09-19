@@ -14,6 +14,7 @@ import EmptyState from "@/components/EmptyState";
 import PaginationControls from "@/components/Pagination";
 
 import ImageLightbox from "@/components/ImageLightbox";
+import { useOriginalImagePreloader } from "@/hooks/useImagePreloader";
 import { cn } from "@/lib/utils";
 
 const albumGridVariants = {
@@ -47,6 +48,9 @@ export default function ProjectAlbum() {
   const [lightboxLoading, setLightboxLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const imagesPerPage = 4;
+
+  // Aggressively preload original images in background for instant lightbox
+  useOriginalImagePreloader(albumData?.album_images || []);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -361,6 +365,7 @@ export default function ProjectAlbum() {
             setLightboxLoading(false);
           }}
           src={currentImage.image}
+          optimizedSrc={albumData?.album_images.find(img => img.id === currentImage.id)?.image_url}
           alt={currentImage.title || `${project.title} - Image ${currentImageIndex + 1}`}
           title={currentImage.title || `${project.title} - Image ${currentImageIndex + 1}`}
           loading={lightboxLoading}
