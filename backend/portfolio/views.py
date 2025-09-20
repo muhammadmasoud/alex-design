@@ -41,6 +41,13 @@ class ProjectPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+
+class ServicePagination(PageNumberPagination):
+    """Custom pagination class for services with 6 items per page"""
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 @shared_task
 def create_project_image(project_id, image_data, order):
     try:
@@ -451,6 +458,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'order']
     ordering = ['order', 'name']
+    pagination_class = ServicePagination
 
     def get_queryset(self):
         """Optimized queryset with prefetching to avoid N+1 queries"""
