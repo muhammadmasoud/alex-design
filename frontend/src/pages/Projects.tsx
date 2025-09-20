@@ -13,7 +13,7 @@ const CategoryFilter = lazy(() => import("@/components/CategoryFilter"));
 const Skeleton = lazy(() => import("@/components/ui/skeleton"));
 const EmptyState = lazy(() => import("@/components/EmptyState"));
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 export default function ProjectsPage() {
   const [items, setItems] = useState<Project[]>([]);

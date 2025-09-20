@@ -30,8 +30,16 @@ import time
 from asgiref.sync import sync_to_async
 from celery import shared_task
 import logging
+from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger(__name__)
+
+
+class ProjectPagination(PageNumberPagination):
+    """Custom pagination class for projects with 6 items per page"""
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 @shared_task
 def create_project_image(project_id, image_data, order):
@@ -105,6 +113,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description']
     ordering_fields = ['project_date', 'title', 'order']
     ordering = ['order', '-project_date']
+    pagination_class = ProjectPagination
 
     def get_queryset(self):
         """Optimized queryset with prefetching to avoid N+1 queries"""
