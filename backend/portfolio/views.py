@@ -137,25 +137,53 @@ class ProjectViewSet(viewsets.ModelViewSet):
             # Capture original filename from uploaded image
             image_file = self.request.FILES.get('image')
             
-            # Get the order from the data
-            order = serializer.validated_data.get('order')
+            # CRITICAL FIX: Disable optimization signals during creation for instant response
+            from django.db.models.signals import post_save
+            from portfolio.signals import optimize_project_images_on_save
             
-            with transaction.atomic():
-                # If an order is specified, shift existing projects to make room
-                if order is not None and order >= 1:
-                    # Only shift if there are actually projects with order >= new_order
-                    # This avoids unnecessary database operations
-                    existing_count = Project.objects.filter(order__gte=order).count()
-                    if existing_count > 0:
-                        Project.objects.filter(order__gte=order).update(
-                            order=models.F('order') + 1
-                        )
+            # Disconnect optimization signals to ensure instant response
+            post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
+            
+            try:
+                # Get the order from the data
+                order = serializer.validated_data.get('order')
                 
-                # Save the project with the image filename if provided
-                if image_file:
-                    serializer.save(original_filename=image_file.name)
-                else:
-                    serializer.save()
+                with transaction.atomic():
+                    # If an order is specified, shift existing projects to make room
+                    if order is not None and order >= 1:
+                        # Only shift if there are actually projects with order >= new_order
+                        # This avoids unnecessary database operations
+                        existing_count = Project.objects.filter(order__gte=order).count()
+                        if existing_count > 0:
+                            Project.objects.filter(order__gte=order).update(
+                                order=models.F('order') + 1
+                            )
+                    
+                    # Save the project with the image filename if provided
+                    if image_file:
+                        instance = serializer.save(original_filename=image_file.name)
+                    else:
+                        instance = serializer.save()
+                    
+                    # IMMEDIATELY queue async optimization AFTER response is sent
+                    if image_file:
+                        def queue_optimization():
+                            try:
+                                from portfolio.async_optimizer import AsyncImageOptimizer
+                                AsyncImageOptimizer.queue_project_optimization(
+                                    project_id=instance.id,
+                                    operation_type='create'
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to queue optimization for new project {instance.id}: {e}")
+                        
+                        # Queue after transaction commits (non-blocking)
+                        transaction.on_commit(queue_optimization)
+                        
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_project_images_on_save, sender=serializer.Meta.model)
+                
         except Exception as e:
             logger.error(f"Error in perform_create: {e}")
             logger.error(f"Error type: {type(e)}")
@@ -169,15 +197,44 @@ class ProjectViewSet(viewsets.ModelViewSet):
             image_file = self.request.FILES.get('image')
             album_images = self.request.FILES.getlist('album_images')
             
-            # Mark instance if new image files were uploaded
-            instance = serializer.save()
-            if image_file or album_images:
-                instance._image_files_changed = True
+            # CRITICAL FIX: Disable ALL signals during main image updates to prevent blocking
+            from django.db.models.signals import post_save
+            from portfolio.signals import optimize_project_images_on_save
+            
+            # Disconnect optimization signals to ensure instant response
+            post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
+            
+            try:
+                # Mark instance if new image files were uploaded
+                instance = serializer.save()
+                if image_file or album_images:
+                    instance._image_files_changed = True
+                    
+                # Save with original filename if main image provided
+                if image_file:
+                    instance.original_filename = image_file.name
+                    instance.save(update_fields=['original_filename'])
+                    
+                # IMMEDIATELY queue async optimization AFTER response is sent
+                if image_file or album_images:
+                    from django.db import transaction
+                    def queue_optimization():
+                        try:
+                            from portfolio.async_optimizer import AsyncImageOptimizer
+                            AsyncImageOptimizer.queue_project_optimization(
+                                project_id=instance.id,
+                                operation_type='main_image_update' if image_file else 'album_update'
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to queue optimization for project {instance.id}: {e}")
+                    
+                    # Queue after transaction commits (non-blocking)
+                    transaction.on_commit(queue_optimization)
+                    
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_project_images_on_save, sender=serializer.Meta.model)
                 
-            # Save with original filename if main image provided
-            if image_file:
-                instance.original_filename = image_file.name
-                instance.save(update_fields=['original_filename'])
         except Exception as e:
             logger.error(f"Error in perform_update: {e}")
             logger.error(f"Error type: {type(e)}")
@@ -1447,40 +1504,99 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
         # Capture original filename from uploaded image
         image_file = self.request.FILES.get('image')
         
-        # Get the order from the data
-        order = serializer.validated_data.get('order')
+        # CRITICAL FIX: Disable optimization signals during creation for instant response
+        from django.db.models.signals import post_save
+        from portfolio.signals import optimize_project_images_on_save
         
-        with transaction.atomic():
-            # If an order is specified, shift existing projects to make room
-            if order is not None and order >= 1:
-                # Only shift if there are actually projects with order >= new_order
-                # This avoids unnecessary database operations
-                existing_count = Project.objects.filter(order__gte=order).count()
-                if existing_count > 0:
-                    Project.objects.filter(order__gte=order).update(
-                        order=models.F('order') + 1
-                    )
+        # Disconnect optimization signals to ensure instant response
+        post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
+        
+        try:
+            # Get the order from the data
+            order = serializer.validated_data.get('order')
             
-            # Save the project with the image filename if provided
-            if image_file:
-                serializer.save(original_filename=image_file.name)
-            else:
-                serializer.save()
+            with transaction.atomic():
+                # If an order is specified, shift existing projects to make room
+                if order is not None and order >= 1:
+                    # Only shift if there are actually projects with order >= new_order
+                    # This avoids unnecessary database operations
+                    existing_count = Project.objects.filter(order__gte=order).count()
+                    if existing_count > 0:
+                        Project.objects.filter(order__gte=order).update(
+                            order=models.F('order') + 1
+                        )
+                
+                # Save the project with the image filename if provided
+                if image_file:
+                    instance = serializer.save(original_filename=image_file.name)
+                else:
+                    instance = serializer.save()
+                
+                # IMMEDIATELY queue async optimization AFTER response is sent
+                if image_file:
+                    def queue_optimization():
+                        try:
+                            from portfolio.async_optimizer import AsyncImageOptimizer
+                            AsyncImageOptimizer.queue_project_optimization(
+                                project_id=instance.id,
+                                operation_type='create'
+                            )
+                        except Exception as e:
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.error(f"Failed to queue optimization for new project {instance.id}: {e}")
+                    
+                    # Queue after transaction commits (non-blocking)
+                    transaction.on_commit(queue_optimization)
+                    
+        finally:
+            # Reconnect the signal
+            post_save.connect(optimize_project_images_on_save, sender=serializer.Meta.model)
 
     def perform_update(self, serializer):
         # Capture original filename from uploaded image if a new one is provided
         image_file = self.request.FILES.get('image')
         album_images = self.request.FILES.getlist('album_images')
         
-        # Mark instance if new image files were uploaded
-        instance = serializer.save()
-        if image_file or album_images:
-            instance._image_files_changed = True
-            
-        # Save with original filename if main image provided
-        if image_file:
-            instance.original_filename = image_file.name
-            instance.save(update_fields=['original_filename'])
+        # CRITICAL FIX: Disable ALL signals during main image updates to prevent blocking
+        from django.db.models.signals import post_save
+        from portfolio.signals import optimize_project_images_on_save
+        
+        # Disconnect optimization signals to ensure instant response
+        post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
+        
+        try:
+            # Mark instance if new image files were uploaded
+            instance = serializer.save()
+            if image_file or album_images:
+                instance._image_files_changed = True
+                
+            # Save with original filename if main image provided
+            if image_file:
+                instance.original_filename = image_file.name
+                instance.save(update_fields=['original_filename'])
+                
+            # IMMEDIATELY queue async optimization AFTER response is sent
+            if image_file or album_images:
+                from django.db import transaction
+                def queue_optimization():
+                    try:
+                        from portfolio.async_optimizer import AsyncImageOptimizer
+                        AsyncImageOptimizer.queue_project_optimization(
+                            project_id=instance.id,
+                            operation_type='main_image_update' if image_file else 'album_update'
+                        )
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Failed to queue optimization for project {instance.id}: {e}")
+                
+                # Queue after transaction commits (non-blocking)
+                transaction.on_commit(queue_optimization)
+                
+        finally:
+            # Reconnect the signal
+            post_save.connect(optimize_project_images_on_save, sender=serializer.Meta.model)
 
     def perform_destroy(self, instance):
         """
