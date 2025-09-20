@@ -209,20 +209,110 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
         });
       }
       
-      // Always append image if provided (for both create and update)
-      if (data.image && data.image[0]) {
-        formData.append("image", data.image[0]);
-      }
-
-      let projectId = editingProject?.id;
-      
-      // Check if we have album images to upload
+      // Check if we have main image to upload
+      const hasMainImage = data.image && data.image[0];
       const hasAlbumImages = data.album_images && data.album_images.length > 0;
       
+      // CASE 1: Text-only update (no images)
+      if (!hasMainImage && !hasAlbumImages) {
+        if (editingProject) {
+          await api.patch(`${endpoints.admin.projects}${editingProject.id}/`, formData);
+          toast({ title: "Project updated successfully!" });
+        } else {
+          await api.post(endpoints.admin.projects, formData);
+          toast({ title: "Project created successfully!" });
+        }
+        setIsDialogOpen(false);
+        setEditingProject(null);
+        form.reset();
+        fetchProjects();
+        onUpdate();
+        return;
+      }
+
+      // CASE 2: Has images - use upload progress system
+      let projectId = editingProject?.id;
+      
+      // Always append image if provided (for both create and update)  
+      if (hasMainImage) {
+        formData.append("image", data.image[0]);
+      }
+      
+      // If updating existing project with main image only, use upload progress
+      if (editingProject && hasMainImage && !hasAlbumImages) {
+        // Close dialog immediately and show progress
+        setIsDialogOpen(false);
+        
+        const mainImageFile = data.image[0] as File;
+        const uploadFile = {
+          file: mainImageFile,
+          name: mainImageFile.name,
+          size: mainImageFile.size
+        };
+        
+        // Create a special FormData for main image update
+        const uploadFormData = new FormData();
+        uploadFormData.append("title", data.title);
+        uploadFormData.append("description", data.description);
+        uploadFormData.append("project_date", data.project_date);
+        uploadFormData.append("order", data.order?.toString() || (projects.length + 1).toString());
+        
+        if (data.categories && data.categories.length > 0) {
+          data.categories.forEach(categoryId => {
+            uploadFormData.append("categories", categoryId);
+          });
+        }
+        
+        if (data.subcategories && data.subcategories.length > 0) {
+          data.subcategories.forEach(subcategoryId => {
+            uploadFormData.append("subcategories", subcategoryId);
+          });
+        }
+
+        try {
+          await uploadFiles(
+            [uploadFile],
+            `${endpoints.admin.projects}${editingProject.id}/`,
+            uploadFormData,
+            () => {
+              toast({ 
+                title: "Project updated successfully!", 
+                description: "Main image is being optimized in the background." 
+              });
+              setEditingProject(null);
+              form.reset();
+              fetchProjects();
+              onUpdate();
+              onStorageUpdate?.();
+            },
+            (error) => {
+              toast({
+                title: "Main Image Upload Error",
+                description: error,
+                variant: "destructive",
+              });
+            },
+            'PATCH'
+          );
+        } catch (uploadError) {
+          console.error('Error in main image upload:', uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload main image. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      
+      // For new projects or projects with album images, handle accordingly
       if (editingProject) {
+        // Update existing project first
         await api.patch(`${endpoints.admin.projects}${editingProject.id}/`, formData);
+        projectId = editingProject.id;
+        
         if (!hasAlbumImages) {
-          // Text-only update or main image change - should be fast now
+          // Main image updated without album images
           const hasMainImageUpdate = data.image && data.image[0];
           if (hasMainImageUpdate) {
             toast({ 
@@ -232,12 +322,73 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
           } else {
             toast({ title: "Project updated successfully!" });
           }
+          setIsDialogOpen(false);
+          setEditingProject(null);
+          form.reset();
+          fetchProjects();
+          onUpdate();
+          return;
         }
       } else {
-        const response = await api.post(endpoints.admin.projects, formData);
-        projectId = response.data.id;
-        if (!hasAlbumImages) {
-          toast({ title: "Project created successfully!" });
+        // Create new project with main image - use progress if has main image
+        if (hasMainImage && !hasAlbumImages) {
+          // Close dialog immediately and show progress for new project with main image
+          setIsDialogOpen(false);
+          
+          const mainImageFile = data.image[0] as File;
+          const uploadFile = {
+            file: mainImageFile,
+            name: mainImageFile.name,
+            size: mainImageFile.size
+          };
+          
+          try {
+            await uploadFiles(
+              [uploadFile],
+              endpoints.admin.projects,
+              formData,
+              () => {
+                toast({ 
+                  title: "Project created successfully!", 
+                  description: "Main image is being optimized in the background." 
+                });
+                setEditingProject(null);
+                form.reset();
+                fetchProjects();
+                onUpdate();
+                onStorageUpdate?.();
+              },
+              (error) => {
+                toast({
+                  title: "Project Creation Error",
+                  description: error,
+                  variant: "destructive",
+                });
+              },
+              'POST'
+            );
+          } catch (uploadError) {
+            console.error('Error in project creation upload:', uploadError);
+            toast({
+              title: "Upload Error",
+              description: "Failed to create project with image. Please try again.",
+              variant: "destructive",
+            });
+          }
+          return;
+        } else {
+          // Create new project without main image or with album images
+          const response = await api.post(endpoints.admin.projects, formData);
+          projectId = response.data.id;
+          if (!hasAlbumImages) {
+            toast({ title: "Project created successfully!" });
+            setIsDialogOpen(false);
+            setEditingProject(null);
+            form.reset();
+            fetchProjects();
+            onUpdate();
+            return;
+          }
         }
       }
 

@@ -68,7 +68,8 @@ export function useUploadProgress() {
     endpoint: string,
     formData: FormData,
     onSuccess?: (data: any) => void,
-    onError?: (error: string) => void
+    onError?: (error: string) => void,
+    method: 'POST' | 'PATCH' = 'POST'
   ) => {
     if (files.length === 0) return;
 
@@ -116,7 +117,8 @@ export function useUploadProgress() {
       }
 
       // Configure axios for progress tracking with better error handling
-      const response = await api.post(endpoint, uploadFormData, {
+      const apiMethod = method === 'PATCH' ? api.patch : api.post;
+      const response = await apiMethod(endpoint, uploadFormData, {
         signal: abortControllerRef.current.signal,
         timeout: 3600000, // 1 hour timeout for large uploads
         headers: {
