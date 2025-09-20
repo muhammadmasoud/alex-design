@@ -26,46 +26,38 @@ currently_optimizing = set()
 def optimize_project_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize project images when a project is created or updated
-    OPTIMIZED: Uses async queue system to prevent blocking HTTP responses
+    ULTRA-OPTIMIZED: Only queue optimization when absolutely necessary
     """
     try:
-        # Skip optimization entirely if this is just a text-only update
-        # Check if this save was triggered by updating optimized image fields (avoid infinite loop)
+        # SKIP ENTIRELY for optimization-related updates to avoid infinite loops
         update_fields = kwargs.get('update_fields')
-        if update_fields and all(field.startswith('optimized_') for field in update_fields):
-            logger.debug(f"Skipping optimization - optimized fields update for project: {instance.title}")
+        if update_fields and any(field.startswith('optimized_') or field == 'order' for field in update_fields):
             return
         
-        # Fast path: For existing projects, only optimize if new images were uploaded
+        # SKIP ENTIRELY if instance is marked as already processed
+        if hasattr(instance, '_needs_optimization') and not instance._needs_optimization:
+            return
+        
+        # SKIP ENTIRELY for existing projects without new images
         if not created:
-            # Check if any image files were actually changed in this update
-            image_changed = False
-            
-            # Check if this is an API update with new files
-            if hasattr(instance, '_image_files_changed') and instance._image_files_changed:
-                image_changed = True
-                logger.info(f"Project has new image files - will optimize: {instance.title}")
-            else:
-                # For existing projects without new files, skip optimization entirely
-                logger.info(f"FAST PATH: Skipping optimization - no new image files for existing project: {instance.title}")
+            # Only optimize if explicitly marked as having new images
+            if not (hasattr(instance, '_image_files_changed') and instance._image_files_changed):
                 return
+            logger.info(f"Project has new image files - queuing optimization: {instance.title}")
         else:
-            # For new projects, check if they have images to optimize
+            # For new projects, only optimize if they actually have images
             has_main_image = bool(instance.image)
             if not has_main_image:
-                # Album images will be handled by ProjectImage signals
-                logger.debug(f"New project created without main image - skipping optimization: {instance.title}")
                 return
-            
             logger.info(f"New project created with main image - queuing optimization: {instance.title}")
         
-        # Queue optimization asynchronously - this is instantaneous and non-blocking
+        # Queue optimization asynchronously - instant and non-blocking
         AsyncImageOptimizer.queue_project_optimization(
             project_id=instance.id,
             operation_type='create' if created else 'update'
         )
         
-        # Clear cache since we're processing image optimization
+        # Clear cache
         cache_key = f"project_{instance.id}_images"
         cache.delete(cache_key)
         
@@ -76,46 +68,38 @@ def optimize_project_images_on_save(sender, instance, created, **kwargs):
 def optimize_service_images_on_save(sender, instance, created, **kwargs):
     """
     Automatically optimize service images when a service is created or updated
-    OPTIMIZED: Uses async queue system to prevent blocking HTTP responses
+    ULTRA-OPTIMIZED: Only queue optimization when absolutely necessary
     """
     try:
-        # Skip optimization entirely if this is just a text-only update
-        # Check if this save was triggered by updating optimized image fields (avoid infinite loop)
+        # SKIP ENTIRELY for optimization-related updates to avoid infinite loops
         update_fields = kwargs.get('update_fields')
-        if update_fields and all(field.startswith('optimized_') for field in update_fields):
-            logger.debug(f"Skipping optimization - optimized fields update for service: {instance.name}")
+        if update_fields and any(field.startswith('optimized_') or field == 'order' for field in update_fields):
             return
         
-        # Fast path: For existing services, only optimize if new images were uploaded
+        # SKIP ENTIRELY if instance is marked as already processed
+        if hasattr(instance, '_needs_optimization') and not instance._needs_optimization:
+            return
+        
+        # SKIP ENTIRELY for existing services without new images
         if not created:
-            # Check if any image files were actually changed in this update
-            image_changed = False
-            
-            # Check if this is an API update with new files
-            if hasattr(instance, '_image_files_changed') and instance._image_files_changed:
-                image_changed = True
-                logger.info(f"Service has new image files - will optimize: {instance.name}")
-            else:
-                # For existing services without new files, skip optimization entirely
-                logger.info(f"FAST PATH: Skipping optimization - no new image files for existing service: {instance.name}")
+            # Only optimize if explicitly marked as having new images
+            if not (hasattr(instance, '_image_files_changed') and instance._image_files_changed):
                 return
+            logger.info(f"Service has new image files - queuing optimization: {instance.name}")
         else:
-            # For new services, check if they have images to optimize
+            # For new services, only optimize if they actually have images
             has_icon = bool(instance.icon)
             if not has_icon:
-                # Album images will be handled by ServiceImage signals
-                logger.debug(f"New service created without icon - skipping optimization: {instance.name}")
                 return
-            
             logger.info(f"New service created with icon - queuing optimization: {instance.name}")
         
-        # Queue optimization asynchronously - this is instantaneous and non-blocking
+        # Queue optimization asynchronously - instant and non-blocking
         AsyncImageOptimizer.queue_service_optimization(
             service_id=instance.id,
             operation_type='create' if created else 'update'
         )
         
-        # Clear cache since we're processing image optimization
+        # Clear cache
         cache_key = f"service_{instance.id}_images"
         cache.delete(cache_key)
         

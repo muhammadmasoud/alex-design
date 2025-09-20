@@ -182,18 +182,20 @@ class AsyncImageOptimizer:
             
             while True:
                 try:
-                    # Process all files in queue
+                    # Process all files in queue with better batching
                     queue_files = list(cls.QUEUE_DIR.glob('*.json'))
                     
                     if not queue_files:
-                        # No work to do, sleep and check again
-                        time.sleep(2)
+                        # No work to do, sleep and check again (shorter interval for responsiveness)
+                        time.sleep(1)
                         continue
                     
-                    # Process oldest file first
+                    # Process oldest file first (FIFO for better user experience)
                     queue_files.sort(key=lambda f: f.stat().st_mtime)
                     
-                    for queue_file in queue_files:
+                    # Process up to 3 tasks at once for better throughput
+                    batch_size = min(3, len(queue_files))
+                    for queue_file in queue_files[:batch_size]:
                         try:
                             cls._process_task_file(queue_file)
                         except Exception as e:
@@ -204,10 +206,14 @@ class AsyncImageOptimizer:
                                 queue_file.rename(failed_file)
                             except:
                                 pass
+                    
+                    # Brief pause between batches for better system responsiveness
+                    if len(queue_files) > batch_size:
+                        time.sleep(0.5)
                 
                 except Exception as e:
                     logger.error(f"Error in background processor: {e}")
-                    time.sleep(5)  # Wait before retrying
+                    time.sleep(3)  # Shorter wait before retrying
                     
         except Exception as e:
             logger.error(f"Fatal error in background processor: {e}")

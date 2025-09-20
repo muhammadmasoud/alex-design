@@ -137,11 +137,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
             # Capture original filename from uploaded image
             image_file = self.request.FILES.get('image')
             
-            # CRITICAL FIX: Disable optimization signals during creation for instant response
-            from django.db.models.signals import post_save
+            # CRITICAL FIX: Completely disable ALL optimization signals during creation for instant response
+            from django.db.models.signals import post_save, pre_save
             from portfolio.signals import optimize_project_images_on_save
             
-            # Disconnect optimization signals to ensure instant response
+            # Disconnect ALL optimization signals to ensure instant response
             post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
             
             try:
@@ -159,13 +159,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                 order=models.F('order') + 1
                             )
                     
-                    # Save the project with the image filename if provided
+                    # Save the project with the image filename if provided - NO PROCESSING
                     if image_file:
                         instance = serializer.save(original_filename=image_file.name)
+                        # Mark that this needs processing but don't do it now
+                        instance._needs_optimization = True
                     else:
                         instance = serializer.save()
                     
-                    # IMMEDIATELY queue async optimization AFTER response is sent
+                    # QUEUE optimization for later - completely non-blocking
                     if image_file:
                         def queue_optimization():
                             try:
@@ -174,6 +176,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                     project_id=instance.id,
                                     operation_type='create'
                                 )
+                                logger.info(f"Successfully queued optimization for new project {instance.id}")
                             except Exception as e:
                                 logger.error(f"Failed to queue optimization for new project {instance.id}: {e}")
                         
@@ -197,27 +200,29 @@ class ProjectViewSet(viewsets.ModelViewSet):
             image_file = self.request.FILES.get('image')
             album_images = self.request.FILES.getlist('album_images')
             
-            # CRITICAL FIX: Disable ALL signals during main image updates to prevent blocking
-            from django.db.models.signals import post_save
+            # CRITICAL FIX: Completely disable ALL signals during updates to prevent blocking
+            from django.db.models.signals import post_save, pre_save
             from portfolio.signals import optimize_project_images_on_save
             
-            # Disconnect optimization signals to ensure instant response
+            # Disconnect ALL optimization signals to ensure instant response
             post_save.disconnect(optimize_project_images_on_save, sender=serializer.Meta.model)
             
             try:
-                # Mark instance if new image files were uploaded
+                # Save without any processing - FAST PATH
                 instance = serializer.save()
+                
+                # Mark if new image files were uploaded but DON'T process them
                 if image_file or album_images:
                     instance._image_files_changed = True
+                    instance._needs_optimization = True
                     
-                # Save with original filename if main image provided
+                # Save with original filename if main image provided - NO PROCESSING
                 if image_file:
                     instance.original_filename = image_file.name
                     instance.save(update_fields=['original_filename'])
                     
-                # IMMEDIATELY queue async optimization AFTER response is sent
+                # QUEUE optimization for later - completely non-blocking
                 if image_file or album_images:
-                    from django.db import transaction
                     def queue_optimization():
                         try:
                             from portfolio.async_optimizer import AsyncImageOptimizer
@@ -225,6 +230,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                 project_id=instance.id,
                                 operation_type='main_image_update' if image_file else 'album_update'
                             )
+                            logger.info(f"Successfully queued optimization for updated project {instance.id}")
                         except Exception as e:
                             logger.error(f"Failed to queue optimization for project {instance.id}: {e}")
                     
@@ -468,27 +474,57 @@ class ServiceViewSet(viewsets.ModelViewSet):
             # Capture original filename from uploaded icon
             icon_file = self.request.FILES.get('icon')
             
-            # Get the order from the data
-            order = serializer.validated_data.get('order')
+            # CRITICAL FIX: Disable service optimization signals for instant response
+            from django.db.models.signals import post_save
+            from portfolio.signals import optimize_service_images_on_save
             
-            with transaction.atomic():
-                # If an order is specified, shift existing services to make room
-                if order is not None and order >= 1:
-                    # Shift all services with order >= new_order by +1
-                    Service.objects.filter(order__gte=order).update(
-                        order=models.F('order') + 1
-                    )
+            # Disconnect optimization signals to ensure instant response
+            post_save.disconnect(optimize_service_images_on_save, sender=serializer.Meta.model)
+            
+            try:
+                # Get the order from the data
+                order = serializer.validated_data.get('order')
                 
-                # Save the service with the icon filename if provided
-                if icon_file:
-                    serializer.save(original_filename=icon_file.name)
-                else:
-                    serializer.save()
+                with transaction.atomic():
+                    # If an order is specified, shift existing services to make room
+                    if order is not None and order >= 1:
+                        # Shift all services with order >= new_order by +1
+                        Service.objects.filter(order__gte=order).update(
+                            order=models.F('order') + 1
+                        )
+                    
+                    # Save the service with the icon filename if provided - NO PROCESSING
+                    if icon_file:
+                        instance = serializer.save(original_filename=icon_file.name)
+                        instance._needs_optimization = True
+                    else:
+                        instance = serializer.save()
+                    
+                    # QUEUE optimization for later - completely non-blocking
+                    if icon_file:
+                        def queue_optimization():
+                            try:
+                                from portfolio.async_optimizer import AsyncImageOptimizer
+                                AsyncImageOptimizer.queue_service_optimization(
+                                    service_id=instance.id,
+                                    operation_type='create'
+                                )
+                                logger.info(f"Successfully queued optimization for new service {instance.id}")
+                            except Exception as e:
+                                logger.error(f"Failed to queue optimization for new service {instance.id}: {e}")
+                        
+                        # Queue after transaction commits (non-blocking)
+                        transaction.on_commit(queue_optimization)
+                        
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_service_images_on_save, sender=serializer.Meta.model)
+                
         except Exception as e:
-            print(f"Error in service perform_create: {e}")
-            print(f"Error type: {type(e)}")
+            logger.error(f"Error in service perform_create: {e}")
+            logger.error(f"Error type: {type(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             raise e
 
     def perform_update(self, serializer):
@@ -497,20 +533,52 @@ class ServiceViewSet(viewsets.ModelViewSet):
             icon_file = self.request.FILES.get('icon')
             album_images = self.request.FILES.getlist('album_images')
             
-            # Mark instance if new image files were uploaded
-            instance = serializer.save()
-            if icon_file or album_images:
-                instance._image_files_changed = True
+            # CRITICAL FIX: Disable service optimization signals for instant response
+            from django.db.models.signals import post_save
+            from portfolio.signals import optimize_service_images_on_save
+            
+            # Disconnect optimization signals to ensure instant response
+            post_save.disconnect(optimize_service_images_on_save, sender=serializer.Meta.model)
+            
+            try:
+                # Save without any processing - FAST PATH
+                instance = serializer.save()
                 
-            # Save with original filename if icon provided
-            if icon_file:
-                instance.original_filename = icon_file.name
-                instance.save(update_fields=['original_filename'])
+                # Mark if new image files were uploaded but DON'T process them
+                if icon_file or album_images:
+                    instance._image_files_changed = True
+                    instance._needs_optimization = True
+                    
+                # Save with original filename if icon provided - NO PROCESSING
+                if icon_file:
+                    instance.original_filename = icon_file.name
+                    instance.save(update_fields=['original_filename'])
+                
+                # QUEUE optimization for later - completely non-blocking
+                if icon_file or album_images:
+                    def queue_optimization():
+                        try:
+                            from portfolio.async_optimizer import AsyncImageOptimizer
+                            AsyncImageOptimizer.queue_service_optimization(
+                                service_id=instance.id,
+                                operation_type='icon_update' if icon_file else 'album_update'
+                            )
+                            logger.info(f"Successfully queued optimization for updated service {instance.id}")
+                        except Exception as e:
+                            logger.error(f"Failed to queue optimization for service {instance.id}: {e}")
+                    
+                    # Queue after transaction commits (non-blocking)
+                    transaction.on_commit(queue_optimization)
+                    
+            finally:
+                # Reconnect the signal
+                post_save.connect(optimize_service_images_on_save, sender=serializer.Meta.model)
+                
         except Exception as e:
-            print(f"Error in service perform_update: {e}")
-            print(f"Error type: {type(e)}")
+            logger.error(f"Error in service perform_update: {e}")
+            logger.error(f"Error type: {type(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             raise e
 
     def perform_destroy(self, instance):
@@ -950,6 +1018,28 @@ class AdminCheckView(APIView):
             })
 
 
+class OptimizationStatusView(APIView):
+    """
+    Check the status of background image optimization
+    """
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        try:
+            from portfolio.async_optimizer import AsyncImageOptimizer
+            status = AsyncImageOptimizer.get_queue_status()
+            
+            return Response({
+                'optimization_queue': status,
+                'message': f"{status['queued_tasks']} tasks queued, {status['processing_tasks']} processing",
+                'processor_running': status['processor_running']
+            })
+        except Exception as e:
+            return Response({
+                'error': f'Failed to get optimization status: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CSRFTokenView(APIView):
     """
     Return CSRF token for frontend use
@@ -1073,20 +1163,21 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
 
         replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
 
-        # CRITICAL FIX: Disconnect optimization signals during bulk upload
+        # CRITICAL FIX: Disconnect ALL optimization signals during bulk upload for instant response
         post_save.disconnect(optimize_project_album_image_on_save, sender=ProjectImage)
         
         try:
-            # Fast database operations only
+            # FASTEST PATH: Only database operations, no image processing at all
             with transaction.atomic():
                 if replace_existing:
+                    # Delete existing images without processing
                     existing_images = ProjectImage.objects.filter(project=project)
                     for existing_image in existing_images:
                         if existing_image.image:
                             existing_image.image.delete(save=False)
                     existing_images.delete()
 
-                # Create image records without triggering signals
+                # Create image records ONLY - no processing whatsoever
                 created_images = []
                 for i, image in enumerate(images):
                     project_image = ProjectImage.objects.create(
@@ -1097,72 +1188,32 @@ class ProjectImageViewSet(viewsets.ModelViewSet):
                     )
                     created_images.append(project_image)
 
-            # SEND RESPONSE IMMEDIATELY - before optimization
+            # SEND IMMEDIATE RESPONSE - before any processing
             response_data = {
                 'message': f'{len(created_images)} images uploaded successfully',
                 'images': [{'id': img.id, 'name': img.original_filename} for img in created_images],
-                'processing_status': 'Image optimization will continue in background',
-                'upload_time': time.time() - start_time,
-                'timeout_settings': {
-                    'request_timeout': getattr(settings, 'REQUEST_TIMEOUT', 3600),
-                    'upload_timeout': getattr(settings, 'UPLOAD_TIMEOUT', 3600),
-                    'optimization_timeout': getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
-                }
+                'processing_status': 'Images saved successfully. Optimization will run in background.',
+                'upload_time': f"{time.time() - start_time:.2f}s",
+                'background_processing': True,
+                'total_images': len(created_images)
             }
             
-            # Schedule SINGLE optimization call in background thread AFTER response
-            def optimize_project_once():
+            # Queue SINGLE optimization for the entire project - completely asynchronous
+            def queue_bulk_optimization():
                 try:
-                    # Wait a moment to ensure all database transactions are complete
-                    import time
-                    time.sleep(0.5)
-                    
-                    # Prevent any signal-based optimization during our manual optimization
-                    from django.db.models.signals import post_save
-                    from .signals import optimize_project_images_on_save
-                    
-                    # Ensure no signals interfere
-                    post_save.disconnect(optimize_project_images_on_save, sender=Project)
-                    
-                    # Single optimization call for entire project with timeout handling
-                    from .image_optimizer import ImageOptimizer
-                    from django.conf import settings
-                    
-                    # Set a reasonable timeout for optimization
-                    optimization_timeout = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
-                    start_opt_time = time.time()
-                    
-                    try:
-                        ImageOptimizer.optimize_project_images(project)
-                        opt_elapsed = time.time() - start_opt_time
-                        logger.info(f"Image optimization completed in {opt_elapsed:.2f}s")
-                    except Exception as opt_error:
-                        logger.error(f"Image optimization failed: {opt_error}")
-                        # Continue even if optimization fails
-                    
-                    # FORCE PROJECT SIGNAL TRIGGER - this ensures the project gets marked as optimized
-                    post_save.connect(optimize_project_images_on_save, sender=Project)
-                    project.save(update_fields=['order'])  # Minimal save to trigger updated signal
-                    
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} images")
-                    
+                    from portfolio.async_optimizer import AsyncImageOptimizer
+                    AsyncImageOptimizer.queue_project_optimization(
+                        project_id=project.id,
+                        operation_type='bulk_upload'
+                    )
+                    logger.info(f"Successfully queued bulk optimization for project {project.id} with {len(created_images)} images")
                 except Exception as e:
-                    logger.error(f"Error in single background optimization: {e}")
-                finally:
-                    # Re-enable signals after optimization is complete
-                    try:
-                        post_save.connect(optimize_project_images_on_save, sender=Project)
-                        post_save.connect(optimize_project_album_image_on_save, sender=ProjectImage)
-                    except:
-                        pass  # Already connected
+                    logger.error(f"Failed to queue bulk optimization for project {project.id}: {e}")
 
-            # Start SINGLE background processing thread
-            optimization_thread = threading.Thread(target=optimize_project_once)
-            optimization_thread.daemon = True
-            optimization_thread.start()
+            # Queue after transaction commits (non-blocking)
+            transaction.on_commit(queue_bulk_optimization)
             
-            logger.info(f"Immediate bulk upload response sent in {time.time() - start_time:.2f}s, single optimization running in background")
+            logger.info(f"INSTANT bulk upload response sent in {time.time() - start_time:.2f}s, optimization queued in background")
             return Response(response_data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
@@ -1248,20 +1299,21 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
 
         replace_existing = request.data.get('replace_existing', 'false').lower() == 'true'
 
-        # CRITICAL FIX: Disconnect optimization signals during bulk upload
+        # CRITICAL FIX: Disconnect ALL optimization signals during bulk upload for instant response
         post_save.disconnect(optimize_service_album_image_on_save, sender=ServiceImage)
         
         try:
-            # Fast database operations only
+            # FASTEST PATH: Only database operations, no image processing at all
             with transaction.atomic():
                 if replace_existing:
+                    # Delete existing images without processing
                     existing_images = ServiceImage.objects.filter(service=service)
                     for existing_image in existing_images:
                         if existing_image.image:
                             existing_image.image.delete(save=False)
                     existing_images.delete()
 
-                # Create image records without triggering signals
+                # Create image records ONLY - no processing whatsoever
                 created_images = []
                 for i, image in enumerate(images):
                     service_image = ServiceImage.objects.create(
@@ -1272,72 +1324,32 @@ class ServiceImageViewSet(viewsets.ModelViewSet):
                     )
                     created_images.append(service_image)
 
-            # SEND RESPONSE IMMEDIATELY - before optimization
+            # SEND IMMEDIATE RESPONSE - before any processing
             response_data = {
                 'message': f'{len(created_images)} images uploaded successfully',
                 'images': [{'id': img.id, 'name': img.original_filename} for img in created_images],
-                'processing_status': 'Image optimization will continue in background',
-                'upload_time': time.time() - start_time,
-                'timeout_settings': {
-                    'request_timeout': getattr(settings, 'REQUEST_TIMEOUT', 3600),
-                    'upload_timeout': getattr(settings, 'UPLOAD_TIMEOUT', 3600),
-                    'optimization_timeout': getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
-                }
+                'processing_status': 'Images saved successfully. Optimization will run in background.',
+                'upload_time': f"{time.time() - start_time:.2f}s",
+                'background_processing': True,
+                'total_images': len(created_images)
             }
             
-            # Schedule SINGLE optimization call in background thread AFTER response
-            def optimize_service_once():
+            # Queue SINGLE optimization for the entire service - completely asynchronous
+            def queue_bulk_optimization():
                 try:
-                    # Wait a moment to ensure all database transactions are complete
-                    import time
-                    time.sleep(0.5)
-                    
-                    # Prevent any signal-based optimization during our manual optimization
-                    from django.db.models.signals import post_save
-                    from .signals import optimize_service_images_on_save
-                    
-                    # Ensure no signals interfere
-                    post_save.disconnect(optimize_service_images_on_save, sender=Service)
-                    
-                    # Single optimization call for entire service with timeout handling
-                    from .image_optimizer import ImageOptimizer
-                    from django.conf import settings
-                    
-                    # Set a reasonable timeout for optimization
-                    optimization_timeout = getattr(settings, 'IMAGE_OPTIMIZATION_TIMEOUT', 1800)
-                    start_opt_time = time.time()
-                    
-                    try:
-                        ImageOptimizer.optimize_service_images(service)
-                        opt_elapsed = time.time() - start_opt_time
-                        logger.info(f"Service image optimization completed in {opt_elapsed:.2f}s")
-                    except Exception as opt_error:
-                        logger.error(f"Service image optimization failed: {opt_error}")
-                        # Continue even if optimization fails
-                    
-                    # FORCE SERVICE SIGNAL TRIGGER - this ensures the service gets marked as optimized
-                    post_save.connect(optimize_service_images_on_save, sender=Service)
-                    service.save(update_fields=['order'])  # Minimal save to trigger updated signal
-                    
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Single background optimization completed in {elapsed_time:.2f}s for {len(created_images)} service images")
-                    
+                    from portfolio.async_optimizer import AsyncImageOptimizer
+                    AsyncImageOptimizer.queue_service_optimization(
+                        service_id=service.id,
+                        operation_type='bulk_upload'
+                    )
+                    logger.info(f"Successfully queued bulk optimization for service {service.id} with {len(created_images)} images")
                 except Exception as e:
-                    logger.error(f"Error in single background service optimization: {e}")
-                finally:
-                    # Re-enable signals after optimization is complete
-                    try:
-                        post_save.connect(optimize_service_images_on_save, sender=Service)
-                        post_save.connect(optimize_service_album_image_on_save, sender=ServiceImage)
-                    except:
-                        pass  # Already connected
+                    logger.error(f"Failed to queue bulk optimization for service {service.id}: {e}")
 
-            # Start SINGLE background processing thread
-            optimization_thread = threading.Thread(target=optimize_service_once)
-            optimization_thread.daemon = True
-            optimization_thread.start()
+            # Queue after transaction commits (non-blocking)
+            transaction.on_commit(queue_bulk_optimization)
             
-            logger.info(f"Immediate service bulk upload response sent in {time.time() - start_time:.2f}s, single optimization running in background")
+            logger.info(f"INSTANT service bulk upload response sent in {time.time() - start_time:.2f}s, optimization queued in background")
             return Response(response_data, status=status.HTTP_201_CREATED)
             
         except Exception as e:

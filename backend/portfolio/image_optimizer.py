@@ -443,8 +443,8 @@ class ImageOptimizer:
                 # Get original file size for comparison
                 original_size = os.path.getsize(original_path)
                 
-                # MEMORY OPTIMIZATION: Resize large images before processing
-                max_dimension = 3000  # Reasonable limit for web use
+                # MEMORY OPTIMIZATION: Resize very large images before processing to save RAM and time
+                max_dimension = 4000  # Increased limit for high-resolution portfolio images
                 if img.width > max_dimension or img.height > max_dimension:
                     # Calculate new dimensions maintaining aspect ratio
                     if img.width > img.height:
@@ -454,8 +454,10 @@ class ImageOptimizer:
                         new_height = max_dimension
                         new_width = int((max_dimension * img.width) / img.height)
                     
-                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                    logger.info(f"Resized large image from {original_path} to {new_width}x{new_height}")
+                    # Use faster resampling for very large images to speed up processing
+                    resample_method = Image.Resampling.LANCZOS if img.width * img.height < 50000000 else Image.Resampling.BILINEAR
+                    img = img.resize((new_width, new_height), resample_method)
+                    logger.info(f"Resized large image from {original_path} to {new_width}x{new_height} for faster processing")
                 
                 # Preserve original image data and metadata
                 original_img = img.copy()
@@ -502,9 +504,17 @@ class ImageOptimizer:
                     # Convert any other modes to RGB
                     img = img.convert('RGB')
                 
-                # PERFORMANCE: Use faster quality for development and reduce processing time
-                webp_quality = cls.WEBP_QUALITY if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 80)
-                webp_method = cls.WEBP_METHOD if cls.PRODUCTION_MODE else min(cls.WEBP_METHOD, 3)
+                # PERFORMANCE: Use faster settings for large images to speed up processing
+                is_large_image = img.width * img.height > 16000000  # 16MP threshold
+                
+                if is_large_image:
+                    # Faster processing for large images
+                    webp_quality = min(cls.WEBP_QUALITY, 90) if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 80)
+                    webp_method = min(cls.WEBP_METHOD, 4)  # Faster method for large images
+                else:
+                    # Standard processing for smaller images
+                    webp_quality = cls.WEBP_QUALITY if cls.PRODUCTION_MODE else min(cls.WEBP_QUALITY, 85)
+                    webp_method = cls.WEBP_METHOD if cls.PRODUCTION_MODE else min(cls.WEBP_METHOD, 4)
                 
                 # Save as WebP with optimal settings and AWS compatibility
                 if cls.PRODUCTION_MODE and cls.WEBP_LOSSLESS:

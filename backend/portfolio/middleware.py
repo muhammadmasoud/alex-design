@@ -15,7 +15,7 @@ import time
 
 class RequestTimeoutMiddleware:
     """
-    Middleware to handle request timeouts for long-running operations
+    Middleware to handle request timeouts for long-running operations and track timing
     """
     
     def __init__(self, get_response):
@@ -23,6 +23,9 @@ class RequestTimeoutMiddleware:
         self.timeout = getattr(settings, 'REQUEST_TIMEOUT', 3600)  # Default 1 hour
 
     def __call__(self, request):
+        import time
+        start_time = time.time()
+        
         # Set a timeout for the request
         if request.path.endswith('/bulk_upload/'):
             # Increase timeout for bulk upload operations
@@ -30,9 +33,22 @@ class RequestTimeoutMiddleware:
         else:
             request_timeout = self.timeout
         
-        # Add timeout header to response for debugging
+        # Process the request
         response = self.get_response(request)
+        
+        # Calculate processing time
+        processing_time = time.time() - start_time
+        
+        # Add timing and timeout headers to response for debugging
         response['X-Request-Timeout'] = str(request_timeout)
+        response['X-Processing-Time'] = f"{processing_time:.3f}s"
+        
+        # Log slow requests for debugging
+        if processing_time > 5.0:  # Log requests taking more than 5 seconds
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Slow request: {request.method} {request.path} took {processing_time:.2f}s")
+        
         return response
     
     def _timeout_handler(self, request):
