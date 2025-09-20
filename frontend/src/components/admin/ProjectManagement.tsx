@@ -232,24 +232,12 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
           } else {
             toast({ title: "Project updated successfully!" });
           }
-          // CRITICAL FIX: Close dialog and reset state immediately for non-album updates
-          setIsDialogOpen(false);
-          setEditingProject(null);
-          form.reset();
-          fetchProjects();
-          onUpdate();
         }
       } else {
         const response = await api.post(endpoints.admin.projects, formData);
         projectId = response.data.id;
         if (!hasAlbumImages) {
           toast({ title: "Project created successfully!" });
-          // CRITICAL FIX: Close dialog and reset state immediately for non-album creates
-          setIsDialogOpen(false);
-          setEditingProject(null);
-          form.reset();
-          fetchProjects();
-          onUpdate();
         }
       }
 
@@ -335,10 +323,6 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
         description: error.response?.data?.detail || "Failed to save project",
         variant: "destructive",
       });
-      // CRITICAL FIX: Reset form even on error to prevent stuck state
-      setIsDialogOpen(false);
-      setEditingProject(null);
-      form.reset();
     }
   };
 
@@ -791,6 +775,7 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 <Button 
                   type="submit" 
                   disabled={form.formState.isSubmitting}
+                  onClick={form.handleSubmit(onSubmit)}
                   className="h-12 px-8 text-base"
                 >
                   {form.formState.isSubmitting 
