@@ -69,7 +69,8 @@ export function useUploadProgress() {
     formData: FormData,
     onSuccess?: (data: any) => void,
     onError?: (error: string) => void,
-    method: 'POST' | 'PATCH' = 'POST'
+    method: 'POST' | 'PATCH' = 'POST',
+    fileFieldName: string = 'images'
   ) => {
     if (files.length === 0) return;
 
@@ -108,7 +109,7 @@ export function useUploadProgress() {
 
       // Add all files
       files.forEach((fileObj) => {
-        uploadFormData.append('images', fileObj.file);
+        uploadFormData.append(fileFieldName, fileObj.file);
       });
 
       // Log upload start for debugging in development only

@@ -292,7 +292,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                 variant: "destructive",
               });
             },
-            'PATCH'
+            'PATCH',
+            'image'
           );
         } catch (uploadError) {
           console.error('Error in main image upload:', uploadError);
@@ -365,7 +366,8 @@ export default function ProjectManagement({ onUpdate, onStorageUpdate }: Project
                   variant: "destructive",
                 });
               },
-              'POST'
+              'POST',
+              'image'
             );
           } catch (uploadError) {
             console.error('Error in project creation upload:', uploadError);

@@ -1733,29 +1733,62 @@ class AdminServiceViewSet(viewsets.ModelViewSet):
         return context
 
     def perform_create(self, serializer):
+        from django.db import transaction
+        from .signals import post_save
+        from .models import Service
+        from .async_optimizer import AsyncImageOptimizer
+        
         # Capture original filename from uploaded icon
         icon_file = self.request.FILES.get('icon')
         
-        # Save the service with the icon filename if provided
-        if icon_file:
-            serializer.save(original_filename=icon_file.name)
-        else:
-            serializer.save()
+        # Temporarily disconnect signals during creation for async processing
+        post_save.disconnect(sender=Service)
+        
+        try:
+            # Save the service with the icon filename if provided
+            if icon_file:
+                instance = serializer.save(original_filename=icon_file.name)
+            else:
+                instance = serializer.save()
+            
+            # Queue async optimization if icon was uploaded
+            if icon_file:
+                AsyncImageOptimizer.queue_service_optimization(instance.id, 'create')
+                
+        finally:
+            # Reconnect signals
+            post_save.connect(sender=Service)
 
     def perform_update(self, serializer):
+        from django.db import transaction
+        from .signals import post_save
+        from .models import Service
+        from .async_optimizer import AsyncImageOptimizer
+        
         # Capture original filename from uploaded icon if a new one is provided
         icon_file = self.request.FILES.get('icon')
         album_images = self.request.FILES.getlist('album_images')
         
-        # Mark instance if new image files were uploaded
-        instance = serializer.save()
-        if icon_file or album_images:
-            instance._image_files_changed = True
-            
-        # Save with original filename if icon provided
-        if icon_file:
-            instance.original_filename = icon_file.name
-            instance.save(update_fields=['original_filename'])
+        # Temporarily disconnect signals during update for async processing
+        post_save.disconnect(sender=Service)
+        
+        try:
+            # Mark instance if new image files were uploaded
+            instance = serializer.save()
+            if icon_file or album_images:
+                instance._image_files_changed = True
+                
+            # Save with original filename if icon provided
+            if icon_file:
+                instance.original_filename = icon_file.name
+                instance.save(update_fields=['original_filename'])
+                
+                # Queue async optimization for new icon
+                AsyncImageOptimizer.queue_service_optimization(instance.id, 'update')
+                
+        finally:
+            # Reconnect signals
+            post_save.connect(sender=Service)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reorder(self, request, pk=None):

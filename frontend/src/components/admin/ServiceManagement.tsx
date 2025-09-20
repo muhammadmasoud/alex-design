@@ -187,9 +187,6 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
       if (data.price !== undefined) formData.append("price", data.price.toString());
       formData.append("order", data.order?.toString() || "0");
       
-      // Track if we're uploading new images for better user feedback
-      const hasNewImages = (data.icon && data.icon[0]) || (data.album_images && data.album_images.length > 0);
-      
       // Append multiple categories
       if (data.categories) {
         data.categories.forEach(categoryId => {
@@ -210,22 +207,102 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
 
       let serviceId = editingService?.id;
       
-      // Check if we have album images to upload
+      // Check if we have images to upload
       const hasAlbumImages = data.album_images && data.album_images.length > 0;
+      const hasIconUpload = data.icon && data.icon[0];
+      
+      // Handle icon uploads with progress tracking
+      if (hasIconUpload && !hasAlbumImages) {
+        // Icon-only upload with progress
+        const iconFile = data.icon[0] as File;
+        const uploadFile = {
+          file: iconFile,
+          name: iconFile.name,
+          size: iconFile.size
+        };
+
+        // Prepare form data without icon for initial creation/update
+        const baseFormData = new FormData();
+        baseFormData.append("name", data.name);
+        baseFormData.append("description", data.description);
+        if (data.price !== undefined) baseFormData.append("price", data.price.toString());
+        baseFormData.append("order", data.order?.toString() || "0");
+        
+        // Append categories and subcategories
+        if (data.categories) {
+          data.categories.forEach(categoryId => {
+            baseFormData.append("categories", categoryId);
+          });
+        }
+        if (data.subcategories) {
+          data.subcategories.forEach(subcategoryId => {
+            baseFormData.append("subcategories", subcategoryId);
+          });
+        }
+
+        // Create/update service first without icon
+        if (editingService) {
+          await api.patch(`${endpoints.admin.services}${editingService.id}/`, baseFormData);
+        } else {
+          const response = await api.post(endpoints.admin.services, baseFormData);
+          serviceId = response.data.id;
+        }
+
+        // Close dialog and show progress for icon upload
+        setIsDialogOpen(false);
+
+        // Create form data for icon upload
+        const iconFormData = new FormData();
+        iconFormData.append("icon", iconFile);
+
+        const endpoint = `${endpoints.admin.services}${serviceId}/`;
+        const method = 'PATCH';
+
+        try {
+          await uploadFiles(
+            [uploadFile],
+            endpoint,
+            iconFormData,
+            (response) => {
+              console.log('Service icon upload success response:', response);
+              toast({ 
+                title: editingService ? "Service updated successfully!" : "Service created successfully!",
+                description: "Icon uploaded and is being optimized in the background."
+              });
+              setEditingService(null);
+              form.reset();
+              fetchData();
+              onUpdate();
+              onStorageUpdate?.();
+            },
+            (error) => {
+              console.error('Service icon upload error:', error);
+              toast({
+                title: "Icon Upload Error",
+                description: error,
+                variant: "destructive",
+              });
+            },
+            method,
+            'icon'
+          );
+        } catch (uploadError) {
+          console.error('Error in uploadFiles call for service icon:', uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to start service icon upload process",
+            variant: "destructive",
+          });
+        }
+        
+        return;
+      }
       
       if (editingService) {
         await api.patch(`${endpoints.admin.services}${editingService.id}/`, formData);
         if (!hasAlbumImages) {
-          // Text-only update or icon change - should be fast now
-          const hasIconUpdate = data.icon && data.icon[0];
-          if (hasIconUpdate) {
-            toast({ 
-              title: "Service updated successfully!", 
-              description: "Icon is being optimized in the background." 
-            });
-          } else {
-            toast({ title: "Service updated successfully!" });
-          }
+          // Text-only update - should be fast now
+          toast({ title: "Service updated successfully!" });
         }
       } else {
         const response = await api.post(endpoints.admin.services, formData);
@@ -286,7 +363,8 @@ export default function ServiceManagement({ onUpdate, onStorageUpdate }: Service
                 description: error,
                 variant: "destructive",
               });
-            }
+            },
+            'POST'
           );
         } catch (uploadError) {
           console.error('Error in uploadFiles call for service:', uploadError);
