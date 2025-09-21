@@ -1,6 +1,7 @@
-import { Link, NavLink } from "react-router-dom";
-import { Instagram, Facebook, Linkedin, Mail, Phone, MapPin, Palette } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import BehanceIcon from "@/components/icons/BehanceIcon";
 
 export default function Footer() {
   const { isAdmin } = useAuth();
@@ -23,7 +24,7 @@ export default function Footer() {
                 <Linkedin className="h-4 w-4" />
               </a>
               <a href="https://www.behance.net/mohamedaboelhamd" target="_blank" rel="noopener noreferrer" aria-label="Behance" className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background hover:bg-accent/60 transition-colors">
-                <Palette className="h-4 w-4" />
+                <BehanceIcon className="h-6 w-6" />
               </a>
             </div>
           </div>

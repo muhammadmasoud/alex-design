@@ -276,15 +276,15 @@ export default function ProjectDetail() {
                 />
                 Project Details
               </motion.h3>
-              <motion.div className="space-y-3" variants={itemVariants}>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Project:</span>
-                  <span className="font-medium">{project.title}</span>
+              <motion.div className="space-y-4 sm:space-y-3" variants={itemVariants}>
+                <div className="space-y-1 sm:space-y-0 sm:flex sm:justify-between sm:items-center">
+                  <span className="text-sm font-medium text-muted-foreground block">Project:</span>
+                  <span className="font-medium block sm:text-right break-words">{project.title}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-muted-foreground">Categories:</span>
-                  <div className="flex flex-wrap gap-1 justify-end">
+                <div className="space-y-2 sm:space-y-0 sm:flex sm:justify-between sm:items-start">
+                  <span className="text-sm font-medium text-muted-foreground block">Categories:</span>
+                  <div className="flex flex-wrap gap-1">
                     {project.category_names && project.category_names.length > 0 ? (
                       project.category_names.map((categoryName, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
@@ -303,9 +303,9 @@ export default function ProjectDetail() {
                 {((project.subcategory_names && project.subcategory_names.length > 0) || project.subcategory_name) && (
                   <>
                     <Separator />
-                    <div className="flex justify-between items-start">
-                      <span className="text-sm font-medium text-muted-foreground">Subcategories:</span>
-                      <div className="flex flex-wrap gap-1 justify-end">
+                    <div className="space-y-2 sm:space-y-0 sm:flex sm:justify-between sm:items-start">
+                      <span className="text-sm font-medium text-muted-foreground block">Subcategories:</span>
+                      <div className="flex flex-wrap gap-1">
                         {project.subcategory_names && project.subcategory_names.length > 0 ? (
                           project.subcategory_names.map((subcategoryName, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
@@ -322,9 +322,9 @@ export default function ProjectDetail() {
                   </>
                 )}
                 <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Project Date:</span>
-                  <span className="font-medium">{formatDate(project.project_date)}</span>
+                <div className="space-y-1 sm:space-y-0 sm:flex sm:justify-between sm:items-center">
+                  <span className="text-sm font-medium text-muted-foreground block">Project Date:</span>
+                  <span className="font-medium block sm:text-right">{formatDate(project.project_date)}</span>
                 </div>
               </motion.div>
             </CardContent>
