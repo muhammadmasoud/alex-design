@@ -10,7 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load admin components since they're heavy and only used by admins
-const ProjectManagement = lazy(() => import("@/components/admin/ProjectManagement"));
+const ProjectManagementWithTabs = lazy(() => import("@/components/admin/ProjectManagementWithTabs"));
 const ServiceManagement = lazy(() => import("@/components/admin/ServiceManagement"));
 const CategoryManagement = lazy(() => import("@/components/admin/CategoryManagement"));
 const ConsultationManagement = lazy(() => import("@/components/admin/ConsultationManagement"));
@@ -261,7 +261,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             }>
-              <ProjectManagement 
+              <ProjectManagementWithTabs 
                 onUpdate={handleDataUpdate}
                 onStorageUpdate={handleStorageUpdate}
               />
