@@ -108,7 +108,8 @@ const Index = () => {
         const { data } = await api.get<PaginatedResponse<Project>>(endpoints.projects, {
           params: {
             category: "Architecture Design",
-            _t: Date.now() // Cache busting - fetches ALL architecture projects
+            page_size: 1000, // Get all projects (set very high to bypass pagination)
+            _t: Date.now() // Cache busting
           }
         });
         
@@ -141,7 +142,8 @@ const Index = () => {
         const { data } = await api.get<PaginatedResponse<Project>>(endpoints.projects, {
           params: {
             category: "Interior Design",
-            _t: Date.now() // Cache busting - fetches ALL interior projects
+            page_size: 1000, // Get all projects (set very high to bypass pagination)
+            _t: Date.now() // Cache busting
           }
         });
         

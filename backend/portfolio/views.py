@@ -39,7 +39,7 @@ class ProjectPagination(PageNumberPagination):
     """Custom pagination class for projects with 6 items per page"""
     page_size = 6
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = 10000  # Allow very high page size to get all projects
 
 
 class ServicePagination(PageNumberPagination):
