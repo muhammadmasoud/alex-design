@@ -371,32 +371,50 @@ const Index = () => {
 
               {/* Project Thumbnails Navigation */}
               <div className="flex flex-col items-center gap-4">
-                {/* Small project icons */}
-                <div className="flex items-center justify-center gap-2 flex-wrap max-w-lg">
-                  {architectureProjects.map((project, index) => (
-                    <button
-                      key={project.id}
-                      onClick={() => setCurrentSlide(index)}
-                      className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-                        index === currentSlide 
-                          ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg' 
-                          : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
-                      }`}
-                    >
-                      <ProgressiveImage
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {/* Active indicator */}
-                      {index === currentSlide && (
-                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                          <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                {/* Small project icons - sliding window */}
+                <div className="relative w-full max-w-lg overflow-hidden">
+                  <div 
+                    className="flex gap-2 transition-transform duration-500 ease-in-out"
+                    style={{
+                      transform: `translateX(-${Math.max(0, Math.min(
+                        (currentSlide - 3) * (56 + 8), // 56px icon + 8px gap
+                        (architectureProjects.length - 8) * (56 + 8)
+                      ))}px)`
+                    }}
+                  >
+                    {architectureProjects.map((project, index) => (
+                      <button
+                        key={project.id}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`relative flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                          index === currentSlide 
+                            ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg z-10' 
+                            : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
+                        }`}
+                      >
+                        <ProgressiveImage
+                          src={project.image || "/placeholder.svg"}
+                          alt={project.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {/* Active indicator */}
+                        {index === currentSlide && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Gradient fade edges for visual indication of scrollable content */}
+                  {architectureProjects.length > 8 && (
+                    <>
+                      <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
+                    </>
+                  )}
                 </div>
 
                 {/* Play/Pause Controls */}
@@ -683,32 +701,50 @@ const Index = () => {
 
               {/* Project Thumbnails Navigation */}
               <div className="flex flex-col items-center gap-4">
-                {/* Small project icons */}
-                <div className="flex items-center justify-center gap-2 flex-wrap max-w-lg">
-                  {interiorProjects.map((project, index) => (
-                    <button
-                      key={project.id}
-                      onClick={() => setCurrentInteriorSlide(index)}
-                      className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-                        index === currentInteriorSlide 
-                          ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg' 
-                          : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
-                      }`}
-                    >
-                      <ProgressiveImage
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {/* Active indicator */}
-                      {index === currentInteriorSlide && (
-                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                          <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                {/* Small project icons - sliding window */}
+                <div className="relative w-full max-w-lg overflow-hidden">
+                  <div 
+                    className="flex gap-2 transition-transform duration-500 ease-in-out"
+                    style={{
+                      transform: `translateX(-${Math.max(0, Math.min(
+                        (currentInteriorSlide - 3) * (56 + 8), // 56px icon + 8px gap
+                        (interiorProjects.length - 8) * (56 + 8)
+                      ))}px)`
+                    }}
+                  >
+                    {interiorProjects.map((project, index) => (
+                      <button
+                        key={project.id}
+                        onClick={() => setCurrentInteriorSlide(index)}
+                        className={`relative flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                          index === currentInteriorSlide 
+                            ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg z-10' 
+                            : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
+                        }`}
+                      >
+                        <ProgressiveImage
+                          src={project.image || "/placeholder.svg"}
+                          alt={project.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {/* Active indicator */}
+                        {index === currentInteriorSlide && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Gradient fade edges for visual indication of scrollable content */}
+                  {interiorProjects.length > 8 && (
+                    <>
+                      <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
+                    </>
+                  )}
                 </div>
 
                 {/* Play/Pause Controls */}
