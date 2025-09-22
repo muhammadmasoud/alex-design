@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -66,6 +66,7 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
   
   // Common state
   const [loading, setLoading] = useState(true);
+  const [reorderingProjectId, setReorderingProjectId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectCategories, setProjectCategories] = useState<any[]>([]);
@@ -73,6 +74,10 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
   const [uploadMode, setUploadMode] = useState<'replace' | 'add'>('replace');
   const [activeTab, setActiveTab] = useState<'architecture' | 'interior'>('architecture');
   const [currentCategory, setCurrentCategory] = useState<'Architecture Design' | 'Interior Design'>('Architecture Design');
+  
+  // Refs for scroll position preservation
+  const architectureScrollRef = useRef<HTMLDivElement>(null);
+  const interiorScrollRef = useRef<HTMLDivElement>(null);
   
   const { uploadState, uploadFiles, pauseUpload, resumeUpload, cancelUpload, resetUpload } = useUploadProgress();
 
@@ -150,6 +155,28 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
         variant: "destructive",
       });
     }
+  };
+
+  // Helper function to preserve scroll position
+  const preserveScrollPosition = (callback: () => Promise<void>) => {
+    return async () => {
+      // Save current scroll positions
+      const archScrollTop = architectureScrollRef.current?.scrollTop || 0;
+      const interiorScrollTop = interiorScrollRef.current?.scrollTop || 0;
+      
+      // Execute the callback
+      await callback();
+      
+      // Restore scroll positions after a small delay to ensure DOM has updated
+      setTimeout(() => {
+        if (architectureScrollRef.current) {
+          architectureScrollRef.current.scrollTop = archScrollTop;
+        }
+        if (interiorScrollRef.current) {
+          interiorScrollRef.current.scrollTop = interiorScrollTop;
+        }
+      }, 50);
+    };
   };
 
   const fetchProjects = async () => {
@@ -537,7 +564,7 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
     try {
       await api.delete(`${endpoints.admin.projects}${id}/`);
       toast({ title: "Project deleted successfully!" });
-      fetchProjects();
+      await preserveScrollPosition(fetchProjects)();
       onUpdate();
       onStorageUpdate?.();
     } catch (error) {
@@ -580,12 +607,25 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
 
   const handleReorder = async (projectId: number, direction: 'up' | 'down') => {
     try {
-      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { direction });
+      // Set loading state for visual feedback
+      setReorderingProjectId(projectId);
+      
+      // Show immediate feedback
       toast({ 
-        title: `Project moved ${direction} successfully!`
+        title: `Moving project ${direction}...`,
+        description: "Updating all project positions..."
       });
-      fetchProjects();
+      
+      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { direction });
+      
+      // Immediately refresh the project lists to show updated positions while preserving scroll
+      await preserveScrollPosition(fetchProjects)();
       onUpdate();
+      
+      toast({ 
+        title: `Project moved ${direction} successfully!`,
+        description: "All project positions have been updated."
+      });
     } catch (error: any) {
       console.error("Error reordering project:", error);
       toast({
@@ -593,6 +633,8 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
         description: error.response?.data?.error || `Failed to move project ${direction}`,
         variant: "destructive",
       });
+    } finally {
+      setReorderingProjectId(null);
     }
   };
 
@@ -607,12 +649,25 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
     }
 
     try {
-      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { new_order: newOrder });
+      // Set loading state for visual feedback
+      setReorderingProjectId(projectId);
+      
+      // Show immediate feedback
       toast({ 
-        title: "Project order updated successfully!"
+        title: "Updating project position...",
+        description: `Moving to position ${newOrder} and updating all other positions...`
       });
-      fetchProjects();
+      
+      await api.post(`${endpoints.admin.projects}${projectId}/reorder/`, { new_order: newOrder });
+      
+      // Immediately refresh the project lists to show updated positions while preserving scroll
+      await preserveScrollPosition(fetchProjects)();
       onUpdate();
+      
+      toast({ 
+        title: "Project order updated successfully!",
+        description: `Project moved to position ${newOrder}. All positions have been updated.`
+      });
     } catch (error: any) {
       console.error("Error updating project order:", error);
       toast({
@@ -620,10 +675,12 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
         description: error.response?.data?.error || "Failed to update project order",
         variant: "destructive",
       });
+    } finally {
+      setReorderingProjectId(null);
     }
   };
 
-  const renderProjectTable = (projects: Project[], searchQuery: string, setSearchQuery: (query: string) => void, categoryName: string) => {
+  const renderProjectTable = (projects: Project[], searchQuery: string, setSearchQuery: (query: string) => void, categoryName: string, scrollRef: React.RefObject<HTMLDivElement>) => {
     return (
       <>
         {/* Search Input */}
@@ -645,7 +702,13 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
         </div>
         
         <div className="rounded-md border">
-          <div className="max-h-[600px] overflow-y-auto">
+          {reorderingProjectId && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              Updating project positions...
+            </div>
+          )}
+          <div ref={scrollRef} className="max-h-[600px] overflow-y-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
@@ -669,7 +732,10 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
                   projects.map((project) => (
                     <TableRow 
                       key={project.id}
-                      className="hover:bg-muted/50"
+                      className={`hover:bg-muted/50 ${
+                        reorderingProjectId === project.id ? 'bg-blue-50 border-blue-200' : 
+                        reorderingProjectId ? 'opacity-75' : ''
+                      }`}
                     >
                       <TableCell className="font-medium">
                         {project.title}
@@ -726,14 +792,33 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
                           <Input
                             type="number"
                             min="1"
-                            value={project.order || 1}
-                            onChange={(e) => {
-                              const newOrder = parseInt(e.target.value);
-                              if (!isNaN(newOrder) && newOrder !== project.order) {
-                                handleOrderChange(project.id, newOrder);
+                            defaultValue={project.order || 1}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const newOrder = parseInt(e.currentTarget.value);
+                                if (!isNaN(newOrder) && newOrder !== project.order && newOrder >= 1) {
+                                  handleOrderChange(project.id, newOrder);
+                                } else if (isNaN(newOrder) || newOrder < 1) {
+                                  // Reset to original value if invalid
+                                  e.currentTarget.value = (project.order || 1).toString();
+                                }
+                                e.currentTarget.blur(); // Remove focus after Enter
                               }
                             }}
-                            className="w-16 h-8 text-center text-sm font-mono"
+                            onBlur={(e) => {
+                              const newOrder = parseInt(e.target.value);
+                              if (!isNaN(newOrder) && newOrder !== project.order && newOrder >= 1) {
+                                handleOrderChange(project.id, newOrder);
+                              } else if (isNaN(newOrder) || newOrder < 1) {
+                                // Reset to original value if invalid
+                                e.target.value = (project.order || 1).toString();
+                              }
+                            }}
+                            className={`w-16 h-8 text-center text-sm font-mono ${
+                              reorderingProjectId === project.id ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                            title="Type new order number and press Enter or click outside"
+                            disabled={reorderingProjectId === project.id}
                           />
                           <div className="flex flex-col gap-1">
                             <Button
@@ -741,18 +826,26 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
                               size="sm"
                               onClick={() => handleReorder(project.id, 'up')}
                               className="h-6 w-6 p-0"
-                              disabled={project.order === 1}
+                              disabled={project.order === 1 || reorderingProjectId === project.id}
                             >
-                              <ChevronUp className="h-3 w-3" />
+                              {reorderingProjectId === project.id ? (
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                              ) : (
+                                <ChevronUp className="h-3 w-3" />
+                              )}
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleReorder(project.id, 'down')}
                               className="h-6 w-6 p-0"
-                              disabled={project.order === projects.length}
+                              disabled={project.order === projects.length || reorderingProjectId === project.id}
                             >
-                              <ChevronDown className="h-3 w-3" />
+                              {reorderingProjectId === project.id ? (
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                              ) : (
+                                <ChevronDown className="h-3 w-3" />
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -1212,11 +1305,11 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
             </div>
 
             <TabsContent value="architecture">
-              {renderProjectTable(filteredArchitectureProjects, architectureSearchQuery, setArchitectureSearchQuery, "Architecture Design")}
+              {renderProjectTable(filteredArchitectureProjects, architectureSearchQuery, setArchitectureSearchQuery, "Architecture Design", architectureScrollRef)}
             </TabsContent>
 
             <TabsContent value="interior">
-              {renderProjectTable(filteredInteriorProjects, interiorSearchQuery, setInteriorSearchQuery, "Interior Design")}
+              {renderProjectTable(filteredInteriorProjects, interiorSearchQuery, setInteriorSearchQuery, "Interior Design", interiorScrollRef)}
             </TabsContent>
           </Tabs>
         </CardContent>
