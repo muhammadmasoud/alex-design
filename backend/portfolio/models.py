@@ -67,9 +67,9 @@ def validate_image(image):
     Validate uploaded image file
     """
     try:
-        # Check file size (25MB max)
-        if image.size > 25 * 1024 * 1024:
-            raise ValidationError("Image file too large. Maximum size is 25MB.")
+        # Check file size (50MB max)
+        if image.size > 50 * 1024 * 1024:
+            raise ValidationError("Image file too large. Maximum size is 50MB.")
         
         # Check file extension
         valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.tif']

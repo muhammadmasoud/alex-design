@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { validateFiles, formatFileSize, getFilePreview, ValidationResult } from '@/lib/fileValidation';
+import { validateFiles, formatFileSize, getFilePreview, ValidationResult } from '../lib/fileValidation';
 
 interface FileUploadProps {
   onFilesChange: (files: File[]) => void;
@@ -28,7 +28,7 @@ interface FileWithPreview extends File {
 export default function FileUpload({
   onFilesChange,
   multiple = false,
-  maxSize = 25 * 1024 * 1024, // 25MB
+  maxSize = 50 * 1024 * 1024, // 50MB
   allowedTypes,
   maxFiles = 10,
   className,
@@ -37,6 +37,8 @@ export default function FileUpload({
   showPreview = true,
   compress = false
 }: FileUploadProps) {
+  // Note: compress parameter is available for future use
+  void compress; // Acknowledge parameter to avoid lint warning
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [validation, setValidation] = useState<ValidationResult>({ valid: true, errors: [] });
   const [isDragOver, setIsDragOver] = useState(false);
@@ -208,7 +210,7 @@ export default function FileUpload({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <ul className="space-y-1">
-              {validation.errors.map((error, index) => (
+              {validation.errors.map((error: string, index: number) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>
