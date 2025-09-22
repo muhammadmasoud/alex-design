@@ -369,8 +369,37 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Play/Pause Controls */}
-              <div className="flex justify-center">
+              {/* Project Thumbnails Navigation */}
+              <div className="flex flex-col items-center gap-4">
+                {/* Small project icons */}
+                <div className="flex items-center justify-center gap-2 flex-wrap max-w-lg">
+                  {architectureProjects.map((project, index) => (
+                    <button
+                      key={project.id}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                        index === currentSlide 
+                          ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg' 
+                          : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
+                      }`}
+                    >
+                      <ProgressiveImage
+                        src={project.image || "/placeholder.svg"}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Active indicator */}
+                      {index === currentSlide && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Play/Pause Controls */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -652,8 +681,37 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Play/Pause Controls */}
-              <div className="flex justify-center">
+              {/* Project Thumbnails Navigation */}
+              <div className="flex flex-col items-center gap-4">
+                {/* Small project icons */}
+                <div className="flex items-center justify-center gap-2 flex-wrap max-w-lg">
+                  {interiorProjects.map((project, index) => (
+                    <button
+                      key={project.id}
+                      onClick={() => setCurrentInteriorSlide(index)}
+                      className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                        index === currentInteriorSlide 
+                          ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg' 
+                          : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
+                      }`}
+                    >
+                      <ProgressiveImage
+                        src={project.image || "/placeholder.svg"}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Active indicator */}
+                      {index === currentInteriorSlide && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-primary shadow-lg"></div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Play/Pause Controls */}
                 <Button
                   variant="outline"
                   size="sm"
