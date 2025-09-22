@@ -369,43 +369,6 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Thumbnail Navigation */}
-              <div className="flex justify-center">
-                <div className="flex gap-3 overflow-x-auto pb-2 max-w-full">
-                  {architectureProjects.map((project, index) => (
-                    <motion.button
-                      key={project.id}
-                      onClick={() => setCurrentSlide(index)}
-                      className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg overflow-hidden transition-all duration-300 ${
-                        index === currentSlide 
-                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-105' 
-                          : 'hover:scale-105 hover:ring-1 hover:ring-primary/50 hover:ring-offset-1 hover:ring-offset-background opacity-70 hover:opacity-100'
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <img
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        className="h-full w-full object-cover"
-                      />
-                      
-                      {/* Active indicator */}
-                      {index === currentSlide && (
-                        <motion.div
-                          className="absolute inset-0 bg-primary/20 flex items-center justify-center"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </motion.div>
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-
               {/* Play/Pause Controls */}
               <div className="flex justify-center">
                 <Button
@@ -686,43 +649,6 @@ const Index = () => {
                   >
                     <ChevronRight className="h-6 w-6" />
                   </Button>
-                </div>
-              </div>
-
-              {/* Thumbnail Navigation */}
-              <div className="flex justify-center">
-                <div className="flex gap-3 overflow-x-auto pb-2 max-w-full">
-                  {interiorProjects.map((project, index) => (
-                    <motion.button
-                      key={project.id}
-                      onClick={() => setCurrentInteriorSlide(index)}
-                      className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg overflow-hidden transition-all duration-300 ${
-                        index === currentInteriorSlide 
-                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-105' 
-                          : 'hover:scale-105 hover:ring-1 hover:ring-primary/50 hover:ring-offset-1 hover:ring-offset-background opacity-70 hover:opacity-100'
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <img
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        className="h-full w-full object-cover"
-                      />
-                      
-                      {/* Active indicator */}
-                      {index === currentInteriorSlide && (
-                        <motion.div
-                          className="absolute inset-0 bg-primary/20 flex items-center justify-center"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </motion.div>
-                      )}
-                    </motion.button>
-                  ))}
                 </div>
               </div>
 
