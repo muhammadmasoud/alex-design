@@ -18,9 +18,10 @@ interface CategorySectionProps {
   categoryName: string;
   displayTitle: string;
   description: string;
+  sectionId: string;
 }
 
-export default function CategorySection({ categoryName, displayTitle, description }: CategorySectionProps) {
+export default function CategorySection({ categoryName, displayTitle, description, sectionId }: CategorySectionProps) {
   const [items, setItems] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,14 +60,17 @@ export default function CategorySection({ categoryName, displayTitle, descriptio
 
   return (
     <motion.section 
+      id={sectionId}
       className="mb-12"
       variants={itemVariants}
     >
-      {/* Section Header */}
-      <motion.div className="mb-6" variants={itemVariants}>
-        <h2 className="font-heading text-xl sm:text-2xl mb-2">{displayTitle}</h2>
-        <p className="text-sm sm:text-base text-muted-foreground">{description}</p>
-      </motion.div>
+      {/* Section Header - Only show if title and description are provided */}
+      {displayTitle && description && (
+        <motion.div className="mb-6" variants={itemVariants}>
+          <h2 className="font-heading text-xl sm:text-2xl mb-2">{displayTitle}</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">{description}</p>
+        </motion.div>
+      )}
 
       {/* Filters */}
       <motion.div className="flex flex-col sm:flex-row gap-4 mb-6" variants={itemVariants}>
