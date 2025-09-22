@@ -160,22 +160,48 @@ export default function ProjectManagementWithTabs({ onUpdate, onStorageUpdate }:
   // Helper function to preserve scroll position
   const preserveScrollPosition = (callback: () => Promise<void>) => {
     return async () => {
-      // Save current scroll positions
+      // Save current scroll positions (both page and table)
+      const pageScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const pageScrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
       const archScrollTop = architectureScrollRef.current?.scrollTop || 0;
       const interiorScrollTop = interiorScrollRef.current?.scrollTop || 0;
       
-      // Execute the callback
-      await callback();
+      // Prevent any scroll restoration during the update
+      const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = 'auto';
       
-      // Restore scroll positions after a small delay to ensure DOM has updated
-      setTimeout(() => {
-        if (architectureScrollRef.current) {
-          architectureScrollRef.current.scrollTop = archScrollTop;
-        }
-        if (interiorScrollRef.current) {
-          interiorScrollRef.current.scrollTop = interiorScrollTop;
-        }
-      }, 50);
+      try {
+        // Execute the callback
+        await callback();
+        
+        // Use multiple strategies to ensure scroll position is maintained
+        const restoreScroll = () => {
+          // Restore page scroll position with options
+          window.scrollTo({
+            top: pageScrollTop,
+            left: pageScrollLeft,
+            behavior: 'auto'
+          });
+          
+          // Restore table scroll positions
+          if (architectureScrollRef.current) {
+            architectureScrollRef.current.scrollTop = archScrollTop;
+          }
+          if (interiorScrollRef.current) {
+            interiorScrollRef.current.scrollTop = interiorScrollTop;
+          }
+        };
+        
+        // Try multiple times to ensure it sticks
+        restoreScroll(); // Immediate
+        requestAnimationFrame(restoreScroll); // Next frame
+        setTimeout(restoreScroll, 10); // Small delay
+        setTimeout(restoreScroll, 50); // Longer delay
+        
+      } finally {
+        // Restore original scroll behavior
+        document.documentElement.style.scrollBehavior = originalScrollBehavior;
+      }
     };
   };
 
