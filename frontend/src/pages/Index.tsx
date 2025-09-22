@@ -374,11 +374,11 @@ const Index = () => {
                 {/* Small project icons - sliding window */}
                 <div className="relative w-full max-w-lg overflow-hidden">
                   <div 
-                    className="flex gap-2 transition-transform duration-500 ease-in-out"
+                    className="flex gap-3 transition-transform duration-500 ease-in-out"
                     style={{
                       transform: `translateX(-${Math.max(0, Math.min(
-                        (currentSlide - 3) * (56 + 8), // 56px icon + 8px gap
-                        (architectureProjects.length - 8) * (56 + 8)
+                        (currentSlide - 3) * (80 + 12), // 80px icon + 12px gap
+                        (architectureProjects.length - 6) * (80 + 12)
                       ))}px)`
                     }}
                   >
@@ -386,7 +386,7 @@ const Index = () => {
                       <button
                         key={project.id}
                         onClick={() => setCurrentSlide(index)}
-                        className={`relative flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                        className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
                           index === currentSlide 
                             ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg z-10' 
                             : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
@@ -409,10 +409,10 @@ const Index = () => {
                   </div>
                   
                   {/* Gradient fade edges for visual indication of scrollable content */}
-                  {architectureProjects.length > 8 && (
+                  {architectureProjects.length > 6 && (
                     <>
-                      <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
-                      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
                     </>
                   )}
                 </div>
@@ -704,11 +704,11 @@ const Index = () => {
                 {/* Small project icons - sliding window */}
                 <div className="relative w-full max-w-lg overflow-hidden">
                   <div 
-                    className="flex gap-2 transition-transform duration-500 ease-in-out"
+                    className="flex gap-3 transition-transform duration-500 ease-in-out"
                     style={{
                       transform: `translateX(-${Math.max(0, Math.min(
-                        (currentInteriorSlide - 3) * (56 + 8), // 56px icon + 8px gap
-                        (interiorProjects.length - 8) * (56 + 8)
+                        (currentInteriorSlide - 3) * (80 + 12), // 80px icon + 12px gap
+                        (interiorProjects.length - 6) * (80 + 12)
                       ))}px)`
                     }}
                   >
@@ -716,7 +716,7 @@ const Index = () => {
                       <button
                         key={project.id}
                         onClick={() => setCurrentInteriorSlide(index)}
-                        className={`relative flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                        className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
                           index === currentInteriorSlide 
                             ? 'border-primary ring-2 ring-primary/30 scale-110 shadow-lg z-10' 
                             : 'border-muted-foreground/30 hover:border-primary/60 hover:scale-105'
@@ -739,10 +739,10 @@ const Index = () => {
                   </div>
                   
                   {/* Gradient fade edges for visual indication of scrollable content */}
-                  {interiorProjects.length > 8 && (
+                  {interiorProjects.length > 6 && (
                     <>
-                      <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
-                      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent pointer-events-none z-20" />
+                      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none z-20" />
                     </>
                   )}
                 </div>
