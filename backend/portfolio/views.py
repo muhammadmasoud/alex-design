@@ -321,19 +321,39 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 
                 with transaction.atomic():
                     old_order = project.order
+                    # Get the primary category for category-aware reordering
+                    primary_category = project.categories.first()
                     
-                    if new_order > old_order:
-                        # Moving down: shift items up
-                        Project.objects.filter(
-                            order__gt=old_order,
-                            order__lte=new_order
-                        ).update(order=models.F('order') - 1)
-                    elif new_order < old_order:
-                        # Moving up: shift items down
-                        Project.objects.filter(
-                            order__gte=new_order,
-                            order__lt=old_order
-                        ).update(order=models.F('order') + 1)
+                    if primary_category:
+                        # Category-aware reordering
+                        if new_order > old_order:
+                            # Moving down: shift items up within the same category
+                            Project.objects.filter(
+                                categories=primary_category,
+                                order__gt=old_order,
+                                order__lte=new_order
+                            ).update(order=models.F('order') - 1)
+                        elif new_order < old_order:
+                            # Moving up: shift items down within the same category
+                            Project.objects.filter(
+                                categories=primary_category,
+                                order__gte=new_order,
+                                order__lt=old_order
+                            ).update(order=models.F('order') + 1)
+                    else:
+                        # Fallback to global reordering if no category
+                        if new_order > old_order:
+                            # Moving down: shift items up
+                            Project.objects.filter(
+                                order__gt=old_order,
+                                order__lte=new_order
+                            ).update(order=models.F('order') - 1)
+                        elif new_order < old_order:
+                            # Moving up: shift items down
+                            Project.objects.filter(
+                                order__gte=new_order,
+                                order__lt=old_order
+                            ).update(order=models.F('order') + 1)
                     
                     project.order = new_order
                     project.save()
@@ -345,11 +365,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
         elif direction in ['up', 'down']:
             # Up/down arrow functionality
             with transaction.atomic():
+                # Get the primary category for category-aware reordering
+                primary_category = project.categories.first()
+                
                 if direction == 'up':
-                    # Find the project with the order just before this one
-                    previous_project = Project.objects.filter(
-                        order__lt=project.order
-                    ).order_by('-order').first()
+                    # Find the project with the order just before this one within the same category
+                    if primary_category:
+                        previous_project = Project.objects.filter(
+                            categories=primary_category,
+                            order__lt=project.order
+                        ).order_by('-order').first()
+                    else:
+                        previous_project = Project.objects.filter(
+                            order__lt=project.order
+                        ).order_by('-order').first()
                     
                     if previous_project:
                         # Swap orders
@@ -361,10 +390,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
                         return Response({'error': 'Project is already first'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 else:  # direction == 'down'
-                    # Find the project with the order just after this one
-                    next_project = Project.objects.filter(
-                        order__gt=project.order
-                    ).order_by('order').first()
+                    # Find the project with the order just after this one within the same category
+                    if primary_category:
+                        next_project = Project.objects.filter(
+                            categories=primary_category,
+                            order__gt=project.order
+                        ).order_by('order').first()
+                    else:
+                        next_project = Project.objects.filter(
+                            order__gt=project.order
+                        ).order_by('order').first()
                     
                     if next_project:
                         # Swap orders
@@ -1661,19 +1696,39 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
                 
                 with transaction.atomic():
                     old_order = project.order
+                    # Get the primary category for category-aware reordering
+                    primary_category = project.categories.first()
                     
-                    if new_order > old_order:
-                        # Moving down: shift items up
-                        Project.objects.filter(
-                            order__gt=old_order,
-                            order__lte=new_order
-                        ).update(order=models.F('order') - 1)
-                    elif new_order < old_order:
-                        # Moving up: shift items down
-                        Project.objects.filter(
-                            order__gte=new_order,
-                            order__lt=old_order
-                        ).update(order=models.F('order') + 1)
+                    if primary_category:
+                        # Category-aware reordering
+                        if new_order > old_order:
+                            # Moving down: shift items up within the same category
+                            Project.objects.filter(
+                                categories=primary_category,
+                                order__gt=old_order,
+                                order__lte=new_order
+                            ).update(order=models.F('order') - 1)
+                        elif new_order < old_order:
+                            # Moving up: shift items down within the same category
+                            Project.objects.filter(
+                                categories=primary_category,
+                                order__gte=new_order,
+                                order__lt=old_order
+                            ).update(order=models.F('order') + 1)
+                    else:
+                        # Fallback to global reordering if no category
+                        if new_order > old_order:
+                            # Moving down: shift items up
+                            Project.objects.filter(
+                                order__gt=old_order,
+                                order__lte=new_order
+                            ).update(order=models.F('order') - 1)
+                        elif new_order < old_order:
+                            # Moving up: shift items down
+                            Project.objects.filter(
+                                order__gte=new_order,
+                                order__lt=old_order
+                            ).update(order=models.F('order') + 1)
                     
                     project.order = new_order
                     project.save()
@@ -1685,11 +1740,20 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
         elif direction in ['up', 'down']:
             # Up/down arrow functionality
             with transaction.atomic():
+                # Get the primary category for category-aware reordering
+                primary_category = project.categories.first()
+                
                 if direction == 'up':
-                    # Find the project with the order just before this one
-                    previous_project = Project.objects.filter(
-                        order__lt=project.order
-                    ).order_by('-order').first()
+                    # Find the project with the order just before this one within the same category
+                    if primary_category:
+                        previous_project = Project.objects.filter(
+                            categories=primary_category,
+                            order__lt=project.order
+                        ).order_by('-order').first()
+                    else:
+                        previous_project = Project.objects.filter(
+                            order__lt=project.order
+                        ).order_by('-order').first()
                     
                     if previous_project:
                         # Swap orders
@@ -1701,10 +1765,16 @@ class AdminProjectViewSet(viewsets.ModelViewSet):
                         return Response({'error': 'Project is already first'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 else:  # direction == 'down'
-                    # Find the project with the order just after this one
-                    next_project = Project.objects.filter(
-                        order__gt=project.order
-                    ).order_by('order').first()
+                    # Find the project with the order just after this one within the same category
+                    if primary_category:
+                        next_project = Project.objects.filter(
+                            categories=primary_category,
+                            order__gt=project.order
+                        ).order_by('order').first()
+                    else:
+                        next_project = Project.objects.filter(
+                            order__gt=project.order
+                        ).order_by('order').first()
                     
                     if next_project:
                         # Swap orders

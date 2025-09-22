@@ -331,15 +331,38 @@ class Project(models.Model):
         
         # Set default order to next available position if not set
         if not self.order or self.order == 0:
-            # Use a more efficient approach to avoid aggregate on every save
+            # Get the primary category for this project
+            primary_category = None
+            if hasattr(self, '_state') and self._state.adding:
+                # For new projects, we need to check the categories that will be assigned
+                # This is handled after the save in the many-to-many relationship
+                pass
+            else:
+                # For existing projects, get the first category
+                primary_category = self.categories.first()
+            
+            # Use category-aware ordering
             try:
-                # Get the last project by order (most efficient query)
-                last_project = Project.objects.only('order').order_by('-order').first()
-                self.order = (last_project.order if last_project else 0) + 1
+                if primary_category:
+                    # Get the last project in the same primary category
+                    last_project = Project.objects.filter(
+                        categories=primary_category
+                    ).only('order').order_by('-order').first()
+                    self.order = (last_project.order if last_project else 0) + 1
+                else:
+                    # Fallback to global ordering for new projects without category set yet
+                    last_project = Project.objects.only('order').order_by('-order').first()
+                    self.order = (last_project.order if last_project else 0) + 1
             except:
                 # Fallback to aggregate if the above fails
-                max_order = Project.objects.aggregate(models.Max('order'))['order__max']
-                self.order = (max_order or 0) + 1
+                if primary_category:
+                    max_order = Project.objects.filter(
+                        categories=primary_category
+                    ).aggregate(models.Max('order'))['order__max']
+                    self.order = (max_order or 0) + 1
+                else:
+                    max_order = Project.objects.aggregate(models.Max('order'))['order__max']
+                    self.order = (max_order or 0) + 1
         
         # Handle title change and file reorganization
         if self.pk:
