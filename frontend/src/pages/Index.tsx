@@ -372,7 +372,7 @@ const Index = () => {
               {/* Project Thumbnails Navigation */}
               <div className="flex flex-col items-center gap-4">
                 {/* Small project icons - sliding window */}
-                <div className="relative w-full max-w-lg overflow-hidden">
+                <div className="relative w-full max-w-2xl overflow-hidden px-4">
                   <div 
                     className="flex gap-3 transition-transform duration-500 ease-in-out"
                     style={{
@@ -702,7 +702,7 @@ const Index = () => {
               {/* Project Thumbnails Navigation */}
               <div className="flex flex-col items-center gap-4">
                 {/* Small project icons - sliding window */}
-                <div className="relative w-full max-w-lg overflow-hidden">
+                <div className="relative w-full max-w-2xl overflow-hidden px-4">
                   <div 
                     className="flex gap-3 transition-transform duration-500 ease-in-out"
                     style={{
